@@ -1,7 +1,7 @@
 # pylint: disable=E0401
 from ._ffi import ffi
 from ._ffi.lib import (free, reader_close, reader_nsamples, reader_nvariants,
-                       reader_open, reader_read_variants)
+                       reader_open, reader_read_variants, reader_read_samples)
 
 
 def _to_string(v):
@@ -32,9 +32,22 @@ def _read_variants(bgenfile):
         data['pos'].append(positions[i])
         data['nalleles'].append(nalleless[i])
 
-    df = DataFrame(data=data)
+    return DataFrame(data=data)
 
-    return df
+def _read_samples(bgenfile):
+    from pandas import DataFrame
+
+    nsamples = reader_nsamples(bgenfile)
+
+    ids = ffi.new("string *[%d]" % nsamples)
+
+    reader_read_samples(bgenfile, ids)
+
+    py_ids = []
+    for i in range(nsamples):
+        py_ids.append(_to_string(ids[i]))
+
+    return DataFrame(data=dict(id=py_ids))
 
 
 def read(filepath):
@@ -42,7 +55,8 @@ def read(filepath):
     bgenfile = reader_open(filepath)
 
     variants = _read_variants(bgenfile)
+    samples = _read_samples(bgenfile)
 
     reader_close(bgenfile)
 
-    return (variants, None)
+    return (variants, samples, None)

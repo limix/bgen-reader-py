@@ -23,6 +23,7 @@ ffibuilder.cdef(r"""
     inti      reader_read_variants(BGenFile *bgenfile, string **ids,
                                    string **rsids, string **chroms,
                                    inti *position, inti *nalleles);
+    inti reader_read_samples(BGenFile *bgenfile, string **ids);
     void      free(void *ptr);
 """)
 
@@ -96,6 +97,24 @@ ffibuilder.set_source(
             head_ref = head_ref->next;
 
             e = bgen_reader_free_variantid_block(ref);
+        }
+
+        return EXIT_SUCCESS;
+    }
+
+    inti reader_read_samples(BGenFile *bgenfile, string **ids)
+    {
+        inti i;
+        inti nsamples = bgen_reader_nsamples(bgenfile);
+        inti e;
+
+        for (i = 0; i < nsamples; ++i)
+        {
+            ids[i] = malloc(sizeof(string));
+            e = bgen_reader_sampleid(bgenfile, i, &(ids[i]->s), &(ids[i]->len));
+
+            if (e != EXIT_SUCCESS)
+                return EXIT_FAILURE;
         }
 
         return EXIT_SUCCESS;

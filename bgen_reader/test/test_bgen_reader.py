@@ -7,10 +7,13 @@ from numpy.testing import assert_equal
 from bgen_reader import read
 
 
+# TODO: test not found file
+
+
 def test_bgen_reader():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"example.32bits.bgen")
-    (variants, genotype) = read(filepath)
+    (variants, samples, genotype) = read(filepath)
 
     assert_equal(variants.loc[0, 'chrom'], '01')
     assert_equal(variants.loc[0, 'id'], 'SNPID_2')
@@ -30,3 +33,9 @@ def test_bgen_reader():
     assert_equal(variants.loc[n - 1, 'nalleles'], 2)
     assert_equal(variants.loc[n - 1, 'pos'], 100001)
     assert_equal(variants.loc[n - 1, 'rsid'], 'RSID_200')
+
+    assert_equal(samples.loc[0, 'id'], 'sample_001')
+    assert_equal(samples.loc[7, 'id'], 'sample_008')
+
+    n = samples.shape[0]
+    assert_equal(samples.loc[n - 1, 'id'], 'sample_500')
