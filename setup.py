@@ -21,8 +21,8 @@ def setup_package():
     needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
     pytest_runner = ['pytest-runner>=2.9'] if needs_pytest else []
 
-    setup_requires = [] + pytest_runner
-    install_requires = []
+    setup_requires = ['cffi>=1.8'] + pytest_runner
+    install_requires = ['cffi>=1.8']
     tests_require = ['pytest', 'pytest-pep8']
 
     metadata = dict(
@@ -46,7 +46,8 @@ def setup_package():
             "Development Status :: 5 - Production/Stable",
             "License :: OSI Approved :: MIT License",
             "Operating System :: OS Independent",
-        ])
+        ],
+        cffi_modules=["liknorm/_build.py:ffibuilder"])
 
     try:
         setup(**metadata)
