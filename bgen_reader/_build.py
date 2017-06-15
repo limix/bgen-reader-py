@@ -6,6 +6,7 @@ from cffi import FFI
 ffibuilder = FFI()
 
 ffibuilder.cdef(r"""
+    typedef unsigned char byte;
     typedef int_fast64_t  inti;
 
     typedef struct BGenFile BGenFile;
@@ -13,6 +14,7 @@ ffibuilder.cdef(r"""
     inti      reader_close(BGenFile *bgenfile);
     inti      reader_nsamples(BGenFile *bgenfile);
     inti      reader_nvariants(BGenFile *bgenfile);
+    inti      read_variants(BGenFile *bgenfile, byte **ids);
 """)
 
 ffibuilder.set_source(
@@ -38,6 +40,25 @@ ffibuilder.set_source(
     inti reader_nvariants(BGenFile *bgenfile)
     {
         return bgen_reader_nvariants(bgenfile);
+    }
+
+    inti read_variants(BGenFile *bgenfile, byte **ids)
+    {
+        VariantIdBlock *head_ref;
+        inti e = bgen_reader_read_variantid_blocks(bgenfile, &head_ref);
+
+        if (e != EXIT_SUCCESS)
+            return EXIT_FAILURE;
+
+        inti nvariants = bgen_reader_nvariants(bgenfile);
+        inti i;
+
+        for (i = 0; i < nvariants; ++i)
+        {
+            ids[i] = bgen_reader_strndup(head_ref->id, head_ref->id_length);
+        }
+
+        return EXIT_SUCCESS;
     }
 """,
     libraries=['bgen_reader'],
