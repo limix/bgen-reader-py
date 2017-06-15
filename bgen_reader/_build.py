@@ -6,9 +6,13 @@ from cffi import FFI
 ffibuilder = FFI()
 
 ffibuilder.cdef(r"""
+    typedef int_fast64_t  inti;
 
     typedef struct BGenFile BGenFile;
-    BGenFile* open(const char *filepath);
+    BGenFile* reader_open(const char *filepath);
+    inti      reader_close(BGenFile *bgenfile);
+    inti      reader_nsamples(BGenFile *bgenfile);
+    inti      reader_nvariants(BGenFile *bgenfile);
 """)
 
 ffibuilder.set_source(
@@ -16,9 +20,24 @@ ffibuilder.set_source(
     r"""
     #include "bgen_reader/bgen_reader.h"
 
-    BGenFile* open(const char *filepath)
+    BGenFile* reader_open(const char *filepath)
     {
         return bgen_reader_open(filepath);
+    }
+
+    inti reader_close(BGenFile *bgenfile)
+    {
+        return bgen_reader_close(bgenfile);
+    }
+
+    inti reader_nsamples(BGenFile *bgenfile)
+    {
+        return bgen_reader_nsamples(bgenfile);
+    }
+
+    inti reader_nvariants(BGenFile *bgenfile)
+    {
+        return bgen_reader_nvariants(bgenfile);
     }
 """,
     libraries=['bgen_reader'],

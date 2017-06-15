@@ -47,7 +47,7 @@ def setup_package():
             "License :: OSI Approved :: MIT License",
             "Operating System :: OS Independent",
         ],
-        cffi_modules=["liknorm/_build.py:ffibuilder"])
+        cffi_modules=["bgen_reader/_build.py:ffibuilder"])
 
     try:
         setup(**metadata)

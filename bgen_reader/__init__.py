@@ -17,6 +17,7 @@ try:
 except _DistributionNotFound:
     __version__ = 'unknown'
 
+from .bgen_reader import print_something
 
 def test():
     import os
