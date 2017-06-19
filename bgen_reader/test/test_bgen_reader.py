@@ -34,8 +34,8 @@ def test_bgen_reader():
     # assert_equal(variants.loc[n - 1, 'pos'], 100001)
     # assert_equal(variants.loc[n - 1, 'rsid'], 'RSID_200')
     #
-    # assert_equal(samples.loc[0, 'id'], 'sample_001')
-    # assert_equal(samples.loc[7, 'id'], 'sample_008')
-    #
-    # n = samples.shape[0]
-    # assert_equal(samples.loc[n - 1, 'id'], 'sample_500')
+    assert_equal(samples.loc[0, 'id'], 'sample_001')
+    assert_equal(samples.loc[7, 'id'], 'sample_008')
+
+    n = samples.shape[0]
+    assert_equal(samples.loc[n - 1, 'id'], 'sample_500')

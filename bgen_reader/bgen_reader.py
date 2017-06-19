@@ -91,8 +91,6 @@ def read(filepath):
     bgenfile = open_bgen(filepath)
 
     samples = _read_samples(bgenfile)
-    print()
-    print(samples.head())
     # variants = _read_variants(bgenfile)
 
     # genotype = _read_genotype(bgenfile)
@@ -101,4 +99,4 @@ def read(filepath):
     close_bgen(bgenfile)
 
     # return (variants, samples, genotype)
-    return (None, None, None)
+    return (None, samples, None)
