@@ -1,12 +1,15 @@
 # pylint: disable=E0401
-from ._ffi import ffi
-from ._ffi.lib import (free, close_bgen, open_bgen, read_samples)
-
 from numpy import int64
 
+from ._ffi import ffi
+from ._ffi.lib import (close_bgen, free, get_nsamples, get_nvariants,
+                       open_bgen, read_samples, string_duplicate)
+
+
 def _to_string(v):
-    v = ffi.gc(v, free)
-    return ffi.string(v[0].s, v[0].len).decode()
+    v = string_duplicate(v)
+    return ffi.string(v.str, v.len).decode()
+
 
 #
 # def _read_variants(bgenfile):
@@ -35,20 +38,19 @@ def _to_string(v):
 #     return DataFrame(data=data)
 #
 #
-# def _read_samples(bgenfile):
-#     from pandas import DataFrame
-#
-#     nsamples = reader_nsamples(bgenfile)
-#
-#     ids = ffi.new("string *[%d]" % nsamples)
-#
-#     reader_read_samples(bgenfile, ids)
-#
-#     py_ids = []
-#     for i in range(nsamples):
-#         py_ids.append(_to_string(ids[i]))
-#
-#     return DataFrame(data=dict(id=py_ids))
+def _read_samples(bgenfile):
+    from pandas import DataFrame
+
+    nsamples = get_nsamples(bgenfile)
+    samples = read_samples(bgenfile)
+
+    py_ids = []
+    for i in range(nsamples):
+        py_ids.append(_to_string(samples[i]))
+
+    return DataFrame(data=dict(id=py_ids))
+
+
 #
 # def _read_genotype_chunk(bgenfile, variant_start, variant_end):
 #
@@ -86,14 +88,17 @@ def _to_string(v):
 
 def read(filepath):
 
-    bgenfile = reader_open(filepath)
+    bgenfile = open_bgen(filepath)
 
     samples = _read_samples(bgenfile)
+    print()
+    print(samples.head())
     # variants = _read_variants(bgenfile)
 
     # genotype = _read_genotype(bgenfile)
     genotype = None
 
-    reader_close(bgenfile)
+    close_bgen(bgenfile)
 
-    return (variants, samples, genotype)
+    # return (variants, samples, genotype)
+    return (None, None, None)

@@ -62,3 +62,13 @@ void free_variant_genotypes(VariantGenotype *vg,
 {
     bgen_free_variant_genotypes(vg, nvariants);
 }
+
+string string_duplicate(string s)
+{
+    string r;
+
+    r.str = malloc(s.len);
+    memcpy(r.str, s.str, s.len);
+    r.len = s.len;
+    return r;
+}
