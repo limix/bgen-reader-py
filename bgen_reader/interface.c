@@ -72,3 +72,8 @@ string string_duplicate(string s)
     r.len = s.len;
     return r;
 }
+
+inti sample_ids_presence(BGenFile *bgen)
+{
+    return bgen_sample_ids_presence(bgen);
+}

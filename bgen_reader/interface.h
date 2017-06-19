@@ -60,3 +60,5 @@ void   free_variant_genotypes(VariantGenotype *vg,
 void   free(void *);
 
 string string_duplicate(const string s);
+
+inti sample_ids_presence(BGenFile *bgen);

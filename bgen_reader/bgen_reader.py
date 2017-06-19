@@ -3,8 +3,9 @@ from numpy import int64
 
 from ._ffi import ffi
 from ._ffi.lib import (close_bgen, free, get_nsamples, get_nvariants,
-                       open_bgen, read_samples, string_duplicate)
+                       open_bgen, read_samples, string_duplicate, sample_ids_presence)
 
+from pandas import DataFrame
 
 def _to_string(v):
     v = string_duplicate(v)
@@ -39,7 +40,6 @@ def _to_string(v):
 #
 #
 def _read_samples(bgenfile):
-    from pandas import DataFrame
 
     nsamples = get_nsamples(bgenfile)
     samples = read_samples(bgenfile)
@@ -49,6 +49,10 @@ def _read_samples(bgenfile):
         py_ids.append(_to_string(samples[i]))
 
     return DataFrame(data=dict(id=py_ids))
+
+def _generate_samples(bgenfile):
+    nsamples = get_nsamples(bgenfile)
+    return DataFrame(data=dict(id=['sample_%d' % i for i in range(nsamples)]))
 
 
 #
@@ -90,7 +94,11 @@ def read(filepath):
 
     bgenfile = open_bgen(filepath)
 
-    samples = _read_samples(bgenfile)
+    if sample_ids_presence(bgenfile) == 0:
+        print("Sample ids are not present")
+        samples = _generate_samples(bgenfile)
+    else:
+        samples = _read_samples(bgenfile)
     # variants = _read_variants(bgenfile)
 
     # genotype = _read_genotype(bgenfile)
