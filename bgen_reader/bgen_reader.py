@@ -1,44 +1,35 @@
 # pylint: disable=E0401
 from numpy import int64
+from pandas import DataFrame
 
 from ._ffi import ffi
 from ._ffi.lib import (close_bgen, free, get_nsamples, get_nvariants,
-                       open_bgen, read_samples, string_duplicate, sample_ids_presence)
+                       open_bgen, read_samples, read_variants,
+                       sample_ids_presence, string_duplicate)
 
-from pandas import DataFrame
 
 def _to_string(v):
     v = string_duplicate(v)
     return ffi.string(v.str, v.len).decode()
 
 
-#
-# def _read_variants(bgenfile):
-#     from pandas import DataFrame
-#
-#     nvariants = reader_nvariants(bgenfile)
-#
-#     ids = ffi.new("string *[%d]" % nvariants)
-#     rsids = ffi.new("string *[%d]" % nvariants)
-#     chroms = ffi.new("string *[%d]" % nvariants)
-#
-#     positions = ffi.new("inti[%d]" % nvariants)
-#     nalleless = ffi.new("inti[%d]" % nvariants)
-#
-#     reader_read_variants(bgenfile, ids, rsids, chroms, positions, nalleless)
-#
-#     data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[])
-#     for i in reversed(range(nvariants)):
-#         data['id'].append(_to_string(ids[i]))
-#         data['rsid'].append(_to_string(rsids[i]))
-#         data['chrom'].append(_to_string(chroms[i]))
-#
-#         data['pos'].append(positions[i])
-#         data['nalleles'].append(nalleless[i])
-#
-#     return DataFrame(data=data)
-#
-#
+def _read_variants(bgenfile):
+    indexing = ffi.new("VariantIndexing *[1]")
+    nvariants = get_nvariants(bgenfile)
+    variants = read_variants(bgenfile, indexing)
+
+    data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[])
+    for i in reversed(range(nvariants)):
+        data['id'].append(_to_string(variants[i].id))
+        data['rsid'].append(_to_string(variants[i].rsid))
+        data['chrom'].append(_to_string(variants[i].chrom))
+
+        data['pos'].append(variants[i].position)
+        data['nalleles'].append(variants[i].nalleles)
+
+    return DataFrame(data=data)
+
+
 def _read_samples(bgenfile):
 
     nsamples = get_nsamples(bgenfile)
@@ -49,6 +40,7 @@ def _read_samples(bgenfile):
         py_ids.append(_to_string(samples[i]))
 
     return DataFrame(data=dict(id=py_ids))
+
 
 def _generate_samples(bgenfile):
     nsamples = get_nsamples(bgenfile)
@@ -99,12 +91,12 @@ def read(filepath):
         samples = _generate_samples(bgenfile)
     else:
         samples = _read_samples(bgenfile)
-    # variants = _read_variants(bgenfile)
+
+    variants = _read_variants(bgenfile)
 
     # genotype = _read_genotype(bgenfile)
     genotype = None
 
     close_bgen(bgenfile)
 
-    # return (variants, samples, genotype)
-    return (None, samples, None)
+    return (variants, samples, None)
