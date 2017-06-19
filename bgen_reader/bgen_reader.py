@@ -1,6 +1,6 @@
 # pylint: disable=E0401
 from ._ffi import ffi
-from ._ffi.lib import (free, reader_close, reader_open, reader_read_samples)
+from ._ffi.lib import (free, close_bgen, open_bgen, read_samples)
 
 from numpy import int64
 

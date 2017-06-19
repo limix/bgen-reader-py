@@ -2,30 +2,6 @@
 
 #include "bgen/bgen.h"
 
-typedef struct string {
-    inti  len;
-    byte *str;
-} string;
-
-typedef struct BGenFile BGenFile;
-
-typedef struct Variant
-{
-    string  id;
-    string  rsid;
-    string  chrom;
-    inti    position;
-    inti    nalleles;
-    string *allele_ids;
-} Variant;
-
-typedef struct VariantGenotype
-{
-    inti  ploidy;
-    real *probabilities;
-} VariantGenotype;
-
-
 BGenFile* open_bgen(const byte *filepath)
 {
     return bgen_open(filepath);
