@@ -53,16 +53,20 @@ void             free_variants(const BGenFile *bgen,
 
 void             free_indexing(VariantIndexing *index);
 
-VariantGenotype* read_variant_genotypes(VariantIndexing *indexing,
-                                        inti             variant_start,
-                                        inti             variant_end);
+VariantGenotype* open_variant_genotype(VariantIndexing *indexing,
+                                       inti             variant_idx);
 
-void           free_variant_genotypes(VariantGenotype *vg,
-                                      inti             nvariants);
+void             read_variant_genotype(VariantIndexing *indexing,
+                                       VariantGenotype *vg,
+                                       real            *probabilities);
 
-PyArrayObject* read_variant_genotype(VariantIndexing *indexing,
-                                     inti             nsamples,
-                                     inti             variant_idx);
+inti   variant_genotype_nsamples(VariantGenotype *vg);
+inti   variant_genotype_nalleles(VariantGenotype *vg);
+inti   variant_genotype_ploidy(VariantGenotype *vg);
+inti   variant_genotype_ncombs(VariantGenotype *vg);
+
+void   close_variant_genotype(VariantIndexing *indexing,
+                              VariantGenotype *vg);
 
 void   free(void *);
 

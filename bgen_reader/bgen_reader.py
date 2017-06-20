@@ -9,8 +9,7 @@ from scipy.special import binom
 from ._ffi import ffi
 from ._ffi.lib import (close_bgen, free, get_nsamples, get_nvariants,
                        open_bgen, read_samples, read_variant_genotypes,
-                       read_variants, sample_ids_presence, string_duplicate,
-                       read_variant_genotype)
+                       read_variants, sample_ids_presence, string_duplicate)
 
 
 def _to_string(v):
@@ -69,6 +68,7 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless):
 
     genotype = []
     import pdb; pdb.set_trace()
+    g = read_variant_genotype(indexing[0], nsamples, 0)
     for i in range(nvariants):
 
         x = delayed(_read_genotype_variant)(indexing, nsamples, nalleless[i], i)
@@ -95,6 +95,7 @@ def read(filepath):
     nvariants = variants.shape[0]
     close_bgen(bgenfile)
 
-    genotype = _read_genotype(indexing, nsamples, nvariants, nalleless)
+    # genotype = _read_genotype(indexing, nsamples, nvariants, nalleless)
+    genotype = None
 
     return (variants, samples, genotype)
