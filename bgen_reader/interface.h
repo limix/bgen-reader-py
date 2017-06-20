@@ -1,3 +1,5 @@
+typedef struct PyArrayObject PyArrayObject;
+
 typedef unsigned char byte;
 typedef int_fast64_t  inti;
 typedef double        real;
@@ -22,6 +24,7 @@ typedef struct Variant
 typedef struct VariantGenotype
 {
     inti  ploidy;
+    inti  ncombs;
     real *probabilities;
 } VariantGenotype;
 
@@ -54,11 +57,15 @@ VariantGenotype* read_variant_genotypes(VariantIndexing *indexing,
                                         inti             variant_start,
                                         inti             variant_end);
 
-void   free_variant_genotypes(VariantGenotype *vg,
-                              inti             nvariants);
+void           free_variant_genotypes(VariantGenotype *vg,
+                                      inti             nvariants);
+
+PyArrayObject* read_variant_genotype(VariantIndexing *indexing,
+                                     inti             nsamples,
+                                     inti             variant_idx);
 
 void   free(void *);
 
 string string_duplicate(const string s);
 
-inti sample_ids_presence(BGenFile *bgen);
+inti   sample_ids_presence(BGenFile *bgen);

@@ -1,6 +1,9 @@
 #include <stdlib.h>
 
+#include "Python.h"
 #include "bgen/bgen.h"
+#include "numpy/ndarraytypes.h"
+#include "numpy/ndarrayobject.h"
 
 BGenFile* open_bgen(const byte *filepath)
 {
@@ -56,6 +59,37 @@ VariantGenotype* read_variant_genotypes(VariantIndexing *indexing,
 {
     return bgen_read_variant_genotypes(indexing, variant_start, variant_end);
 }
+
+PyArrayObject* read_variant_genotype(VariantIndexing *indexing,
+                                     inti             nsamples,
+                                     inti             variant_idx)
+{
+    VariantGenotype *vg = bgen_read_variant_genotypes(indexing,
+                                                      variant_idx,
+                                                      variant_idx + 1);
+
+    npy_intp dims[2]   = { nsamples, vg->ncombs };
+    PyArrayObject *arr = (PyArrayObject *)PyArray_SimpleNewFromData(2,
+                                                                    dims,
+                                                                    NPY_FLOAT64,
+                                                                    vg->probabilities);
+
+    PyArray_ENABLEFLAGS(arr, NPY_ARRAY_OWNDATA);
+    free(vg);
+
+    return arr;
+}
+
+// ctypedef np.int32_t DTYPE_t
+//
+// cdef extern from "numpy/arrayobject.h":
+//     void PyArray_ENABLEFLAGS(np.ndarray arr, int flags)
+//
+// cdef data_to_numpy_array_with_spec(void * ptr, np.npy_intp N, int t):
+//     cdef np.ndarray[DTYPE_t, ndim=1] arr = np.PyArray_SimpleNewFromData(1,
+// &N, t, ptr)
+//     PyArray_ENABLEFLAGS(arr, np.NPY_OWNDATA)
+//     return arr
 
 void free_variant_genotypes(VariantGenotype *vg,
                             inti             nvariants)

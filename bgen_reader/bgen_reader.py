@@ -1,11 +1,16 @@
 # pylint: disable=E0401
-from numpy import int64
+import dask.array as da
+from dask.delayed import delayed
+from numpy import int64, float64, empty
 from pandas import DataFrame
+
+from scipy.special import binom
 
 from ._ffi import ffi
 from ._ffi.lib import (close_bgen, free, get_nsamples, get_nvariants,
-                       open_bgen, read_samples, read_variants,
-                       sample_ids_presence, string_duplicate)
+                       open_bgen, read_samples, read_variant_genotypes,
+                       read_variants, sample_ids_presence, string_duplicate,
+                       read_variant_genotype)
 
 
 def _to_string(v):
@@ -27,7 +32,7 @@ def _read_variants(bgenfile):
         data['pos'].append(variants[i].position)
         data['nalleles'].append(variants[i].nalleles)
 
-    return DataFrame(data=data)
+    return (DataFrame(data=data), indexing)
 
 
 def _read_samples(bgenfile):
@@ -47,39 +52,30 @@ def _generate_samples(bgenfile):
     return DataFrame(data=dict(id=['sample_%d' % i for i in range(nsamples)]))
 
 
-#
-# def _read_genotype_chunk(bgenfile, variant_start, variant_end):
-#
-#     nsamples = reader_nsamples(bgenfile)
-#     X = zeros((nsamples, variant_end - variant_start), int64)
-#
-#     return X
+def _read_genotype_variant(indexing, nsamples, nalleles, variant_idx):
 
-# def _read_genotype(bgenfile):
-#     import dask.array as da
-#     from dask.delayed import delayed
-#
-#     nsamples = reader_nsamples(bgenfile)
-#     nvariants = reader_nvariants(bgenfile)
-#
-#
-#     variant_start = 0
-#     variant_chunk = 10
-#     genotype = []
-#     while (variant_start < nvariants):
-#         variant_end = min(variant_start + variant_chunk, nvariants)
-#
-#         x = delayed(_read_genotype_chunk)(bgenfile, variant_start, variant_end)
-#
-#         shape = (nsamples, variant_end - variant_start)
-#
-#         genotype += [da.from_delayed(x, shape, int64)]
-#         variant_start = variant_end
-#
-#     genotype = da.concatenate(genotype, axis=1)
-#
-#
-#     return genotype
+    g = read_variant_genotype(indexing[0], nsamples, variant_idx)
+
+    # ncombs = int(binom(nalleles + vg[0].ploidy - 1, nalleles - 1))
+    # shape = (nsamples, ncombs)
+    # g = empty(shape, dtype=float64)
+
+    # g = vg[0].probabilities
+
+    return g
+
+
+def _read_genotype(indexing, nsamples, nvariants, nalleless):
+
+    genotype = []
+    import pdb; pdb.set_trace()
+    for i in range(nvariants):
+
+        x = delayed(_read_genotype_variant)(indexing, nsamples, nalleless[i], i)
+
+        genotype += [x]
+
+    return genotype
 
 
 def read(filepath):
@@ -92,11 +88,13 @@ def read(filepath):
     else:
         samples = _read_samples(bgenfile)
 
-    variants = _read_variants(bgenfile)
+    variants, indexing = _read_variants(bgenfile)
+    nalleless = variants['nalleles'].values
 
-    # genotype = _read_genotype(bgenfile)
-    genotype = None
-
+    nsamples = samples.shape[0]
+    nvariants = variants.shape[0]
     close_bgen(bgenfile)
 
-    return (variants, samples, None)
+    genotype = _read_genotype(indexing, nsamples, nvariants, nalleless)
+
+    return (variants, samples, genotype)
