@@ -19,7 +19,7 @@ def _read_variants(bgenfile):
     variants = read_variants(bgenfile, indexing)
 
     data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[])
-    for i in reversed(range(nvariants)):
+    for i in range(nvariants):
         data['id'].append(_to_string(variants[i].id))
         data['rsid'].append(_to_string(variants[i].rsid))
         data['chrom'].append(_to_string(variants[i].chrom))
