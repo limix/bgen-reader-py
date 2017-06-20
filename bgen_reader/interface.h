@@ -21,13 +21,7 @@ typedef struct Variant
     string *allele_ids;
 } Variant;
 
-typedef struct VariantGenotype
-{
-    inti  ploidy;
-    inti  ncombs;
-    real *probabilities;
-} VariantGenotype;
-
+typedef struct VariantGenotype VariantGenotype;
 typedef struct VariantIndexing VariantIndexing;
 typedef struct BGenFile        BGenFile;
 

@@ -8,8 +8,10 @@ from scipy.special import binom
 
 from ._ffi import ffi
 from ._ffi.lib import (close_bgen, free, get_nsamples, get_nvariants,
-                       open_bgen, read_samples, read_variant_genotypes,
-                       read_variants, sample_ids_presence, string_duplicate)
+                       open_bgen, read_samples, open_variant_genotype,
+                       variant_genotype_ncombs, close_variant_genotype,
+                       read_variants, sample_ids_presence, string_duplicate,
+                       read_variant_genotype)
 
 
 def _to_string(v):
@@ -53,13 +55,15 @@ def _generate_samples(bgenfile):
 
 def _read_genotype_variant(indexing, nsamples, nalleles, variant_idx):
 
-    g = read_variant_genotype(indexing[0], nsamples, variant_idx)
+    vg = open_variant_genotype(indexing[0], variant_idx)
 
-    # ncombs = int(binom(nalleles + vg[0].ploidy - 1, nalleles - 1))
-    # shape = (nsamples, ncombs)
-    # g = empty(shape, dtype=float64)
+    ncombs = variant_genotype_ncombs(vg)
+    g = empty((nsamples, ncombs), dtype=float64)
 
-    # g = vg[0].probabilities
+    pg = ffi.cast("real *", g.ctypes.data)
+    read_variant_genotype(indexing[0], vg, pg)
+
+    close_variant_genotype(indexing[0], vg)
 
     return g
 
@@ -67,8 +71,8 @@ def _read_genotype_variant(indexing, nsamples, nalleles, variant_idx):
 def _read_genotype(indexing, nsamples, nvariants, nalleless):
 
     genotype = []
-    import pdb; pdb.set_trace()
-    g = read_variant_genotype(indexing[0], nsamples, 0)
+    _read_genotype_variant(indexing, nsamples, nalleless[0], 0)
+
     for i in range(nvariants):
 
         x = delayed(_read_genotype_variant)(indexing, nsamples, nalleless[i], i)
@@ -95,7 +99,6 @@ def read(filepath):
     nvariants = variants.shape[0]
     close_bgen(bgenfile)
 
-    # genotype = _read_genotype(indexing, nsamples, nvariants, nalleless)
-    genotype = None
+    genotype = _read_genotype(indexing, nsamples, nvariants, nalleless)
 
     return (variants, samples, genotype)
