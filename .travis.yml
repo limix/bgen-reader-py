@@ -1,0 +1,51 @@
+language: python
+sudo: required
+dist: trusty
+services: docker
+git:
+  depth: 5
+cache:
+  pip: true
+  directories:
+  - "$HOME/bin"
+  - "$HOME/.download"
+matrix:
+  include:
+  - python: 2.7
+  - python: 3.5
+  - python: 3.6
+  - env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
+  - os: osx
+    language: generic
+    env: PYENV=py27
+  - os: osx
+    language: generic
+    env: PYENV=py35
+  - os: osx
+    language: generic
+    env: PYENV=py36
+before_install:
+- travis_retry bash <(curl -s https://raw.githubusercontent.com/limix/travis-tools/master/get-travis-tools.sh)
+- travis_retry travis/before-install.sh
+script:
+- pip install pep8 --upgrade -q
+- find bgen_reader -name \*.py -exec pep8 --ignore=E402 --ignore=E501 {} +
+- travis_retry travis/script.sh
+after_success:
+- travis_retry travis/after-success.sh
+notifications:
+  email: false
+env:
+  global:
+  - PKG_NAME=bgen_reader
+  - LIKNORM=true
+  - PY_DEPS="numpy scipy pandas sphinx_rtd_theme
+             git+https://github.com/dask/partd git+https://github.com/dask/zict git+https://github.com/dask/distributed git+https://github.com/mrocklin/sparse"
+deploy:
+  provider: pypi
+  user: dhorta
+  password:
+  on:
+    tags: true
+    repo: limix/bgen-reader
+    branch: master

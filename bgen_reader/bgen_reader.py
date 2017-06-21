@@ -1,24 +1,26 @@
-# pylint: disable=E0401
-import dask
-import dask.array as da
-from dask.delayed import delayed
-from numpy import int64, float64, empty, asarray
-from pandas import DataFrame
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
 
-dask.set_options(pool=ThreadPool(cpu_count()))
-
+import dask
+import dask.array as da
+from dask.delayed import delayed
+from numpy import asarray, empty, float64, int64
+from pandas import DataFrame
 from scipy.special import binom
+from tqdm import tqdm
 
 from ._ffi import ffi
-from ._ffi.lib import (close_bgen, free, get_nsamples, get_nvariants,
-                       open_bgen, read_samples, open_variant_genotype,
-                       variant_genotype_ncombs, close_variant_genotype,
-                       read_variants, sample_ids_presence, string_duplicate,
-                       read_variant_genotype)
+from ._ffi.lib import (close_bgen, close_variant_genotype, free, get_nsamples,
+                       get_nvariants, open_bgen, open_variant_genotype,
+                       read_samples, read_variant_genotype, read_variants,
+                       sample_ids_presence, string_duplicate,
+                       variant_genotype_ncombs)
 
-from tqdm import tqdm
+dask.set_options(pool=ThreadPool(cpu_count()))
+
+
+
+
 
 def _to_string(v):
     v = string_duplicate(v)
