@@ -1,8 +1,13 @@
 # pylint: disable=E0401
+import dask
 import dask.array as da
 from dask.delayed import delayed
-from numpy import int64, float64, empty
+from numpy import int64, float64, empty, asarray
 from pandas import DataFrame
+from multiprocessing import cpu_count
+from multiprocessing.pool import ThreadPool
+
+dask.set_options(pool=ThreadPool(cpu_count()))
 
 from scipy.special import binom
 
@@ -13,6 +18,7 @@ from ._ffi.lib import (close_bgen, free, get_nsamples, get_nvariants,
                        read_variants, sample_ids_presence, string_duplicate,
                        read_variant_genotype)
 
+from tqdm import tqdm
 
 def _to_string(v):
     v = string_duplicate(v)
@@ -53,33 +59,35 @@ def _generate_samples(bgenfile):
     return DataFrame(data=dict(id=['sample_%d' % i for i in range(nsamples)]))
 
 
-def _read_genotype_variant(indexing, nsamples, nalleles, variant_idx):
+class ReadGenotypeVariant(object):
+    def __init__(self, indexing):
+        self._indexing = indexing
 
-    vg = open_variant_genotype(indexing[0], variant_idx)
+    def __call__(self, nsamples, nalleles, variant_idx):
 
-    ncombs = variant_genotype_ncombs(vg)
-    g = empty((nsamples, ncombs), dtype=float64)
+        vg = open_variant_genotype(self._indexing[0], variant_idx)
 
-    pg = ffi.cast("real *", g.ctypes.data)
-    read_variant_genotype(indexing[0], vg, pg)
+        ncombs = variant_genotype_ncombs(vg)
+        g = empty((nsamples, ncombs), dtype=float64)
 
-    close_variant_genotype(indexing[0], vg)
+        pg = ffi.cast("real *", g.ctypes.data)
+        read_variant_genotype(self._indexing[0], vg, pg)
 
-    return g
+        close_variant_genotype(self._indexing[0], vg)
+
+        return g
 
 
 def _read_genotype(indexing, nsamples, nvariants, nalleless):
 
     genotype = []
-    _read_genotype_variant(indexing, nsamples, nalleless[0], 0)
+    rgv = ReadGenotypeVariant(indexing)
 
-    for i in range(nvariants):
-
-        x = delayed(_read_genotype_variant)(indexing, nsamples, nalleless[i], i)
-
+    for i in tqdm(range(nvariants), desc='variants'):
+        x = delayed(rgv)(nsamples, nalleless[i], i)
         genotype += [x]
 
-    return genotype
+    return asarray(genotype)
 
 
 def read(filepath):
