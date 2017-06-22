@@ -1,0 +1,7 @@
+include LICENSE
+include README.md
+include setup.cfg
+include bgen_reader/test/example.32bits.bgen
+include bgen_reader/interface.h
+include bgen_reader/interface.c
+recursive-include bgen_reader *.py
