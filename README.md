@@ -1,6 +1,15 @@
 # Bgen-reader
 
-[![Documentation Status](https://readthedocs.org/projects/bgen-reader-py/badge/?style=flat-square&version=latest)](https://bgen-reader-py.readthedocs.io/)
+A [BGEN file format](http://www.well.ox.ac.uk/~gav/bgen_format/) reader.
+
+BGEN is a file format for storing large genetic datasets. It supports both unphased genotypes and phased haplotype data with variable ploidy and number of alleles. It was designed to provides a compact data representation without sacrificing variant access performance.
+
+This Python package is a wrapper around the [bgen library](https://github.com/limix/bgen),
+a low-memory footprint reader that efficiently reads BGEN files.
+It fully supports all the BGEN format specifications: 1.1, 1.2, and 1.3;
+as well as their optional compressed formats.
+
+## Problems
 
 If you encounter any issue, please, [submit it](https://github.com/limix/bgen-reader-py/issues).
 
