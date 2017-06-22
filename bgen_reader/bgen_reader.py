@@ -10,16 +10,13 @@ from scipy.special import binom
 from tqdm import tqdm
 
 from ._ffi import ffi
-from ._ffi.lib import (close_bgen, close_variant_genotype, free, get_nsamples,
-                       get_nvariants, open_bgen, open_variant_genotype,
-                       read_samples, read_variant_genotype, read_variants,
-                       sample_ids_presence, string_duplicate,
-                       variant_genotype_ncombs)
+from ._ffi.lib import (close_bgen, close_variant_genotype, free, get_ncombs,
+                       get_nsamples, get_nvariants, open_bgen,
+                       open_variant_genotype, read_samples,
+                       read_variant_genotype, read_variants,
+                       sample_ids_presence, string_duplicate)
 
 dask.set_options(pool=ThreadPool(cpu_count()))
-
-
-
 
 
 def _to_string(v):
@@ -69,7 +66,7 @@ class ReadGenotypeVariant(object):
 
         vg = open_variant_genotype(self._indexing[0], variant_idx)
 
-        ncombs = variant_genotype_ncombs(vg)
+        ncombs = get_ncombs(vg)
         g = empty((nsamples, ncombs), dtype=float64)
 
         pg = ffi.cast("real *", g.ctypes.data)

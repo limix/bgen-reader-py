@@ -20,7 +20,6 @@ except _DistributionNotFound:
     __version__ = 'unknown'
 
 
-
 def test():
     import os
     p = __import__('bgen_reader').__path__[0]

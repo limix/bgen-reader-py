@@ -2,7 +2,6 @@ import os
 from os.path import join
 from sysconfig import get_config_var
 
-import numpy
 from cffi import FFI
 
 ffibuilder = FFI()

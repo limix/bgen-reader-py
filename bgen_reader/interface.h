@@ -1,5 +1,3 @@
-typedef struct PyArrayObject PyArrayObject;
-
 typedef unsigned char byte;
 typedef int_fast64_t  inti;
 typedef double        real;
@@ -8,8 +6,6 @@ typedef struct string {
     inti  len;
     byte *str;
 } string;
-
-typedef struct BGenFile BGenFile;
 
 typedef struct Variant
 {
@@ -47,19 +43,18 @@ void             free_variants(const BGenFile *bgen,
 
 void             free_indexing(VariantIndexing *index);
 
-VariantGenotype* open_variant_genotype(VariantIndexing *indexing,
+VariantGenotype* open_variant_genotype(VariantIndexing *index,
                                        inti             variant_idx);
 
-void             read_variant_genotype(VariantIndexing *indexing,
+void             read_variant_genotype(VariantIndexing *index,
                                        VariantGenotype *vg,
                                        real            *probabilities);
 
-inti   variant_genotype_nsamples(VariantGenotype *vg);
-inti   variant_genotype_nalleles(VariantGenotype *vg);
-inti   variant_genotype_ploidy(VariantGenotype *vg);
-inti   variant_genotype_ncombs(VariantGenotype *vg);
+inti   get_nalleles(VariantGenotype *vg);
+inti   get_ploidy(VariantGenotype *vg);
+inti   get_ncombs(VariantGenotype *vg);
 
-void   close_variant_genotype(VariantIndexing *indexing,
+void   close_variant_genotype(VariantIndexing *index,
                               VariantGenotype *vg);
 
 void   free(void *);
