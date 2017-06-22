@@ -20,7 +20,7 @@ conda install -c conda-forge bgen-reader
 
 An alternative way would be via pip
 
-```
+```bash
 pip install bgen-reader
 ```
 
@@ -32,16 +32,21 @@ libraries properly installed.
 
 It is as simple as
 
+```python
+# example.py file
+from bgen_reader import read_bgen
+
+(variants, samples, genotype) = read_bgen("example.bgen", verbose=False)
+
+print(variants.head())
+print(samples.head())
+print(len(genotype))
+print(genotype[0].compute())
 ```
->>> # example.py file
->>> from bgen_reader import read_bgen
->>>
->>> (variants, samples, genotype) = read_bgen("example.bgen", verbose=False)
->>>
->>> print(variants.head())
->>> print(samples.head())
->>> print(len(genotype))
->>> print(genotype[0].compute())
+
+The output should something similar to
+
+```
 chrom       id  nalleles   pos    rsid
 0    01  SNPID_2         2  2000  RSID_2
 1    01  SNPID_3         2  3000  RSID_3
