@@ -1,3 +1,4 @@
+import errno
 import os
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
@@ -16,6 +17,11 @@ from ._ffi.lib import (close_bgen, close_variant_genotype, free, get_ncombs,
                        sample_ids_presence, string_duplicate)
 
 dask.set_options(pool=ThreadPool(cpu_count()))
+
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 
 def _to_string(v):
@@ -91,7 +97,8 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless):
 def read_bgen(filepath):
 
     if (not os.path.exists(filepath)):
-        raise FileNotFoundError()
+        raise FileNotFoundError(errno.ENOENT,
+                                os.strerror(errno.ENOENT), filepath)
 
     bgenfile = open_bgen(filepath)
 

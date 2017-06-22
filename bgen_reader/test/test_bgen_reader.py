@@ -7,8 +7,10 @@ from numpy.testing import assert_equal
 
 from bgen_reader import read_bgen
 
-
-# TODO: test not found file
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 
 def test_bgen_reader():
