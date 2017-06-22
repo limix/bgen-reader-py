@@ -9,6 +9,25 @@ a low-memory footprint reader that efficiently reads BGEN files.
 It fully supports all the BGEN format specifications: 1.1, 1.2, and 1.3;
 as well as their optional compressed formats.
 
+## Install
+
+The recommended way of installing it is via
+[conda](http://conda.pydata.org/docs/index.html)
+
+```bash
+conda install -c conda-forge bgen-reader
+```
+
+An alternative way would be via pip
+
+```
+pip install bgen-reader
+```
+
+In this case, you need to make sure you have both
+[Zstandard](https://github.com/facebook/zstd) and [bgen](https://github.com/limix/bgen)
+libraries properly installed.
+
 ## Problems
 
 If you encounter any issue, please, [submit it](https://github.com/limix/bgen-reader-py/issues).
