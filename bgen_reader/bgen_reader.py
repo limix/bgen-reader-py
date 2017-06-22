@@ -1,12 +1,11 @@
+import os
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
 
 import dask
-import dask.array as da
 from dask.delayed import delayed
-from numpy import asarray, empty, float64, int64
+from numpy import asarray, empty, float64
 from pandas import DataFrame
-from scipy.special import binom
 from tqdm import tqdm
 
 from ._ffi import ffi
@@ -89,7 +88,10 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless):
     return asarray(genotype)
 
 
-def read(filepath):
+def read_bgen(filepath):
+
+    if (not os.path.exists(filepath)):
+        raise FileNotFoundError()
 
     bgenfile = open_bgen(filepath)
 

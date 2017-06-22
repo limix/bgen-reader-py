@@ -2,9 +2,10 @@ from __future__ import unicode_literals
 
 import os
 
+import pytest
 from numpy.testing import assert_equal
 
-from bgen_reader import read
+from bgen_reader import read_bgen
 
 
 # TODO: test not found file
@@ -13,7 +14,7 @@ from bgen_reader import read
 def test_bgen_reader():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"example.32bits.bgen")
-    (variants, samples, genotype) = read(filepath)
+    (variants, samples, genotype) = read_bgen(filepath)
 
     assert_equal(variants.loc[0, 'chrom'], '01')
     assert_equal(variants.loc[0, 'id'], 'SNPID_2')
@@ -39,3 +40,10 @@ def test_bgen_reader():
 
     n = samples.shape[0]
     assert_equal(samples.loc[n - 1, 'id'], 'sample_500')
+
+
+def test_bgen_reader_file_notfound():
+    folder = os.path.dirname(os.path.abspath(__file__)).encode()
+    filepath = os.path.join(folder, b"example.33bits.bgen")
+    with pytest.raises(FileNotFoundError):
+        (variants, samples, genotype) = read_bgen(filepath)
