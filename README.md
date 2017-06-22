@@ -32,7 +32,7 @@ libraries properly installed.
 
 It is as simple as
 
-```python
+```
 >>> # example.py file
 >>> from bgen_reader import read_bgen
 >>>
