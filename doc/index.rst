@@ -5,6 +5,8 @@ Bgen-reader's documentation
    :maxdepth: 2
    :caption: Contents:
 
+   install
+
 *****************
 Comments and bugs
 *****************
