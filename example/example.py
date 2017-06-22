@@ -1,8 +1,8 @@
 from bgen_reader import read_bgen
 
-(variants, samples, genotype) = read_bgen("example.bgen")
+bgen = read_bgen("example.bgen", verbose=False)
 
-print(variants.head())
-print(samples.head())
-print(len(genotype))
-print(genotype[0].compute())
+print(bgen['variants'].head())
+print(bgen['samples'].head())
+print(len(bgen['genotype']))
+print(bgen['genotype'][0].compute())

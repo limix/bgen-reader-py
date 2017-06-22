@@ -85,19 +85,35 @@ class ReadGenotypeVariant(object):
         return g
 
 
-def _read_genotype(indexing, nsamples, nvariants, nalleless):
+def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
 
     genotype = []
     rgv = ReadGenotypeVariant(indexing)
 
-    for i in tqdm(range(nvariants), desc='variants'):
+    for i in tqdm(range(nvariants), desc='variants', disable=not verbose):
         x = delayed(rgv)(nsamples, nalleless[i], i)
         genotype += [x]
 
     return asarray(genotype)
 
 
-def read_bgen(filepath):
+def read_bgen(filepath, verbose=True):
+    r"""Read a given BGEN file.
+
+    Args
+    ----
+    filepath : str
+        A BGEN file path.
+    verbose : bool
+        ``True`` to show progress; ``False`` otherwise.
+
+    Returns
+    -------
+    dict
+        variants : Variant position, chromossomes, RSIDs, etc.
+        samples : Sample identifications.
+        genotype : Array of genotype references.
+    """
 
     if PY3:
         try:
@@ -124,6 +140,7 @@ def read_bgen(filepath):
     nvariants = variants.shape[0]
     close_bgen(bgenfile)
 
-    genotype = _read_genotype(indexing, nsamples, nvariants, nalleless)
+    genotype = _read_genotype(indexing, nsamples, nvariants, nalleless,
+                              verbose)
 
-    return (variants, samples, genotype)
+    return dict(variants=variants, samples=samples, genotype=genotype)

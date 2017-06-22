@@ -16,7 +16,10 @@ except NameError:
 def test_bgen_reader():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"example.32bits.bgen")
-    (variants, samples, genotype) = read_bgen(filepath)
+    bgen = read_bgen(filepath)
+    variants = bgen['variants']
+    samples = bgen['samples']
+    genotype = bgen['genotype']
 
     assert_equal(variants.loc[0, 'chrom'], '01')
     assert_equal(variants.loc[0, 'id'], 'SNPID_2')
@@ -48,4 +51,4 @@ def test_bgen_reader_file_notfound():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"example.33bits.bgen")
     with pytest.raises(FileNotFoundError):
-        (variants, samples, genotype) = read_bgen(filepath)
+        read_bgen(filepath)
