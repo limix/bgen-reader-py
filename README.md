@@ -1,10 +1,12 @@
 # Bgen-reader
 
+[![Documentation Status](https://readthedocs.org/projects/bgen-reader-py/badge/?style=flat-square&version=latest)](https://bgen-reader-py.readthedocs.io/)
+
 If you encounter any issue, please, [submit it](https://github.com/limix/bgen-reader-py/issues).
 
 ## Authors
 
-* **Danilo Horta** - [https://github.com/Horta](https://github.com/horta)
+* **Danilo Horta** - [https://github.com/horta](https://github.com/horta)
 
 ## License
 
