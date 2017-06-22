@@ -28,6 +28,42 @@ In this case, you need to make sure you have both
 [Zstandard](https://github.com/facebook/zstd) and [bgen](https://github.com/limix/bgen)
 libraries properly installed.
 
+## Usage
+
+It is as simple as
+
+```python
+>>> # example.py file
+>>> from bgen_reader import read_bgen
+>>>
+>>> (variants, samples, genotype) = read_bgen("example.bgen", verbose=False)
+>>>
+>>> print(variants.head())
+>>> print(samples.head())
+>>> print(len(genotype))
+>>> print(genotype[0].compute())
+chrom       id  nalleles   pos    rsid
+0    01  SNPID_2         2  2000  RSID_2
+1    01  SNPID_3         2  3000  RSID_3
+2    01  SNPID_4         2  4000  RSID_4
+3    01  SNPID_5         2  5000  RSID_5
+4    01  SNPID_6         2  6000  RSID_6
+         id
+0  sample_001
+1  sample_002
+2  sample_003
+3  sample_004
+4  sample_005
+199
+[[        nan         nan         nan]
+[ 0.02780236  0.00863674  0.9635609 ]
+[ 0.01736504  0.04968414  0.93295083]
+...,
+[ 0.01419069  0.02810669  0.95770262]
+[ 0.91949463  0.05206298  0.02844239]
+[ 0.00244141  0.98410029  0.0134583 ]]
+```
+
 ## Problems
 
 If you encounter any issue, please, [submit it](https://github.com/limix/bgen-reader-py/issues).

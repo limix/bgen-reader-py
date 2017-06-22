@@ -1,5 +1,6 @@
 import errno
 import os
+import sys
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
 
@@ -22,6 +23,8 @@ try:
     FileNotFoundError
 except NameError:
     FileNotFoundError = IOError
+
+PY3 = sys.version_info >= (3, )
 
 
 def _to_string(v):
@@ -95,6 +98,12 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless):
 
 
 def read_bgen(filepath):
+
+    if PY3:
+        try:
+            filepath = filepath.encode()
+        except AttributeError:
+            pass
 
     if (not os.path.exists(filepath)):
         raise FileNotFoundError(errno.ENOENT,
