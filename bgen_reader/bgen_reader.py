@@ -105,7 +105,7 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
     rgv = ReadGenotypeVariant(indexing)
 
     step = min(25, nvariants)
-    tqdm_kwds = dict(desc='variants', disable=not verbose)
+    tqdm_kwds = dict(desc='Variant mapping', disable=not verbose)
 
     for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
         size = min(step, nvariants - i)
@@ -170,19 +170,7 @@ def read_bgen(filepath, verbose=True):
     return dict(variants=variants, samples=samples, genotype=genotype)
 
 
-def convert_to_dosage(G):
+def convert_to_dosage(G, verbose=True):
     ncombs = G.shape[2]
-    chunks = G.chunks
-
     mult = da.arange(ncombs, chunks=ncombs, dtype=float64)
-    dosage = []
-
-    start = 0
-    end = 0
-    for chunk in chunks[0]:
-        end = start + chunk
-        X = da.sum(mult * G[start:end, :], axis=2)
-        start = end
-        dosage.append(X)
-
-    return da.concatenate(dosage)
+    return da.sum(mult * G, axis=2)
