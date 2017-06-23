@@ -170,7 +170,7 @@ def read_bgen(filepath, verbose=True):
     return dict(variants=variants, samples=samples, genotype=genotype)
 
 
-def convert_to_dosage(G):
+def convert_to_dosage(G, verbose=True):
     ncombs = G.shape[2]
     chunks = G.chunks
 
@@ -179,8 +179,10 @@ def convert_to_dosage(G):
 
     start = 0
     end = 0
-    for chunk in chunks[0]:
-        end = start + chunk
+    tqdm_kwds = dict(desc='Mapping variants', disable=not verbose)
+
+    for i in tqdm(range(len(chunks[0])), **tqdm_kwds):
+        end = start + chunks[0][i]
         X = da.sum(mult * G[start:end, :], axis=2)
         start = end
         dosage.append(X)
