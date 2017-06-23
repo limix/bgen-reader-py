@@ -3,9 +3,10 @@ from __future__ import unicode_literals
 import os
 
 import pytest
-from numpy.testing import assert_equal
+from numpy import array
+from numpy.testing import assert_allclose, assert_equal
 
-from bgen_reader import read_bgen
+from bgen_reader import convert_to_dosage, read_bgen
 
 try:
     FileNotFoundError
@@ -52,3 +53,12 @@ def test_bgen_reader_file_notfound():
     filepath = os.path.join(folder, b"example.33bits.bgen")
     with pytest.raises(FileNotFoundError):
         read_bgen(filepath)
+
+
+def test_bgen_reader_convert_to_dosage():
+    folder = os.path.dirname(os.path.abspath(__file__)).encode()
+    filepath = os.path.join(folder, b"example.32bits.bgen")
+    bgen = read_bgen(filepath)
+    genotype = bgen['genotype']
+    dosage = convert_to_dosage(genotype)
+    assert_allclose(dosage[0, 1:3], array([1.93575854, 1.91558579]), rtol=1e-5)
