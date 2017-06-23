@@ -5,8 +5,9 @@ from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
 
 import dask
+import dask.array as da
 from dask.delayed import delayed
-from numpy import asarray, empty, float64
+from numpy import empty, float64, zeros
 from pandas import DataFrame
 from tqdm import tqdm
 
@@ -70,19 +71,31 @@ class ReadGenotypeVariant(object):
     def __init__(self, indexing):
         self._indexing = indexing
 
-    def __call__(self, nsamples, nalleles, variant_idx):
+    def __call__(self, nsamples, nalleles, variant_idx, nvariants):
 
-        vg = open_variant_genotype(self._indexing[0], variant_idx)
+        ncombss = []
+        variants = []
 
-        ncombs = get_ncombs(vg)
-        g = empty((nsamples, ncombs), dtype=float64)
+        for i in range(variant_idx, variant_idx + nvariants):
+            vg = open_variant_genotype(self._indexing[0], i)
 
-        pg = ffi.cast("real *", g.ctypes.data)
-        read_variant_genotype(self._indexing[0], vg, pg)
+            ncombs = get_ncombs(vg)
+            ncombss.append(ncombs)
+            g = empty((nsamples, ncombs), dtype=float64)
 
-        close_variant_genotype(self._indexing[0], vg)
+            pg = ffi.cast("real *", g.ctypes.data)
+            read_variant_genotype(self._indexing[0], vg, pg)
 
-        return g
+            close_variant_genotype(self._indexing[0], vg)
+
+            variants.append(g)
+
+        G = zeros((nvariants, nsamples, max(ncombss)), dtype=float64)
+
+        for i in range(0, nvariants):
+            G[i, :, :ncombss[i]] = variants[i]
+
+        return G
 
 
 def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
@@ -90,11 +103,20 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
     genotype = []
     rgv = ReadGenotypeVariant(indexing)
 
-    for i in tqdm(range(nvariants), desc='variants', disable=not verbose):
-        x = delayed(rgv)(nsamples, nalleless[i], i)
-        genotype += [x]
+    step = max(nvariants // 10, 1)
+    tqdm_kwds = dict(desc='variants', disable=not verbose)
 
-    return asarray(genotype)
+    for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
+        size = min(step, nvariants - i)
+        tup = nsamples, nalleless[i:i + size], i, size
+        delayed_kwds = dict(pure=True, traverse=False)
+        g = delayed(rgv, **delayed_kwds)(*tup)
+        # TODO: THIS IS A HACK
+        ncombs = 3
+        g = da.from_delayed(g, (size, nsamples, ncombs), float64)
+        genotype.append(g)
+
+    return da.concatenate(genotype)
 
 
 def read_bgen(filepath, verbose=True):
@@ -128,7 +150,8 @@ def read_bgen(filepath, verbose=True):
     bgenfile = open_bgen(filepath)
 
     if sample_ids_presence(bgenfile) == 0:
-        print("Sample ids are not present")
+        if verbose:
+            print("Sample IDs are not present. I will generate fake ones.")
         samples = _generate_samples(bgenfile)
     else:
         samples = _read_samples(bgenfile)
