@@ -23,7 +23,7 @@ def setup_package():
 
     setup_requires = ['cffi>=1.8'] + pytest_runner
     install_requires = [
-        'cffi>=1.8', 'tqdm>=4.14', 'dask[array,bag,dataframe,delayed]>=0.14',
+        'cffi>=1.8', 'tqdm>=4.14', 'dask[array,bag,dataframe,delayed]>=0.15',
         'scipy>=0.18', 'pandas>=0.19.2'
     ]
     tests_require = ['pytest', 'pytest-pep8']
