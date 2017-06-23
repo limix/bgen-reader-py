@@ -103,7 +103,7 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
     genotype = []
     rgv = ReadGenotypeVariant(indexing)
 
-    step = max(nvariants // 10, 1)
+    step = max(nvariants // 100, 1)
     tqdm_kwds = dict(desc='variants', disable=not verbose)
 
     for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
