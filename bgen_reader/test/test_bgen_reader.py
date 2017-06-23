@@ -17,7 +17,7 @@ except NameError:
 def test_bgen_reader():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"example.32bits.bgen")
-    bgen = read_bgen(filepath)
+    bgen = read_bgen(filepath, verbose=False)
     variants = bgen['variants']
     samples = bgen['samples']
     genotype = bgen['genotype']
@@ -52,13 +52,13 @@ def test_bgen_reader_file_notfound():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"example.33bits.bgen")
     with pytest.raises(FileNotFoundError):
-        read_bgen(filepath)
+        read_bgen(filepath, verbose=False)
 
 
 def test_bgen_reader_convert_to_dosage():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"example.32bits.bgen")
-    bgen = read_bgen(filepath)
+    bgen = read_bgen(filepath, verbose=False)
     genotype = bgen['genotype']
-    dosage = convert_to_dosage(genotype)
+    dosage = convert_to_dosage(genotype, verbose=False)
     assert_allclose(dosage[0, 1:3], array([1.93575854, 1.91558579]), rtol=1e-5)
