@@ -12,7 +12,7 @@ from __future__ import absolute_import as _absolute_import
 from pkg_resources import DistributionNotFound as _DistributionNotFound
 from pkg_resources import get_distribution as _get_distribution
 
-from .bgen_reader import read_bgen
+from .bgen_reader import convert_to_dosage, read_bgen
 
 try:
     __version__ = _get_distribution('bgen_reader').version
@@ -38,4 +38,4 @@ def test():
     return return_code
 
 
-__all__ = ['test', 'read_bgen']
+__all__ = ['test', 'read_bgen', 'convert_to_dosage']

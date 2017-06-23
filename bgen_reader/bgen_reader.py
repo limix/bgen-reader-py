@@ -7,7 +7,8 @@ from multiprocessing.pool import ThreadPool
 import dask
 import dask.array as da
 from dask.delayed import delayed
-from numpy import empty, float64, zeros
+from numpy import sum as npy_sum
+from numpy import arange, empty, float64, zeros
 from pandas import DataFrame
 from tqdm import tqdm
 
@@ -103,7 +104,7 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
     genotype = []
     rgv = ReadGenotypeVariant(indexing)
 
-    step = min(100, nvariants)
+    step = min(25, nvariants)
     tqdm_kwds = dict(desc='variants', disable=not verbose)
 
     for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
@@ -167,3 +168,21 @@ def read_bgen(filepath, verbose=True):
                               verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
+
+
+def convert_to_dosage(G):
+    ncombs = G.shape[2]
+    chunks = G.chunks
+
+    mult = da.arange(ncombs, chunks=ncombs, dtype=float64)
+    dosage = []
+
+    start = 0
+    end = 0
+    for chunk in chunks[0]:
+        end = start + chunk
+        X = da.sum(mult * G[start:end, :], axis=2)
+        start = end
+        dosage.append(X)
+
+    return da.concatenate(dosage)
