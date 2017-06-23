@@ -6,7 +6,7 @@ from multiprocessing.pool import ThreadPool
 
 import dask
 from dask.delayed import delayed
-from numpy import asarray, empty, float64
+from numpy import empty, float64
 from pandas import DataFrame
 from tqdm import tqdm
 
@@ -87,14 +87,15 @@ class ReadGenotypeVariant(object):
 
 def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
 
-    genotype = []
+    genotype = empty(nvariants, dtype=object)
     rgv = ReadGenotypeVariant(indexing)
 
-    for i in tqdm(range(nvariants), desc='variants', disable=not verbose):
-        x = delayed(rgv)(nsamples, nalleless[i], i)
-        genotype += [x]
+    for i in tqdm(
+            range(nvariants), desc='variants', mininterval=2,
+            disable=not verbose):
+        genotype[i] = delayed(rgv, name=i)(nsamples, nalleless[i], i)
 
-    return asarray(genotype)
+    return genotype
 
 
 def read_bgen(filepath, verbose=True):
@@ -128,7 +129,8 @@ def read_bgen(filepath, verbose=True):
     bgenfile = open_bgen(filepath)
 
     if sample_ids_presence(bgenfile) == 0:
-        print("Sample ids are not present")
+        if verbose:
+            print("Sample IDs are not present. I will generate fake ones.")
         samples = _generate_samples(bgenfile)
     else:
         samples = _read_samples(bgenfile)
