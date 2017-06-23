@@ -30,7 +30,7 @@ def setup_package():
 
     metadata = dict(
         name='bgen-reader',
-        version='0.1.2',
+        version='0.1.4',
         maintainer="Danilo Horta",
         maintainer_email="horta@ebi.ac.uk",
         author="Danilo Horta",
