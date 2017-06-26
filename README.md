@@ -1,5 +1,7 @@
 # Bgen-reader
 
+[![Travis](https://img.shields.io/travis/limix/bgen-reader-py.svg?style=flat-square)](https://travis-ci.org/limix/bgen-reader-py)
+
 A [BGEN file format](http://www.well.ox.ac.uk/~gav/bgen_format/) reader.
 
 BGEN is a file format for storing large genetic datasets. It supports both unphased genotypes and phased haplotype data with variable ploidy and number of alleles. It was designed to provides a compact data representation without sacrificing variant access performance.
