@@ -99,12 +99,13 @@ class ReadGenotypeVariant(object):
         return G
 
 
-def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
+def _read_genotype(indexing, nsamples, nvariants, nalleless, size,
+                   verbose):
 
     genotype = []
     rgv = ReadGenotypeVariant(indexing)
 
-    c = int((1024 * 1024 * 50 / 8) // nsamples)
+    c = int((1024 * 1024 * size / 8) // nsamples)
     step = min(c, nvariants)
     tqdm_kwds = dict(desc='Variant mapping', disable=not verbose)
 
@@ -121,13 +122,15 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
     return da.concatenate(genotype)
 
 
-def read_bgen(filepath, verbose=True):
+def read_bgen(filepath, size=50, verbose=True):
     r"""Read a given BGEN file.
 
     Args
     ----
     filepath : str
         A BGEN file path.
+    size : float
+        Chunk size in megabytes. Defaults to ``50``.
     verbose : bool
         ``True`` to show progress; ``False`` otherwise.
 
@@ -166,7 +169,7 @@ def read_bgen(filepath, verbose=True):
     close_bgen(bgenfile)
 
     genotype = _read_genotype(indexing, nsamples, nvariants, nalleless,
-                              verbose)
+                              size, verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
 
