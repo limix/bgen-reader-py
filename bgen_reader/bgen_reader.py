@@ -104,7 +104,8 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, verbose):
     genotype = []
     rgv = ReadGenotypeVariant(indexing)
 
-    step = min(25, nvariants)
+    c = int((1024 * 1024 * 50 / 8) // nsamples)
+    step = min(c, nvariants)
     tqdm_kwds = dict(desc='Variant mapping', disable=not verbose)
 
     for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
@@ -171,6 +172,24 @@ def read_bgen(filepath, verbose=True):
 
 
 def convert_to_dosage(G, verbose=True):
+    r"""Convert probabilities to dosage.
+
+    Let :math:`\mathbf G` be a three-dimensional array for which :math:`G_{i, j, l}`
+    is the probability of the `j`-th sample having the `l`-th genotype
+    (or haplotype) for the `i`-th locus.
+    This function will return a bi-dimensional array ``X`` such that
+    :math:`X_{i, j}` is the dosage of the `j`-th sample for the `i`-th locus.
+
+    Args
+    ----
+    G : array_like
+        A three-dimensional array.
+
+    Returns
+    -------
+    dask_array
+        Matrix representing dosages.
+    """
     ncombs = G.shape[2]
     mult = da.arange(ncombs, chunks=ncombs, dtype=float64)
     return da.sum(mult * G, axis=2)
