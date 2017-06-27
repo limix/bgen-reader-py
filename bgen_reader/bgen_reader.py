@@ -99,8 +99,7 @@ class ReadGenotypeVariant(object):
         return G
 
 
-def _read_genotype(indexing, nsamples, nvariants, nalleless, size,
-                   verbose):
+def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
 
     genotype = []
     rgv = ReadGenotypeVariant(indexing)
@@ -156,20 +155,23 @@ def read_bgen(filepath, size=50, verbose=True):
 
     if sample_ids_presence(bgenfile) == 0:
         if verbose:
-            print("Sample IDs are not present. I will generate fake ones.")
+            print("Sample IDs are not present in this file.")
+            print("I will generate them on my own: sample_1, sample_2, ...")
         samples = _generate_samples(bgenfile)
     else:
         samples = _read_samples(bgenfile)
 
+    sys.stdout.write("Reading variants (it should take less than a minute)...")
     variants, indexing = _read_variants(bgenfile)
+    sys.stdout.write(" done.\n")
     nalleless = variants['nalleles'].values
 
     nsamples = samples.shape[0]
     nvariants = variants.shape[0]
     close_bgen(bgenfile)
 
-    genotype = _read_genotype(indexing, nsamples, nvariants, nalleless,
-                              size, verbose)
+    genotype = _read_genotype(indexing, nsamples, nvariants, nalleless, size,
+                              verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
 
