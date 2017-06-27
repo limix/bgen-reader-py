@@ -156,14 +156,16 @@ def read_bgen(filepath, size=50, verbose=True):
     if sample_ids_presence(bgenfile) == 0:
         if verbose:
             print("Sample IDs are not present in this file.")
-            print("I will generate them on my own: sample_1, sample_2, ...")
+            print("I will generate them on my own: sample_1, sample_2, and so on.")
         samples = _generate_samples(bgenfile)
     else:
         samples = _read_samples(bgenfile)
 
     sys.stdout.write("Reading variants (it should take less than a minute)...")
+    sys.stdout.flush()
     variants, indexing = _read_variants(bgenfile)
     sys.stdout.write(" done.\n")
+    sys.stdout.flush()
     nalleless = variants['nalleles'].values
 
     nsamples = samples.shape[0]
