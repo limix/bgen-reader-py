@@ -9,15 +9,17 @@ import dask.array as da
 from dask.delayed import delayed
 from numpy import sum as npy_sum
 from numpy import arange, empty, float64, zeros
-from pandas import DataFrame
 from tqdm import tqdm
 
+from pandas import DataFrame
+
 from ._ffi import ffi
-from ._ffi.lib import (close_bgen, close_variant_genotype, free, get_ncombs,
-                       get_nsamples, get_nvariants, open_bgen,
-                       open_variant_genotype, read_samples,
-                       read_variant_genotype, read_variants,
-                       sample_ids_presence, string_duplicate)
+from ._ffi.lib import (
+    close_bgen, close_variant_genotype, free, get_ncombs, get_nsamples,
+    get_nvariants, open_bgen, open_variant_genotype, read_samples,
+    read_variant_genotype, read_variants, sample_ids_presence,
+    string_duplicate
+)
 
 dask.set_options(pool=ThreadPool(cpu_count()))
 
@@ -156,7 +158,9 @@ def read_bgen(filepath, size=50, verbose=True):
     if sample_ids_presence(bgenfile) == 0:
         if verbose:
             print("Sample IDs are not present in this file.")
-            print("I will generate them on my own: sample_1, sample_2, and so on.")
+            print(
+                "I will generate them on my own: sample_1, sample_2, and so on."
+            )
         samples = _generate_samples(bgenfile)
     else:
         samples = _read_samples(bgenfile)
