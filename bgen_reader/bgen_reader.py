@@ -41,14 +41,19 @@ def _read_variants(bgenfile):
     nvariants = get_nvariants(bgenfile)
     variants = read_variants(bgenfile, indexing)
 
-    data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[])
+    data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
     for i in range(nvariants):
         data['id'].append(_to_string(variants[i].id))
         data['rsid'].append(_to_string(variants[i].rsid))
         data['chrom'].append(_to_string(variants[i].chrom))
 
         data['pos'].append(variants[i].position)
-        data['nalleles'].append(variants[i].nalleles)
+        nalleles = variants[i].nalleles
+        data['nalleles'].append(nalleles)
+        alleles = []
+        for j in range(nalleles):
+            alleles.append(_to_string(variants[i].allele_ids[j]))
+        data['allele_ids'].append(','.join(alleles))
 
     return (DataFrame(data=data), indexing)
 
