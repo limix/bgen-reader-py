@@ -17,8 +17,8 @@ with open(join(folder, 'interface.c'), 'r') as f:
         f.read(),
         libraries=['bgen'],
         library_dirs=[join(get_config_var('prefix'), 'lib')],
-        include_dirs=[
-            join(get_config_var('prefix'), 'include')])
+        include_dirs=[join(get_config_var('prefix'), 'include')],
+        language='c')
 
 if __name__ == "__main__":
     ffibuilder.compile(verbose=True)

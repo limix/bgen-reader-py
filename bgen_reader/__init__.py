@@ -9,6 +9,8 @@ Bgen file format reader.
 
 from __future__ import absolute_import as _absolute_import
 
+import _cffi_backend
+
 from pkg_resources import DistributionNotFound as _DistributionNotFound
 from pkg_resources import get_distribution as _get_distribution
 
