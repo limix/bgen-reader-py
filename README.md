@@ -1,6 +1,9 @@
 # Bgen-reader
 
+[![PyPI-License](https://img.shields.io/pypi/l/bgen-reader.svg?style=flat-square)](https://pypi.python.org/pypi/bgen-reader/)
 [![Travis](https://img.shields.io/travis/limix/bgen-reader-py.svg?style=flat-square)](https://travis-ci.org/limix/bgen-reader-py)
+[![PyPI-Versions](https://img.shields.io/pypi/pyversions/bgen-reader.svg)](https://pypi.python.org/pypi/bgen-reader/)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/afb406c08b704f8a8722d8fe8e1b66f4)](https://www.codacy.com/app/danilo.horta/bgen-reader-py?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=limix/bgen-reader-py&amp;utm_campaign=Badge_Grade)
 
 A [BGEN file format](http://www.well.ox.ac.uk/~gav/bgen_format/) reader.
 
