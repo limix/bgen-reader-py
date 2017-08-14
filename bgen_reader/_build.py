@@ -1,4 +1,5 @@
 import os
+import platform
 from os.path import join
 from sysconfig import get_config_var
 
@@ -12,6 +13,11 @@ with open(join(folder, 'interface.h'), 'r') as f:
     ffibuilder.cdef(f.read())
 
 with open(join(folder, 'interface.c'), 'r') as f:
+    libraries = ['bgen', 'z']
+    if platform.system() == 'Windows':
+        libraries.append('libzstd')
+    else:
+        libraries.append('zstd')
     ffibuilder.set_source(
         "bgen_reader._ffi",
         f.read(),
