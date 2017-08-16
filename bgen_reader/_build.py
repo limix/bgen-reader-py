@@ -21,7 +21,7 @@ with open(join(folder, 'interface.c'), 'r') as f:
     ffibuilder.set_source(
         "bgen_reader._ffi",
         f.read(),
-        libraries=['bgen', 'z', 'zstd'],
+        libraries=libraries,
         library_dirs=[join(get_config_var('prefix'), 'lib')],
         include_dirs=[join(get_config_var('prefix'), 'include')],
         language='c')
