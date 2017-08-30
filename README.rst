@@ -120,8 +120,6 @@ for details.
 
 .. _pip: https://pypi.python.org/pypi/pip
 
-.. _pytest: http://docs.pytest.org/en/latest/
-
 .. _Zstandard: https://github.com/facebook/zstd
 
 .. _bgen: https://github.com/limix/bgen
