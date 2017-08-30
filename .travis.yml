@@ -1,18 +1,11 @@
 language: python
 sudo: required
 dist: trusty
-services: docker
 git:
   depth: 5
-cache:
-  pip: true
-  directories:
-  - "$HOME/bin"
-  - "$HOME/.download"
 matrix:
   include:
   - python: 2.7
-  - python: 3.5
   - python: 3.6
   - env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
   - os: osx
@@ -20,16 +13,13 @@ matrix:
     env: PYENV=py27
   - os: osx
     language: generic
-    env: PYENV=py35
-  - os: osx
-    language: generic
     env: PYENV=py36
 before_install:
 - travis_retry bash <(curl -s https://raw.githubusercontent.com/limix/travis-tools/master/get-travis-tools.sh)
 - travis_retry travis/before-install.sh
+install:
+- travis_retry travis/install.sh
 script:
-- pip install pep8 --upgrade -q
-- find bgen_reader -name \*.py -exec pep8 --ignore=E402 --ignore=E501 {} +
 - travis_retry travis/script.sh
 after_success:
 - travis_retry travis/after-success.sh
@@ -41,12 +31,9 @@ notifications:
     on_failure: always
 env:
   global:
-  - PKG_NAME=bgen_reader
   - LIKNORM=true
   - BGEN=true
   - ZSTD=true
-  - PY_DEPS="numpy scipy pandas sphinx_rtd_theme git+https://github.com/dask/partd
-    git+https://github.com/dask/zict git+https://github.com/dask/distributed git+https://github.com/mrocklin/sparse"
   - secure: Ed354pd2TEYQiKrDTCdA0/eO4/LtMc99X7xLP6e3J9iN2duy/Ii+NehSNVZc7g/Q/YVbzeeajyIsYp8rdxqY1ioJrYLVfdxx9eFBd1KQLPIufpaoO4bGSwbL8tWmul9Fz/G14/RBUIOzn0V+4pAZ5IqrYCqUbO1xTp9yzLCaR/kF3dMoLDDoZktKXJX6rZlZHjJYsm5cRPQQaA/ZBi9HOF3pUKmBn8MCYXgFi0l93nmAOQXg4NLJOEy4eJ0ISVe53TYHz10Ozik51K42A7BnwEudBoWVkfAOabGahZJg//F1Ut16Kc3Fm9zRVIiIuPQ2mVUpvuFzjrYPNBG81FVhym/33colpwyusXsatAp9BKKKM0u/nGWpamMgExwc1WRVyOWv7VZZYU/QCE2L3ccKed3qNfYoixzCJGDaLVwRvwgBKkFHc/ZYpf5q76XtJwRebwC82crBcFzs2wH3rJPTjDOZJMULOVu1xf0rzGlcyWZaS+T0chLftVaNJqvGZWu01uLrgk/f/OyLoK8b0m8q6Tl08vSUZET3he2UbUXg0o1OIJ9x/dli2E7o78Bjiw0594Ma49Mman6cd/qNgzKN0Eb0rAWbWA9f0iQE4354RmKJRQZL4ZyzCBtwcP1fW4X/6Ub4jRi2ALK1SFSaxqC9oIY3o0APJvElDAzMyAhvKXA=
 deploy:
   provider: pypi
