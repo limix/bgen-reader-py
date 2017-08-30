@@ -2,9 +2,9 @@
 Bgen-reader
 ===========
 
-|PyPI-Status| |Conda-Forge-Status| |Conda-Downloads|
+|PyPI-Status| |Conda-Forge-Status| |Build-Status|
 
-|Build-Status| |Codacy-Grade| |License-Badge|
+|Codacy-Grade| |License-Badge|
 
 A `BGEN file format`_ reader.
 
@@ -100,13 +100,10 @@ for details.
 .. |Codacy-Grade| image:: https://api.codacy.com/project/badge/Grade/afb406c08b704f8a8722d8fe8e1b66f4
     :target: https://www.codacy.com/app/danilo.horta/bgen-reader-py?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=limix/bgen-reader-py&amp;utm_campaign=Badge_Grade
 
-.. |PyPI-Status| image:: https://img.shields.io/pypi/v/bgen-reader-py.svg
-    :target: https://pypi.python.org/pypi/bgen-reader-py
+.. |PyPI-Status| image:: https://img.shields.io/pypi/v/bgen-reader.svg
+    :target: https://pypi.python.org/pypi/bgen-reader
 
 .. |Conda-Forge-Status| image:: https://anaconda.org/conda-forge/bgen-reader-py/badges/version.svg
-    :target: https://anaconda.org/conda-forge/bgen-reader-py
-
-.. |Conda-Downloads| image:: https://anaconda.org/conda-forge/bgen-reader-py/badges/downloads.svg
     :target: https://anaconda.org/conda-forge/bgen-reader-py
 
 .. |License-Badge| image:: https://img.shields.io/pypi/l/bgen-reader.svg
