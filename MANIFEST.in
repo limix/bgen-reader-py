@@ -1,4 +1,4 @@
-include LICENSE
+include LICENSE.txt
 include bgen_reader/test/example.32bits.bgen
 include bgen_reader/interface.h
 include bgen_reader/interface.c
