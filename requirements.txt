@@ -3,3 +3,4 @@ tqdm>=4.14
 dask>=0.15
 scipy>=0.18
 pandas>=0.19.2
+toolz
