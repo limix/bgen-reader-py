@@ -2,9 +2,7 @@
 Bgen-reader
 ===========
 
-|PyPI-Status| |Conda-Forge-Status| |Build-Status|
-
-|Codacy-Grade| |License-Badge|
+|PyPI-Status| |Build-Status| |Codacy-Grade| |License-Badge|
 
 A `BGEN file format`_ reader.
 
@@ -102,9 +100,6 @@ for details.
 
 .. |PyPI-Status| image:: https://img.shields.io/pypi/v/bgen-reader.svg
     :target: https://pypi.python.org/pypi/bgen-reader
-
-.. |Conda-Forge-Status| image:: https://anaconda.org/conda-forge/bgen-reader-py/badges/version.svg
-    :target: https://anaconda.org/conda-forge/bgen-reader-py
 
 .. |License-Badge| image:: https://img.shields.io/pypi/l/bgen-reader.svg
     :target: https://raw.githubusercontent.com/bgen-reader-py/bgen-reader-py/master/LICENSE.txt
