@@ -163,9 +163,9 @@ def read_bgen(filepath, size=50, verbose=True):
     if sample_ids_presence(bgenfile) == 0:
         if verbose:
             print("Sample IDs are not present in this file.")
-            print(
-                "I will generate them on my own: sample_1, sample_2, and so on."
-            )
+            msg = "I will generate them on my own:"
+            msg += " sample_1, sample_2, and so on."
+            print(msg)
         samples = _generate_samples(bgenfile)
     else:
         samples = _read_samples(bgenfile)
@@ -190,9 +190,9 @@ def read_bgen(filepath, size=50, verbose=True):
 def convert_to_dosage(G, verbose=True):
     r"""Convert probabilities to dosage.
 
-    Let :math:`\mathbf G` be a three-dimensional array for which :math:`G_{i, j, l}`
-    is the probability of the `j`-th sample having the `l`-th genotype
-    (or haplotype) for the `i`-th locus.
+    Let :math:`\mathbf G` be a three-dimensional array for which
+    :math:`G_{i, j, l}` is the probability of the `j`-th sample having the
+    `l`-th genotype (or haplotype) for the `i`-th locus.
     This function will return a bi-dimensional array ``X`` such that
     :math:`X_{i, j}` is the dosage of the `j`-th sample for the `i`-th locus.
 
