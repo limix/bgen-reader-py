@@ -1,5 +1,6 @@
 import errno
 import os
+import stat
 import sys
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
@@ -7,15 +8,14 @@ from multiprocessing.pool import ThreadPool
 import dask
 import dask.array as da
 from dask.delayed import delayed
-from numpy import sum as npy_sum
-from numpy import arange, empty, float64, zeros
+from numpy import empty, float64, zeros
 from tqdm import tqdm
 
 from pandas import DataFrame
 
 from ._ffi import ffi
 from ._ffi.lib import (
-    close_bgen, close_variant_genotype, free, get_ncombs, get_nsamples,
+    close_bgen, close_variant_genotype, get_ncombs, get_nsamples,
     get_nvariants, open_bgen, open_variant_genotype, read_samples,
     read_variant_genotype, read_variants, sample_ids_presence,
     string_duplicate
@@ -158,7 +158,14 @@ def read_bgen(filepath, size=50, verbose=True):
         raise FileNotFoundError(errno.ENOENT,
                                 os.strerror(errno.ENOENT), filepath)
 
+    if not _group_readable(filepath):
+        msg = "You don't have file"
+        msg += " permission for reading {}.".format(filepath)
+        raise RuntimeError(msg)
+
     bgenfile = open_bgen(filepath)
+    if bgenfile == ffi.NULL:
+        raise RuntimeError("Could not read {}.".format(filepath))
 
     if sample_ids_presence(bgenfile) == 0:
         if verbose:
@@ -209,3 +216,8 @@ def convert_to_dosage(G, verbose=True):
     ncombs = G.shape[2]
     mult = da.arange(ncombs, chunks=ncombs, dtype=float64)
     return da.sum(mult * G, axis=2)
+
+
+def _group_readable(filepath):
+    st = os.stat(filepath)
+    return bool(st.st_mode & stat.S_IRGRP)
