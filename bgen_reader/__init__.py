@@ -15,7 +15,7 @@ from ._test import test
 from .bgen_reader import convert_to_dosage, read_bgen
 
 __name__ = "bgen-reader"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "Danilo Horta"
 __author_email__ = "horta@ebi.ac.uk"
 
