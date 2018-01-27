@@ -27,7 +27,7 @@ void free_variants(const struct BGenFile *bgen, struct BGenVar *variants) {
   bgen_free_variants(bgen, variants);
 }
 
-void free_indexing(struct BGenVI *index) { return bgen_free_indexing(index); }
+void free_index(struct BGenVI *index) { bgen_free_index(index); }
 
 struct BGenVG *open_variant_genotype(struct BGenVI *index, size_t variant_idx) {
   return bgen_open_variant_genotype(index, variant_idx);

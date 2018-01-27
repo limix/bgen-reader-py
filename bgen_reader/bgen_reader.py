@@ -9,17 +9,15 @@ import dask
 import dask.array as da
 from dask.delayed import delayed
 from numpy import empty, float64, zeros
+from pandas import DataFrame
 from tqdm import tqdm
 
-from pandas import DataFrame
-
 from ._ffi import ffi
-from ._ffi.lib import (
-    close_bgen, close_variant_genotype, get_ncombs, get_nsamples,
-    get_nvariants, open_bgen, open_variant_genotype, read_samples,
-    read_variant_genotype, read_variants, sample_ids_presence,
-    string_duplicate
-)
+from ._ffi.lib import (close_bgen, close_variant_genotype, get_ncombs,
+                       get_nsamples, get_nvariants, open_bgen,
+                       open_variant_genotype, read_samples,
+                       read_variant_genotype, read_variants,
+                       sample_ids_presence, string_duplicate)
 
 dask.set_options(pool=ThreadPool(cpu_count()))
 
@@ -37,7 +35,7 @@ def _to_string(v):
 
 
 def _read_variants(bgenfile):
-    indexing = ffi.new("VariantIndexing *[1]")
+    indexing = ffi.new("struct BGenVI **")
     nvariants = get_nvariants(bgenfile)
     variants = read_variants(bgenfile, indexing)
 
@@ -91,7 +89,7 @@ class ReadGenotypeVariant(object):
             ncombss.append(ncombs)
             g = empty((nsamples, ncombs), dtype=float64)
 
-            pg = ffi.cast("real *", g.ctypes.data)
+            pg = ffi.cast("double *", g.ctypes.data)
             read_variant_genotype(self._indexing[0], vg, pg)
 
             close_variant_genotype(self._indexing[0], vg)
@@ -155,8 +153,8 @@ def read_bgen(filepath, size=50, verbose=True):
             pass
 
     if (not os.path.exists(filepath)):
-        raise FileNotFoundError(errno.ENOENT,
-                                os.strerror(errno.ENOENT), filepath)
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
+                                filepath)
 
     if not _group_readable(filepath):
         msg = "You don't have file"
