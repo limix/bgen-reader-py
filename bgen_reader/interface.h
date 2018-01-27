@@ -1,48 +1,57 @@
+typedef unsigned char byte;
+typedef int_fast64_t inti;
+typedef double real;
+
 typedef struct string {
-  int len;
-  char *str;
+  inti len;
+  byte *str;
 } string;
 
-struct BGenVar {
+typedef struct Variant {
   string id;
   string rsid;
   string chrom;
-  int position;
-  int nalleles;
+  inti position;
+  inti nalleles;
   string *allele_ids;
-};
+} Variant;
 
-struct BGenFile *open_bgen(const char *filepath);
+typedef struct VariantGenotype VariantGenotype;
+typedef struct VariantIndexing VariantIndexing;
+typedef struct BGenFile BGenFile;
 
-void close_bgen(struct BGenFile *bgen);
+BGenFile *open_bgen(const byte *filepath);
 
-int get_nsamples(struct BGenFile *bgen);
+void close_bgen(BGenFile *bgen);
 
-int get_nvariants(struct BGenFile *bgen);
+inti get_nsamples(BGenFile *bgen);
 
-string *read_samples(struct BGenFile *bgen);
+inti get_nvariants(BGenFile *bgen);
 
-void free_samples(const struct BGenFile *bgen, string *samples);
+string *read_samples(BGenFile *bgen);
 
-struct BGenVar *read_variants(struct BGenFile *bgen, struct BGenVI **index);
+void free_samples(const BGenFile *bgen, string *samples);
 
-void free_variants(const struct BGenFile *bgen, struct BGenVar *variants);
+Variant *read_variants(BGenFile *bgen, VariantIndexing **index);
 
-void free_index(struct BGenVI *index);
+void free_variants(const BGenFile *bgen, Variant *variants);
 
-struct BGenVG *open_variant_genotype(struct BGenVI *index, size_t variant_idx);
+void free_indexing(VariantIndexing *index);
 
-void read_variant_genotype(struct BGenVI *index, struct BGenVG *vg,
-                           double *probabilities);
+VariantGenotype *open_variant_genotype(VariantIndexing *index,
+                                       inti variant_idx);
 
-int get_nalleles(struct BGenVG *vg);
-int get_ploidy(struct BGenVG *vg);
-int get_ncombs(struct BGenVG *vg);
+void read_variant_genotype(VariantIndexing *index, VariantGenotype *vg,
+                           real *probabilities);
 
-void close_variant_genotype(struct BGenVI *index, struct BGenVG *vg);
+inti get_nalleles(VariantGenotype *vg);
+inti get_ploidy(VariantGenotype *vg);
+inti get_ncombs(VariantGenotype *vg);
+
+void close_variant_genotype(VariantIndexing *index, VariantGenotype *vg);
 
 void free(void *);
 
 string string_duplicate(const string s);
 
-int sample_ids_presence(struct BGenFile *bgen);
+inti sample_ids_presence(BGenFile *bgen);

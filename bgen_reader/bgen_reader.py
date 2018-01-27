@@ -33,7 +33,7 @@ def _to_string(v):
 
 
 def _read_variants(bgenfile):
-    indexing = ffi.new("struct BGenVI **")
+    indexing = ffi.new("VariantIndexing *[1]")
     nvariants = get_nvariants(bgenfile)
     variants = read_variants(bgenfile, indexing)
 
