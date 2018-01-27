@@ -3,47 +3,48 @@
 
 #include "bgen.h"
 
-BGenFile *open_bgen(const byte *filepath) { return bgen_open(filepath); }
+struct BGenFile *open_bgen(const char *filepath) {
+  return bgen_open(filepath);
+}
 
-void close_bgen(BGenFile *bgen) { bgen_close(bgen); }
+void close_bgen(struct BGenFile *bgen) { bgen_close(bgen); }
 
-inti get_nsamples(BGenFile *bgen) { return bgen_nsamples(bgen); }
+int get_nsamples(struct BGenFile *bgen) { return bgen_nsamples(bgen); }
 
-inti get_nvariants(BGenFile *bgen) { return bgen_nvariants(bgen); }
+int get_nvariants(struct BGenFile *bgen) { return bgen_nvariants(bgen); }
 
-string *read_samples(BGenFile *bgen) { return bgen_read_samples(bgen); }
+string *read_samples(struct BGenFile *bgen) { return bgen_read_samples(bgen); }
 
-void free_samples(const BGenFile *bgen, string *samples) {
+void free_samples(const struct BGenFile *bgen, string *samples) {
   bgen_free_samples(bgen, samples);
 }
 
-Variant *read_variants(BGenFile *bgen, VariantIndexing **index) {
+struct BGenVar *read_variants(struct BGenFile *bgen, struct BGenVI **index) {
   return bgen_read_variants(bgen, index);
 }
 
-void free_variants(const BGenFile *bgen, Variant *variants) {
+void free_variants(const struct BGenFile *bgen, struct BGenVar *variants) {
   bgen_free_variants(bgen, variants);
 }
 
-void free_indexing(VariantIndexing *index) { return bgen_free_indexing(index); }
+void free_indexing(struct BGenVI *index) { return bgen_free_indexing(index); }
 
-VariantGenotype *open_variant_genotype(VariantIndexing *index,
-                                       inti variant_idx) {
+struct BGenVG *open_variant_genotype(struct BGenVI *index, size_t variant_idx) {
   return bgen_open_variant_genotype(index, variant_idx);
 }
 
-void read_variant_genotype(VariantIndexing *index, VariantGenotype *vg,
-                           real *probabilities) {
+void read_variant_genotype(struct BGenVI *index, struct BGenVG *vg,
+                           double *probabilities) {
   bgen_read_variant_genotype(index, vg, probabilities);
 }
 
-inti get_nalleles(VariantGenotype *vg) { return bgen_nalleles(vg); }
+int get_nalleles(struct BGenVG *vg) { return bgen_nalleles(vg); }
 
-inti get_ploidy(VariantGenotype *vg) { return bgen_ploidy(vg); }
+int get_ploidy(struct BGenVG *vg) { return bgen_ploidy(vg); }
 
-inti get_ncombs(VariantGenotype *vg) { return bgen_ncombs(vg); }
+int get_ncombs(struct BGenVG *vg) { return bgen_ncombs(vg); }
 
-void close_variant_genotype(VariantIndexing *index, VariantGenotype *vg) {
+void close_variant_genotype(struct BGenVI *index, struct BGenVG *vg) {
   bgen_close_variant_genotype(index, vg);
 }
 
@@ -56,6 +57,6 @@ string string_duplicate(string s) {
   return r;
 }
 
-inti sample_ids_presence(BGenFile *bgen) {
+int sample_ids_presence(struct BGenFile *bgen) {
   return bgen_sample_ids_presence(bgen);
 }
