@@ -1,6 +1,6 @@
 os: linux
 language: python
-sudo: false
+sudo: required
 python: 3.6
 env:
   - PKG_NAME=bgen_reader
@@ -10,7 +10,10 @@ addons:
         - pandoc
         - libffi-dev
         - libffi6
-install:
+before_script:
+    - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zlib.install/master/install)
+    - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
+    - bash <(curl -fsSL https://raw.githubusercontent.com/horta/almosthere/master/install)
     - bash <(curl -fsSL https://raw.githubusercontent.com/limix/bgen/master/install)
 script:
     - bash <(curl -fsSL https://raw.githubusercontent.com/horta/ci/master/travis.sh)
