@@ -51,7 +51,7 @@ with open(join(folder, 'interface.h'), 'r') as f:
     ffibuilder.cdef(f.read())
 
 with open(join(folder, 'interface.c'), 'r') as f:
-    libraries = ['bgen', 'z']
+    libraries = ['bgen']
     include_dirs = [join(get_config_var('prefix'), 'include')]
     library_dirs = [join(get_config_var('prefix'), 'lib')]
 
@@ -59,8 +59,9 @@ with open(join(folder, 'interface.c'), 'r') as f:
         libraries += ['libzstd']
         include_dirs += windows_include_dirs()
         library_dirs += windows_library_dirs()
+        libraries += ['libz']
     else:
-        libraries += ['zstd']
+        libraries += ['zstd', 'z']
 
     ffibuilder.set_source(
         "bgen_reader._ffi",
