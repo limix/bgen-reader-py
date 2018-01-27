@@ -5,10 +5,6 @@ from sysconfig import get_config_var
 
 from cffi import FFI
 
-ffibuilder = FFI()
-
-folder = os.path.dirname(os.path.abspath(__file__))
-
 
 def windows_dirs(prefix, lib):
     dirs = []
@@ -60,33 +56,56 @@ def windows_find_libname(lib, library_dirs):
     raise RuntimeError("{} library not found.")
 
 
+def prefix_bgen_include(dirs):
+    if platform.system() == 'Windows':
+        sep = ';'
+    else:
+        sep = ':'
+
+    for d in dirs:
+        for folder in d.split(sep):
+            if os.path.exists(join(folder, 'bgen', 'bgen.h')):
+                return True
+
+    return False
+
+
+ffibuilder = FFI()
+
+folder = os.path.dirname(os.path.abspath(__file__))
+
 with open(join(folder, 'interface.h'), 'r') as f:
     ffibuilder.cdef(f.read())
 
 with open(join(folder, 'interface.c'), 'r') as f:
+    interface_content = f.read()
 
-    include_dirs = [join(get_config_var('prefix'), 'include')]
-    library_dirs = [join(get_config_var('prefix'), 'lib')]
+include_dirs = [join(get_config_var('prefix'), 'include')]
+library_dirs = [join(get_config_var('prefix'), 'lib')]
 
-    if platform.system() == 'Windows':
-        include_dirs += windows_include_dirs()
-        library_dirs += windows_library_dirs()
-        libraries = [
-            windows_find_libname('zstd', library_dirs),
-            windows_find_libname('z', library_dirs),
-            windows_find_libname('athr', library_dirs),
-            windows_find_libname('bgen', library_dirs)
-        ]
-    else:
-        libraries = ['bgen', 'athr', 'z', 'zstd']
+if platform.system() == 'Windows':
+    include_dirs += windows_include_dirs()
+    library_dirs += windows_library_dirs()
+    libraries = [
+        windows_find_libname('zstd', library_dirs),
+        windows_find_libname('z', library_dirs),
+        windows_find_libname('athr', library_dirs),
+        windows_find_libname('bgen', library_dirs)
+    ]
 
-    ffibuilder.set_source(
-        "bgen_reader._ffi",
-        f.read(),
-        libraries=libraries,
-        library_dirs=library_dirs,
-        include_dirs=include_dirs,
-        language='c')
+else:
+    libraries = ['bgen', 'athr', 'z', 'zstd']
 
-if __name__ == "__main__":
-    ffibuilder.compile(verbose=True)
+if prefix_bgen_include(include_dirs):
+    interface_content = interface_content.replace("include \"bgen.h\"",
+                                                  "include \"bgen/bgen.h\"")
+
+ffibuilder.set_source(
+    "bgen_reader._ffi",
+    interface_content,
+    libraries=libraries,
+    library_dirs=library_dirs,
+    include_dirs=include_dirs,
+    language='c')
+
+ffibuilder.compile(verbose=True)
