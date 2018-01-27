@@ -95,6 +95,8 @@ if platform.system() == 'Windows':
 
 else:
     libraries = ['bgen', 'athr', 'z', 'zstd']
+    include_dirs += ['/usr/include', '/usr/local/include']
+    library_dirs += ['/usr/lib', '/usr/local/lib']
 
 if prefix_bgen_include(include_dirs):
     interface_content = interface_content.replace("include \"bgen.h\"",

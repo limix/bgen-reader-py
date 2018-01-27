@@ -1,0 +1,6 @@
+generating ./bgen_reader/_ffi.c
+(already up-to-date)
+the current directory is '/Users/horta/github/bgen-reader-py'
+running build_ext
+building 'bgen_reader._ffi' extension
+gcc -Wno-unused-result -Wsign-compare -Wunreachable-code -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -I/usr/local/anaconda3/include -arch x86_64 -I/usr/local/anaconda3/include -arch x86_64 -I/usr/local/anaconda3/include -I/usr/local/anaconda3/include/python3.6m -c bgen_reader/_ffi.c -o ./bgen_reader/_ffi.o
