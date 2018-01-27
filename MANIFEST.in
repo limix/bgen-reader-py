@@ -5,4 +5,4 @@ include example/example.bgen
 include example/example.py
 include LICENSE.md
 include README.md
-include requirements.txt
+include version.py
