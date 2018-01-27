@@ -47,6 +47,19 @@ def windows_library_dirs():
     return library_dirs
 
 
+def windows_find_libname(lib, library_dirs):
+    names = [
+        "{}.lib".format(lib), "lib{}.lib".format(lib), "{}lib.lib".format(lib)
+    ]
+    folders = [f for ldir in library_dirs for f in ldir.split(';')]
+    for f in folders:
+        for n in names:
+            if os.path.exists(join(f, n)):
+                return n[:-4]
+
+    raise RuntimeError("{} library not found.")
+
+
 with open(join(folder, 'interface.h'), 'r') as f:
     ffibuilder.cdef(f.read())
 
@@ -56,10 +69,12 @@ with open(join(folder, 'interface.c'), 'r') as f:
     library_dirs = [join(get_config_var('prefix'), 'lib')]
 
     if platform.system() == 'Windows':
-        libraries += ['libzstd']
         include_dirs += windows_include_dirs()
         library_dirs += windows_library_dirs()
-        libraries += ['libz']
+        libraries += [
+            windows_find_libname('zstd', library_dirs),
+            windows_find_libname('z', library_dirs)
+        ]
     else:
         libraries += ['zstd', 'z']
 
