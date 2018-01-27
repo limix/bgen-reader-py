@@ -7,7 +7,7 @@ environment:
     PKG_NAME: bgen_reader
     PYTHON: "C:\\Python36-x64"
 
-build_script:
+install:
     - mkdir build.%BDIR% && cd build.%BDIR%
     - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install-zlib.bat')" && install-zlib.bat
     - set PATH=%programfiles%\zlib\bin;%PATH%
@@ -16,5 +16,5 @@ build_script:
     - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/almosthere/master/install.bat', 'install.bat')" && call install.bat
     - set PATH=%programfiles%\athr\bin;%PATH%
 
-install:
+build_script:
     - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/ci/master/appveyor.bat', 'appveyor.bat')" && appveyor.bat
