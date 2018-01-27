@@ -11,7 +11,7 @@ representation without sacrificing variant access performance.
 
 This Python package is a wrapper around the [bgen library](https://github.com/limix/bgen),
 a low-memory footprint reader that efficiently reads BGEN files.
-It fully supports all the BGEN format specifications: 1.1, 1.2, and 1.3;
+It fully supports the BGEN format specifications: 1.2 and 1.3;
 as well as their optional compressed formats.
 
 ## Install

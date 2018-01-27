@@ -15,6 +15,8 @@ install:
     - set PATH=%programfiles%\zstd\bin;%PATH%
     - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/almosthere/master/install.bat', 'install-athr.bat')" && call install-athr.bat
     - set PATH=%programfiles%\athr\bin;%PATH%
+    - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/limix/bgen/master/install.bat', 'install-bgen.bat')" && install-bgen.bat
+    - set PATH=%programfiles%\bgen\bin;%PATH%
 
 build_script:
     - cd %APPVEYOR_BUILD_FOLDER%
