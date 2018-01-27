@@ -32,7 +32,7 @@ build_script:
     # - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/ci/master/appveyor.bat', 'appveyor.bat')" && appveyor.bat
     - set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
     - pip install -U setuptools pip pypandoc
-    - python setup.py build_ext --inplace
+    - python setup.py build
     - if errorlevel 1 exit 1
     - python setup.py test
     - if errorlevel 1 exit 1
