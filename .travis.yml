@@ -10,6 +10,8 @@ addons:
         - pandoc
         - libffi-dev
         - libffi6
+install:
+    - bash <(curl -fsSL https://raw.githubusercontent.com/limix/bgen/master/install)
 script:
     - bash <(curl -fsSL https://raw.githubusercontent.com/horta/ci/master/travis.sh)
 notifications:
