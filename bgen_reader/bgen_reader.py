@@ -21,12 +21,10 @@ from ._ffi.lib import (close_bgen, close_variant_genotype, get_ncombs,
 
 dask.set_options(pool=ThreadPool(cpu_count()))
 
-try:
-    FileNotFoundError
-except NameError:
-    FileNotFoundError = IOError
-
 PY3 = sys.version_info >= (3, )
+
+if not PY3:
+    FileNotFoundError = IOError
 
 
 def _to_string(v):
