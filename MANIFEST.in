@@ -1,6 +1,7 @@
 include bgen_reader/interface.c
 include bgen_reader/interface.h
 include bgen_reader/test/example.32bits.bgen
+include build_ext.py
 include example/example.bgen
 include example/example.py
 include LICENSE.md

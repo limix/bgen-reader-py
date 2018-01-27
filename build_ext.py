@@ -74,10 +74,10 @@ ffibuilder = FFI()
 
 folder = os.path.dirname(os.path.abspath(__file__))
 
-with open(join(folder, 'interface.h'), 'r') as f:
+with open(join(folder, 'bgen_reader', 'interface.h'), 'r') as f:
     ffibuilder.cdef(f.read())
 
-with open(join(folder, 'interface.c'), 'r') as f:
+with open(join(folder, 'bgen_reader', 'interface.c'), 'r') as f:
     interface_content = f.read()
 
 include_dirs = [join(get_config_var('prefix'), 'include')]
@@ -110,4 +110,5 @@ ffibuilder.set_source(
     include_dirs=include_dirs,
     language='c')
 
-ffibuilder.compile(verbose=True)
+if __name__ == "__main__":
+    ffibuilder.compile(verbose=True)

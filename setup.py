@@ -11,4 +11,4 @@ if __name__ == '__main__':
 
     setup(
         long_description=long_description,
-        cffi_modules="bgen_reader/_build.py:ffibuilder")
+        cffi_modules="build_ext.py:ffibuilder")
