@@ -27,6 +27,21 @@ def windows_include_dirs():
     return include_dirs
 
 
+def windows_library_dirs():
+    library_dirs = []
+    if 'LIBRARY_LIB' in os.environ:
+        library_dirs += [os.environ['LIBRARY_LIB']]
+    if 'ProgramW6432' in os.environ:
+        fld = join(os.environ['ProgramW6432'], 'bgen', 'lib')
+        if os.path.exists(fld):
+            library_dirs += [fld]
+    if 'ProgramFiles' in os.environ:
+        fld = join(os.environ['ProgramFiles'], 'bgen', 'lib')
+        if os.path.exists(fld):
+            library_dirs += [fld]
+    return library_dirs
+
+
 with open(join(folder, 'interface.h'), 'r') as f:
     ffibuilder.cdef(f.read())
 
@@ -38,10 +53,9 @@ with open(join(folder, 'interface.c'), 'r') as f:
     if platform.system() == 'Windows':
         libraries += ['libzstd']
         include_dirs += windows_include_dirs()
+        library_dirs += windows_library_dirs()
     else:
         libraries += ['zstd']
-
-    # INCLUDE
 
     ffibuilder.set_source(
         "bgen_reader._ffi",
