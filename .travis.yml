@@ -1,46 +1,20 @@
+os: linux
 language: python
-sudo: required
-git:
-  depth: 5
-matrix:
-  include:
-  - python: 2.7
-  - python: 3.6
-  - env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
-  - os: osx
-    language: generic
-    env: PYENV=py27
-  - os: osx
-    language: generic
-    env: PYENV=py36
-before_install:
-- travis_retry bash <(curl -s https://raw.githubusercontent.com/limix/travis-tools/master/get-travis-tools.sh)
-- travis_retry travis/before-install.sh
-install:
-- travis_retry travis/install.sh
+sudo: false
+python: 3.6
+env:
+  - PKG_NAME=bgen_reader
+addons:
+  apt:
+    packages:
+        - pandoc
+        - libffi-dev
+        - libffi6
 script:
-- travis_retry travis/script.sh
-after_success:
-- travis_retry travis/after-success.sh
+    - bash <(curl -fsSL https://raw.githubusercontent.com/horta/ci/master/travis.sh)
 notifications:
   email:
     recipients:
-      - danilo.horta@gmail.com
-    on_success: change
+    - danilo.horta@gmail.com
+    on_success: never
     on_failure: always
-env:
-  global:
-  - LIKNORM=true
-  - BGEN=true
-  - ZSTD=true
-  - PRJ_NAME=bgen-reader
-  - secure: Ed354pd2TEYQiKrDTCdA0/eO4/LtMc99X7xLP6e3J9iN2duy/Ii+NehSNVZc7g/Q/YVbzeeajyIsYp8rdxqY1ioJrYLVfdxx9eFBd1KQLPIufpaoO4bGSwbL8tWmul9Fz/G14/RBUIOzn0V+4pAZ5IqrYCqUbO1xTp9yzLCaR/kF3dMoLDDoZktKXJX6rZlZHjJYsm5cRPQQaA/ZBi9HOF3pUKmBn8MCYXgFi0l93nmAOQXg4NLJOEy4eJ0ISVe53TYHz10Ozik51K42A7BnwEudBoWVkfAOabGahZJg//F1Ut16Kc3Fm9zRVIiIuPQ2mVUpvuFzjrYPNBG81FVhym/33colpwyusXsatAp9BKKKM0u/nGWpamMgExwc1WRVyOWv7VZZYU/QCE2L3ccKed3qNfYoixzCJGDaLVwRvwgBKkFHc/ZYpf5q76XtJwRebwC82crBcFzs2wH3rJPTjDOZJMULOVu1xf0rzGlcyWZaS+T0chLftVaNJqvGZWu01uLrgk/f/OyLoK8b0m8q6Tl08vSUZET3he2UbUXg0o1OIJ9x/dli2E7o78Bjiw0594Ma49Mman6cd/qNgzKN0Eb0rAWbWA9f0iQE4354RmKJRQZL4ZyzCBtwcP1fW4X/6Ub4jRi2ALK1SFSaxqC9oIY3o0APJvElDAzMyAhvKXA=
-deploy:
-  provider: pypi
-  user: dhorta
-  password:
-    secure: yD/qrs+bcZCpR/HrKMhEYXkiSKqW7lwGh0GSVO6fRuh8oBFd6IPTqAUK4SxMLBjnOUHNzfosZ73Ff26Vai12SyLKe9bH2PPBPlsNM4yNgkP4/8ax6f7hL4Tv5KDmEy2JS8DYh/bH+ghvrmitAsExNTIn3lZJEMJ/GqYKysHGW3E4fsYB9gcoQeMJ0ssIjN5WxK2WVosh5/nOB0Gg3J9z262A4qW3+vn0XT2k3XLDBXFDtpa9gHQSM8IQm1MPM8sTJ4BVNeLRZbZ9FfsHZIIolCsXlZ1PK0lpWJv6dL9KdD9WlXgzqPgk9GbHEat7OqSl6sD834bu1NNNgyUzzrvfdFUPE+G5IAC3q4fwaaZP/YlkAYH9B/wvvV5HySF1jGyMyWTS8YFBOKlUEVe431XBMZsku0in/5VwOdBWzRP2YfkFk8NJ1CFuYUaAbp48rTp/qS4S70nWKbcGc7+NIKkV9H5zuHq51435uZpLJCXUsfLBP+3peKN3ph44yZJt9b/S6Mra8a/wcR9RK47vftOhz1V2ivkgvhTpnVc9ObsUaB+AH4R8ST8XxuzZ49o43sRh0BWMy2kQHol2m9cSmPzQjbqRg8gwoJaUHPKZhVQKP5HNh9xpqCQSbvAAzfLqcpnqTxaXHkrUaH0rjrlC8dkfGNfDhAQpJoq0TOrx6nQ3xw4=
-  on:
-    tags: true
-    repo: limix/bgen-reader-py
-    branch: master
