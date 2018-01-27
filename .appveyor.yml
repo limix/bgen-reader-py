@@ -18,6 +18,8 @@ install:
     - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/limix/bgen/master/install.bat', 'install-bgen.bat')" && install-bgen.bat
     - set PATH=%programfiles%\bgen\bin;%PATH%
     - set INCLUDE=%programfiles%\bgen\include;%INCLUDE%
+    - set LIBRARY_INC=%programfiles%\bgen\include;%LIBRARY_INC%
+    - set LIBRARY_LIB=%programfiles%\bgen\lib;%LIBRARY_LIB%
 
 build_script:
     - cd %APPVEYOR_BUILD_FOLDER%
