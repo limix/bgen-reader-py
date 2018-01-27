@@ -10,20 +10,29 @@ ffibuilder = FFI()
 folder = os.path.dirname(os.path.abspath(__file__))
 
 
+def windows_dirs(prefix, lib):
+    dirs = []
+    if 'PROGRAMW6432' in os.environ:
+        fld = join(os.environ['PROGRAMW6432'], lib, prefix)
+        if os.path.exists(fld):
+            dirs += [fld]
+    if 'PROGRAMFILES' in os.environ:
+        fld = join(os.environ['PROGRAMFILES'], lib, prefix)
+        if os.path.exists(fld):
+            dirs += [fld]
+    return dirs
+
+
 def windows_include_dirs():
     include_dirs = []
     if 'INCLUDE' in os.environ:
         include_dirs += [os.environ['INCLUDE']]
     if 'LIBRARY_INC' in os.environ:
         include_dirs += [os.environ['LIBRARY_INC']]
-    if 'PROGRAMW6432' in os.environ:
-        fld = join(os.environ['PROGRAMW6432'], 'bgen', 'include')
-        if os.path.exists(fld):
-            include_dirs += [fld]
-    if 'PROGRAMFILES' in os.environ:
-        fld = join(os.environ['PROGRAMFILES'], 'bgen', 'include')
-        if os.path.exists(fld):
-            include_dirs += [fld]
+    include_dirs += windows_dirs('include', 'bgen')
+    include_dirs += windows_dirs('include', 'zlib')
+    include_dirs += windows_dirs('include', 'zstd')
+    include_dirs += windows_dirs('include', 'athr')
     return include_dirs
 
 
@@ -31,14 +40,10 @@ def windows_library_dirs():
     library_dirs = []
     if 'LIBRARY_LIB' in os.environ:
         library_dirs += [os.environ['LIBRARY_LIB']]
-    if 'PROGRAMW6432' in os.environ:
-        fld = join(os.environ['PROGRAMW6432'], 'bgen', 'lib')
-        if os.path.exists(fld):
-            library_dirs += [fld]
-    if 'PROGRAMFILES' in os.environ:
-        fld = join(os.environ['PROGRAMFILES'], 'bgen', 'lib')
-        if os.path.exists(fld):
-            library_dirs += [fld]
+    library_dirs += windows_dirs('lib', 'bgen')
+    library_dirs += windows_dirs('lib', 'zlib')
+    library_dirs += windows_dirs('lib', 'zstd')
+    library_dirs += windows_dirs('lib', 'athr')
     return library_dirs
 
 
