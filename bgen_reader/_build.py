@@ -16,12 +16,12 @@ def windows_include_dirs():
         include_dirs += [os.environ['INCLUDE']]
     if 'LIBRARY_INC' in os.environ:
         include_dirs += [os.environ['LIBRARY_INC']]
-    if 'ProgramW6432' in os.environ:
-        fld = join(os.environ['ProgramW6432'], 'bgen', 'include')
+    if 'PROGRAMW6432' in os.environ:
+        fld = join(os.environ['PROGRAMW6432'], 'bgen', 'include')
         if os.path.exists(fld):
             include_dirs += [fld]
-    if 'ProgramFiles' in os.environ:
-        fld = join(os.environ['ProgramFiles'], 'bgen', 'include')
+    if 'PROGRAMFILES' in os.environ:
+        fld = join(os.environ['PROGRAMFILES'], 'bgen', 'include')
         if os.path.exists(fld):
             include_dirs += [fld]
     return include_dirs
@@ -31,12 +31,12 @@ def windows_library_dirs():
     library_dirs = []
     if 'LIBRARY_LIB' in os.environ:
         library_dirs += [os.environ['LIBRARY_LIB']]
-    if 'ProgramW6432' in os.environ:
-        fld = join(os.environ['ProgramW6432'], 'bgen', 'lib')
+    if 'PROGRAMW6432' in os.environ:
+        fld = join(os.environ['PROGRAMW6432'], 'bgen', 'lib')
         if os.path.exists(fld):
             library_dirs += [fld]
-    if 'ProgramFiles' in os.environ:
-        fld = join(os.environ['ProgramFiles'], 'bgen', 'lib')
+    if 'PROGRAMFILES' in os.environ:
+        fld = join(os.environ['PROGRAMFILES'], 'bgen', 'lib')
         if os.path.exists(fld):
             library_dirs += [fld]
     return library_dirs
@@ -61,8 +61,8 @@ with open(join(folder, 'interface.c'), 'r') as f:
         "bgen_reader._ffi",
         f.read(),
         libraries=libraries,
-        library_dirs=include_dirs,
-        include_dirs=library_dirs,
+        library_dirs=library_dirs,
+        include_dirs=include_dirs,
         language='c')
 
 if __name__ == "__main__":
