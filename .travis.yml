@@ -13,7 +13,7 @@ addons:
 before_script:
 - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
 - bash <(curl -fsSL https://raw.githubusercontent.com/horta/almosthere/master/install)
-- bash <(curl -fsSL https://raw.githubusercontent.com/limix/bgen/master/install)
+- bash <(curl -fsSL https://raw.githubusercontent.com/limix/bgen/1.0.x/install)
 script:
 - bash <(curl -fsSL https://raw.githubusercontent.com/horta/ci/master/travis.sh)
 notifications:
@@ -30,4 +30,4 @@ deploy:
   on:
     tags: true
     repo: limix/bgen-reader-py
-    branch: master
+    branch: 1.0.x
