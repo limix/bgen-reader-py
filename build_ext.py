@@ -28,7 +28,6 @@ def windows_include_dirs():
     include_dirs += windows_dirs('include', 'bgen')
     include_dirs += windows_dirs('include', 'zlib')
     include_dirs += windows_dirs('include', 'zstd')
-    include_dirs += windows_dirs('include', 'athr')
     return include_dirs
 
 
@@ -39,7 +38,6 @@ def windows_library_dirs():
     library_dirs += windows_dirs('lib', 'bgen')
     library_dirs += windows_dirs('lib', 'zlib')
     library_dirs += windows_dirs('lib', 'zstd')
-    library_dirs += windows_dirs('lib', 'athr')
     return library_dirs
 
 
@@ -89,12 +87,11 @@ if platform.system() == 'Windows':
     libraries = [
         windows_find_libname('zstd', library_dirs),
         windows_find_libname('z', library_dirs),
-        windows_find_libname('athr', library_dirs),
         windows_find_libname('bgen', library_dirs)
     ]
 
 else:
-    libraries = ['bgen', 'athr', 'z', 'zstd']
+    libraries = ['bgen', 'z', 'zstd']
     include_dirs += ['/usr/include', '/usr/local/include']
     library_dirs += ['/usr/lib', '/usr/local/lib']
 
