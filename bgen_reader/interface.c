@@ -13,14 +13,16 @@ int get_nsamples(struct BGenFile *bgen) { return bgen_nsamples(bgen); }
 
 int get_nvariants(struct BGenFile *bgen) { return bgen_nvariants(bgen); }
 
-string *read_samples(struct BGenFile *bgen) { return bgen_read_samples(bgen); }
+bgen_string *read_samples(struct BGenFile *bgen) {
+  return bgen_read_samples(bgen, 0);
+}
 
-void free_samples(const struct BGenFile *bgen, string *samples) {
+void free_samples(const struct BGenFile *bgen, bgen_string *samples) {
   bgen_free_samples(bgen, samples);
 }
 
 struct BGenVar *read_variants(struct BGenFile *bgen, struct BGenVI **index) {
-  return bgen_read_variants(bgen, index);
+  return bgen_read_variants(bgen, index, 0);
 }
 
 void free_variants(const struct BGenFile *bgen, struct BGenVar *variants) {
@@ -48,8 +50,8 @@ void close_variant_genotype(struct BGenVI *index, struct BGenVG *vg) {
   bgen_close_variant_genotype(index, vg);
 }
 
-string string_duplicate(string s) {
-  string r;
+bgen_string string_duplicate(bgen_string s) {
+  bgen_string r;
 
   r.str = malloc(s.len);
   memcpy(r.str, s.str, s.len);

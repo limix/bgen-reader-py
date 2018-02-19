@@ -1,15 +1,15 @@
-typedef struct string {
+typedef struct bgen_string {
   int len;
   char *str;
-} string;
+} bgen_string;
 
 struct BGenVar {
-  string id;
-  string rsid;
-  string chrom;
+  bgen_string id;
+  bgen_string rsid;
+  bgen_string chrom;
   int position;
   int nalleles;
-  string *allele_ids;
+  bgen_string *allele_ids;
 };
 
 struct BGenFile *open_bgen(const char *filepath);
@@ -20,9 +20,9 @@ int get_nsamples(struct BGenFile *bgen);
 
 int get_nvariants(struct BGenFile *bgen);
 
-string *read_samples(struct BGenFile *bgen);
+bgen_string *read_samples(struct BGenFile *bgen);
 
-void free_samples(const struct BGenFile *bgen, string *samples);
+void free_samples(const struct BGenFile *bgen, bgen_string *samples);
 
 struct BGenVar *read_variants(struct BGenFile *bgen, struct BGenVI **index);
 
@@ -43,6 +43,6 @@ void close_variant_genotype(struct BGenVI *index, struct BGenVG *vg);
 
 void free(void *);
 
-string string_duplicate(const string s);
+bgen_string string_duplicate(const bgen_string s);
 
 int sample_ids_presence(struct BGenFile *bgen);
