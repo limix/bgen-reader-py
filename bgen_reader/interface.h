@@ -3,7 +3,7 @@ typedef struct bgen_string {
   char *str;
 } bgen_string;
 
-struct BGenVar {
+struct bgen_var {
   bgen_string id;
   bgen_string rsid;
   bgen_string chrom;
@@ -12,37 +12,38 @@ struct BGenVar {
   bgen_string *allele_ids;
 };
 
-struct BGenFile *open_bgen(const char *filepath);
+struct bgen_file *open_bgen(const char *filepath);
 
-void close_bgen(struct BGenFile *bgen);
+void close_bgen(struct bgen_file *bgen);
 
-int get_nsamples(struct BGenFile *bgen);
+int get_nsamples(struct bgen_file *bgen);
 
-int get_nvariants(struct BGenFile *bgen);
+int get_nvariants(struct bgen_file *bgen);
 
-bgen_string *read_samples(struct BGenFile *bgen);
+bgen_string *read_samples(struct bgen_file *bgen);
 
-void free_samples(const struct BGenFile *bgen, bgen_string *samples);
+void free_samples(const struct bgen_file *bgen, bgen_string *samples);
 
-struct BGenVar *read_variants(struct BGenFile *bgen, struct BGenVI **index);
+struct bgen_var *read_variants(struct bgen_file *bgen, struct bgen_vi **index);
 
-void free_variants(const struct BGenFile *bgen, struct BGenVar *variants);
+void free_variants(const struct bgen_file *bgen, struct bgen_var *variants);
 
-void free_index(struct BGenVI *index);
+void free_index(struct bgen_vi *index);
 
-struct BGenVG *open_variant_genotype(struct BGenVI *index, size_t variant_idx);
+struct bgen_vg *open_variant_genotype(struct bgen_vi *index,
+                                      size_t variant_idx);
 
-void read_variant_genotype(struct BGenVI *index, struct BGenVG *vg,
+void read_variant_genotype(struct bgen_vi *index, struct bgen_vg *vg,
                            double *probabilities);
 
-int get_nalleles(struct BGenVG *vg);
-int get_ploidy(struct BGenVG *vg);
-int get_ncombs(struct BGenVG *vg);
+int get_nalleles(struct bgen_vg *vg);
+int get_ploidy(struct bgen_vg *vg);
+int get_ncombs(struct bgen_vg *vg);
 
-void close_variant_genotype(struct BGenVI *index, struct BGenVG *vg);
+void close_variant_genotype(struct bgen_vi *index, struct bgen_vg *vg);
 
 void free(void *);
 
 bgen_string string_duplicate(const bgen_string s);
 
-int sample_ids_presence(struct BGenFile *bgen);
+int sample_ids_presence(struct bgen_file *bgen);

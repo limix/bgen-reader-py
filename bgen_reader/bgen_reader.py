@@ -32,10 +32,10 @@ def _to_string(v):
     return ffi.string(v.str, v.len).decode()
 
 
-def _read_variants(bgenfile):
-    indexing = ffi.new("struct BGenVI **")
-    nvariants = get_nvariants(bgenfile)
-    variants = read_variants(bgenfile, indexing)
+def _read_variants(bgen_file):
+    indexing = ffi.new("struct bgen_vi **")
+    nvariants = get_nvariants(bgen_file)
+    variants = read_variants(bgen_file, indexing)
 
     data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
     for i in range(nvariants):
@@ -54,10 +54,10 @@ def _read_variants(bgenfile):
     return (DataFrame(data=data), indexing)
 
 
-def _read_samples(bgenfile):
+def _read_samples(bgen_file):
 
-    nsamples = get_nsamples(bgenfile)
-    samples = read_samples(bgenfile)
+    nsamples = get_nsamples(bgen_file)
+    samples = read_samples(bgen_file)
 
     py_ids = []
     for i in range(nsamples):
@@ -66,8 +66,8 @@ def _read_samples(bgenfile):
     return DataFrame(data=dict(id=py_ids))
 
 
-def _generate_samples(bgenfile):
-    nsamples = get_nsamples(bgenfile)
+def _generate_samples(bgen_file):
+    nsamples = get_nsamples(bgen_file)
     return DataFrame(data=dict(id=['sample_%d' % i for i in range(nsamples)]))
 
 
@@ -159,30 +159,30 @@ def read_bgen(filepath, size=50, verbose=True):
         msg += " permission for reading {}.".format(filepath)
         raise RuntimeError(msg)
 
-    bgenfile = open_bgen(filepath)
-    if bgenfile == ffi.NULL:
+    bgen_file = open_bgen(filepath)
+    if bgen_file == ffi.NULL:
         raise RuntimeError("Could not read {}.".format(filepath))
 
-    if sample_ids_presence(bgenfile) == 0:
+    if sample_ids_presence(bgen_file) == 0:
         if verbose:
             print("Sample IDs are not present in this file.")
             msg = "I will generate them on my own:"
             msg += " sample_1, sample_2, and so on."
             print(msg)
-        samples = _generate_samples(bgenfile)
+        samples = _generate_samples(bgen_file)
     else:
-        samples = _read_samples(bgenfile)
+        samples = _read_samples(bgen_file)
 
     sys.stdout.write("Reading variants (it should take less than a minute)...")
     sys.stdout.flush()
-    variants, indexing = _read_variants(bgenfile)
+    variants, indexing = _read_variants(bgen_file)
     sys.stdout.write(" done.\n")
     sys.stdout.flush()
     nalleless = variants['nalleles'].values
 
     nsamples = samples.shape[0]
     nvariants = variants.shape[0]
-    close_bgen(bgenfile)
+    close_bgen(bgen_file)
 
     genotype = _read_genotype(indexing, nsamples, nvariants, nalleless, size,
                               verbose)
