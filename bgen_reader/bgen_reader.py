@@ -13,11 +13,12 @@ from pandas import DataFrame
 from tqdm import tqdm
 
 from ._ffi import ffi
-from ._ffi.lib import (close_bgen, close_variant_genotype, get_ncombs,
-                       get_nsamples, get_nvariants, open_bgen,
-                       open_variant_genotype, read_samples,
-                       read_variant_genotype, read_variants,
-                       sample_ids_presence, string_duplicate)
+from ._ffi.lib import (close_bgen, close_variant_genotype,
+                       free_variants_metadata, get_ncombs, get_nsamples,
+                       get_nvariants, open_bgen, open_variant_genotype,
+                       read_samples, read_variant_genotype,
+                       read_variants_metadata, sample_ids_presence,
+                       string_duplicate)
 
 dask.set_options(pool=ThreadPool(cpu_count()))
 
@@ -33,9 +34,10 @@ def _to_string(v):
 
 
 def _read_variants(bgen_file):
+    verbose = 0
     indexing = ffi.new("struct bgen_vi **")
     nvariants = get_nvariants(bgen_file)
-    variants = read_variants(bgen_file, indexing)
+    variants = read_variants_metadata(bgen_file, indexing, verbose)
 
     data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
     for i in range(nvariants):
@@ -51,13 +53,16 @@ def _read_variants(bgen_file):
             alleles.append(_to_string(variants[i].allele_ids[j]))
         data['allele_ids'].append(','.join(alleles))
 
+    free_variants_metadata(bgen_file, variants)
+
     return (DataFrame(data=data), indexing)
 
 
 def _read_samples(bgen_file):
 
+    verbose = 0
     nsamples = get_nsamples(bgen_file)
-    samples = read_samples(bgen_file)
+    samples = read_samples(bgen_file, verbose)
 
     py_ids = []
     for i in range(nsamples):
