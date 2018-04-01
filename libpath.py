@@ -116,7 +116,7 @@ class Windows(System):
             for n in names:
                 if exists(join(d, n)):
                     return n[:-4]
-        msg = "Could not find the library name for {}.".format(name)
+        msg = "Could not find the {} library.".format(name)
         raise ValueError(msg)
 
     def __str__(self):

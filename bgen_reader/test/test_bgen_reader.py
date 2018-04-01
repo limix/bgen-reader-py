@@ -3,10 +3,9 @@ from __future__ import unicode_literals
 import os
 
 import pytest
-from numpy import array
-from numpy.testing import assert_allclose, assert_equal
-
 from bgen_reader import convert_to_dosage, read_bgen
+from numpy import array
+from numpy.testing import assert_, assert_allclose, assert_equal
 
 try:
     FileNotFoundError
@@ -20,7 +19,7 @@ def test_bgen_reader():
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen['variants']
     samples = bgen['samples']
-    genotype = bgen['genotype']
+    assert_('genotype' in bgen)
 
     assert_equal(variants.loc[0, 'chrom'], '01')
     assert_equal(variants.loc[0, 'id'], 'SNPID_2')
