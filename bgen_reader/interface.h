@@ -12,6 +12,10 @@ struct bgen_var {
   struct bgen_string *allele_ids;
 };
 
+struct bgen_file;
+struct bgen_vi;
+struct bgen_vg;
+
 struct bgen_file *bgen_open(const char *filepath);
 void bgen_close(struct bgen_file *bgen);
 

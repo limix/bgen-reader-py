@@ -14,9 +14,6 @@ folder = os.path.dirname(os.path.abspath(__file__))
 with open(join(folder, 'bgen_reader', 'interface.h'), 'r') as f:
     ffibuilder.cdef(f.read())
 
-with open(join(folder, 'bgen_reader', 'interface.c'), 'r') as f:
-    interface_content = f.read()
-
 if platform.system() == 'Windows':
     s = Windows()
     f = s.get_programfiles()
@@ -30,7 +27,7 @@ else:
 
 ffibuilder.set_source(
     "bgen_reader._ffi",
-    interface_content,
+    "#include \"bgen.h\"",
     libraries=libs,
     library_dirs=s.get_library_dirs(),
     include_dirs=s.get_include_dirs(),
