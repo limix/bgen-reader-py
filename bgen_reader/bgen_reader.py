@@ -13,12 +13,12 @@ from pandas import DataFrame
 from tqdm import tqdm
 
 from ._ffi import ffi
-from ._ffi.lib import (close_bgen, close_variant_genotype,
-                       free_variants_metadata, get_ncombs, get_nsamples,
-                       get_nvariants, open_bgen, open_variant_genotype,
-                       read_samples, read_variant_genotype,
-                       read_variants_metadata, sample_ids_presence,
-                       string_duplicate)
+from ._ffi.lib import (bgen_close, bgen_close_variant_genotype,
+                       bgen_free_samples, bgen_free_variants_metadata,
+                       bgen_ncombs, bgen_nsamples, bgen_nvariants, bgen_open,
+                       bgen_open_variant_genotype, bgen_read_samples,
+                       bgen_read_variant_genotype, bgen_read_variants_metadata,
+                       bgen_sample_ids_presence)
 
 dask.set_options(pool=ThreadPool(cpu_count()))
 
@@ -28,32 +28,33 @@ if not PY3:
     FileNotFoundError = IOError
 
 
-def _to_string(v):
-    v = string_duplicate(v)
-    return ffi.string(v.str, v.len).decode()
+def _create_string(v):
+    s = ffi.new("char[]", v.len)
+    ffi.memmove(s, v.str, v.len)
+    return ffi.string(s, v.len).decode()
 
 
 def _read_variants(bgen_file):
     verbose = 0
     indexing = ffi.new("struct bgen_vi **")
-    nvariants = get_nvariants(bgen_file)
-    variants = read_variants_metadata(bgen_file, indexing, verbose)
+    nvariants = bgen_nvariants(bgen_file)
+    variants = bgen_read_variants_metadata(bgen_file, indexing, verbose)
 
     data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
     for i in range(nvariants):
-        data['id'].append(_to_string(variants[i].id))
-        data['rsid'].append(_to_string(variants[i].rsid))
-        data['chrom'].append(_to_string(variants[i].chrom))
+        data['id'].append(_create_string(variants[i].id))
+        data['rsid'].append(_create_string(variants[i].rsid))
+        data['chrom'].append(_create_string(variants[i].chrom))
 
         data['pos'].append(variants[i].position)
         nalleles = variants[i].nalleles
         data['nalleles'].append(nalleles)
         alleles = []
         for j in range(nalleles):
-            alleles.append(_to_string(variants[i].allele_ids[j]))
+            alleles.append(_create_string(variants[i].allele_ids[j]))
         data['allele_ids'].append(','.join(alleles))
 
-    free_variants_metadata(bgen_file, variants)
+    bgen_free_variants_metadata(bgen_file, variants)
 
     return (DataFrame(data=data), indexing)
 
@@ -61,18 +62,19 @@ def _read_variants(bgen_file):
 def _read_samples(bgen_file):
 
     verbose = 0
-    nsamples = get_nsamples(bgen_file)
-    samples = read_samples(bgen_file, verbose)
+    nsamples = bgen_nsamples(bgen_file)
+    samples = bgen_read_samples(bgen_file, verbose)
 
     py_ids = []
     for i in range(nsamples):
-        py_ids.append(_to_string(samples[i]))
+        py_ids.append(_create_string(samples[i]))
 
+    bgen_free_samples(bgen_file, samples)
     return DataFrame(data=dict(id=py_ids))
 
 
 def _generate_samples(bgen_file):
-    nsamples = get_nsamples(bgen_file)
+    nsamples = bgen_nsamples(bgen_file)
     return DataFrame(data=dict(id=['sample_%d' % i for i in range(nsamples)]))
 
 
@@ -86,16 +88,16 @@ class ReadGenotypeVariant(object):
         variants = []
 
         for i in range(variant_idx, variant_idx + nvariants):
-            vg = open_variant_genotype(self._indexing[0], i)
+            vg = bgen_open_variant_genotype(self._indexing[0], i)
 
-            ncombs = get_ncombs(vg)
+            ncombs = bgen_ncombs(vg)
             ncombss.append(ncombs)
             g = empty((nsamples, ncombs), dtype=float64)
 
             pg = ffi.cast("double *", g.ctypes.data)
-            read_variant_genotype(self._indexing[0], vg, pg)
+            bgen_read_variant_genotype(self._indexing[0], vg, pg)
 
-            close_variant_genotype(self._indexing[0], vg)
+            bgen_close_variant_genotype(self._indexing[0], vg)
 
             variants.append(g)
 
@@ -164,11 +166,11 @@ def read_bgen(filepath, size=50, verbose=True):
         msg += " permission for reading {}.".format(filepath)
         raise RuntimeError(msg)
 
-    bgen_file = open_bgen(filepath)
+    bgen_file = bgen_open(filepath)
     if bgen_file == ffi.NULL:
         raise RuntimeError("Could not read {}.".format(filepath))
 
-    if sample_ids_presence(bgen_file) == 0:
+    if bgen_sample_ids_presence(bgen_file) == 0:
         if verbose:
             print("Sample IDs are not present in this file.")
             msg = "I will generate them on my own:"
@@ -187,7 +189,7 @@ def read_bgen(filepath, size=50, verbose=True):
 
     nsamples = samples.shape[0]
     nvariants = variants.shape[0]
-    close_bgen(bgen_file)
+    bgen_close(bgen_file)
 
     genotype = _read_genotype(indexing, nsamples, nvariants, nalleless, size,
                               verbose)
