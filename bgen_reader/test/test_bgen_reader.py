@@ -62,5 +62,5 @@ def test_bgen_reader_convert_to_dosage():
     filepath = os.path.join(folder, b"example.32bits.bgen")
     bgen = read_bgen(filepath, verbose=False)
     genotype = bgen['genotype']
-    dosage = convert_to_dosage(genotype, verbose=False)
+    dosage = convert_to_dosage(genotype)
     assert_allclose(dosage[0, 1:3], array([1.93575854, 1.91558579]), rtol=1e-5)

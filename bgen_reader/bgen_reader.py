@@ -34,8 +34,12 @@ def _create_string(v):
     return ffi.string(s, v.len).decode()
 
 
-def _read_variants(bgen_file):
-    verbose = 0
+def _read_variants(bgen_file, verbose):
+    if verbose:
+        verbose = 1
+    else:
+        verbose = 0
+
     indexing = ffi.new("struct bgen_vi **")
     nvariants = bgen_nvariants(bgen_file)
     variants = bgen_read_variants_metadata(bgen_file, indexing, verbose)
@@ -59,9 +63,12 @@ def _read_variants(bgen_file):
     return (DataFrame(data=data), indexing)
 
 
-def _read_samples(bgen_file):
+def _read_samples(bgen_file, verbose):
+    if verbose:
+        verbose = 1
+    else:
+        verbose = 0
 
-    verbose = 0
     nsamples = bgen_nsamples(bgen_file)
     samples = bgen_read_samples(bgen_file, verbose)
 
@@ -178,13 +185,9 @@ def read_bgen(filepath, size=50, verbose=True):
             print(msg)
         samples = _generate_samples(bgen_file)
     else:
-        samples = _read_samples(bgen_file)
+        samples = _read_samples(bgen_file, verbose)
 
-    sys.stdout.write("Reading variants (it should take less than a minute)...")
-    sys.stdout.flush()
-    variants, indexing = _read_variants(bgen_file)
-    sys.stdout.write(" done.\n")
-    sys.stdout.flush()
+    variants, indexing = _read_variants(bgen_file, verbose)
     nalleless = variants['nalleles'].values
 
     nsamples = samples.shape[0]
@@ -197,7 +200,7 @@ def read_bgen(filepath, size=50, verbose=True):
     return dict(variants=variants, samples=samples, genotype=genotype)
 
 
-def convert_to_dosage(G, verbose=True):
+def convert_to_dosage(G):
     r"""Convert probabilities to dosage.
 
     Let :math:`\mathbf G` be a three-dimensional array for which
