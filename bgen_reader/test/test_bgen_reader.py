@@ -7,6 +7,7 @@ from bgen_reader import convert_to_dosage, read_bgen, create_metadata_file
 from numpy import array
 from numpy.testing import assert_, assert_allclose, assert_equal
 
+
 try:
     FileNotFoundError
 except NameError:
@@ -72,11 +73,19 @@ def test_bgen_reader_without_metadata():
     assert_(not os.path.exists(filepath + b'.metadata'))
 
 
-def test_bgen_reader_with_wrong_metadata():
+def test_bgen_reader_with_wrong_metadata_file():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"example.32bits.bgen")
     metadata_file = os.path.join(folder, b"wrong.metadata")
     with pytest.raises(RuntimeError):
+        read_bgen(filepath, verbose=False, metadata_file=metadata_file)
+
+
+def test_bgen_reader_with_nonexistent_metadata_file():
+    folder = os.path.dirname(os.path.abspath(__file__)).encode()
+    filepath = os.path.join(folder, b"example.32bits.bgen")
+    metadata_file = os.path.join(folder, b"nonexistent.metadata")
+    with pytest.raises(FileNotFoundError):
         read_bgen(filepath, verbose=False, metadata_file=metadata_file)
 
 
@@ -106,7 +115,3 @@ def test_create_metadata_file():
     create_metadata_file(filepath, metadata_file, verbose=False)
     assert_(os.path.exists(metadata_file))
     os.remove(metadata_file)
-
-
-if __name__ == '__main__':
-    test_bgen_reader_with_wrong_metadata()

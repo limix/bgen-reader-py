@@ -1,10 +1,8 @@
-import errno
-import os
-import stat
-import sys
 from os.path import join, dirname, basename, exists
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
+from ._misc import (make_sure_bytes, create_string,
+                    check_file_exist, check_file_readable)
 
 import dask
 import dask.array as da
@@ -25,17 +23,6 @@ from ._ffi.lib import (bgen_close, bgen_close_variant_genotype,
                        bgen_store_variants_metadata)
 
 dask.set_options(pool=ThreadPool(cpu_count()))
-
-PY3 = sys.version_info >= (3, )
-
-if not PY3:
-    FileNotFoundError = IOError
-
-
-def _create_string(v):
-    s = ffi.new("char[]", v.len)
-    ffi.memmove(s, v.str, v.len)
-    return ffi.string(s, v.len).decode()
 
 
 def _read_variants_from_bgen_file(bfile, index, v):
@@ -69,13 +56,29 @@ def _try_read_variants_metadata_file(bfile, mfilepath, index, v):
     return variants
 
 
-def _read_variants(bgen_file, filepath, metadata_file, verbose):
+def _create_variants_dataframe(variants, nvariants):
+    data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
+    for i in range(nvariants):
+        data['id'].append(create_string(variants[i].id))
+        data['rsid'].append(create_string(variants[i].rsid))
+        data['chrom'].append(create_string(variants[i].chrom))
+
+        data['pos'].append(variants[i].position)
+        nalleles = variants[i].nalleles
+        data['nalleles'].append(nalleles)
+        alleles = []
+        for j in range(nalleles):
+            alleles.append(create_string(variants[i].allele_ids[j]))
+        data['allele_ids'].append(','.join(alleles))
+    return data
+
+
+def _read_variants(bfile, filepath, metadata_file, verbose):
     if verbose:
         v = 1
     else:
         v = 0
 
-    bfile = bgen_file
     mfile = metadata_file
     index = ffi.new("struct bgen_vi **")
     nvariants = bgen_nvariants(bfile)
@@ -92,20 +95,7 @@ def _read_variants(bgen_file, filepath, metadata_file, verbose):
         msg = "Could not read the metadata file {}.".format(mfile)
         raise RuntimeError(msg)
 
-    data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
-    for i in range(nvariants):
-        data['id'].append(_create_string(variants[i].id))
-        data['rsid'].append(_create_string(variants[i].rsid))
-        data['chrom'].append(_create_string(variants[i].chrom))
-
-        data['pos'].append(variants[i].position)
-        nalleles = variants[i].nalleles
-        data['nalleles'].append(nalleles)
-        alleles = []
-        for j in range(nalleles):
-            alleles.append(_create_string(variants[i].allele_ids[j]))
-        data['allele_ids'].append(','.join(alleles))
-
+    data = _create_variants_dataframe(variants, nvariants)
     bgen_free_variants_metadata(bfile, variants)
 
     return (DataFrame(data=data), index)
@@ -120,12 +110,10 @@ def _read_samples(bgen_file, verbose):
     nsamples = bgen_nsamples(bgen_file)
     samples = bgen_read_samples(bgen_file, verbose)
 
-    py_ids = []
-    for i in range(nsamples):
-        py_ids.append(_create_string(samples[i]))
+    ids = [create_string(samples[i]) for i in range(nsamples)]
 
     bgen_free_samples(bgen_file, samples)
-    return DataFrame(data=dict(id=py_ids))
+    return DataFrame(data=dict(id=ids))
 
 
 def _generate_samples(bgen_file):
@@ -186,15 +174,6 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
     return da.concatenate(genotype)
 
 
-def _make_sure_bytes(p):
-    if PY3:
-        try:
-            p = p.encode()
-        except AttributeError:
-            pass
-    return p
-
-
 def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
     r"""Read a given BGEN file.
 
@@ -207,7 +186,15 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
     verbose : bool
         ``True`` to show progress; ``False`` otherwise.
     metadata_file : bool, str
-        If ``True``, it look for
+        If ``True``, it will try to read the variants metadata from the
+        metadata file ``filepath + ".metadata"``. If this is not possible,
+        the variants metadata will be read from the BGEN file itself. If
+        ``filepath + ".metadata"`` does not exist, it will try to create one
+        with the same name to speed up reads. If ``False``, variants metadata
+        will be read only from the BGEN file. If a file path is given instead,
+        it assumes that the specified metadata file is valid and readable and
+        therefore it will read variants metadata from that file only. Defaults
+        to ``True``.
 
     Returns
     -------
@@ -217,41 +204,38 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
         genotype : Array of genotype references.
     """
 
-    filepath = _make_sure_bytes(filepath)
+    filepath = make_sure_bytes(filepath)
 
-    if (not exists(filepath)):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
-                                filepath)
+    check_file_exist(filepath)
+    check_file_readable(filepath)
 
-    if not _group_readable(filepath):
-        msg = "You don't have file"
-        msg += " permission for reading {}.".format(filepath)
-        raise RuntimeError(msg)
+    if metadata_file not in [True, False]:
+        metadata_file = make_sure_bytes(metadata_file)
+        check_file_exist(metadata_file)
+        check_file_readable(metadata_file)
 
-    bgen_file = bgen_open(filepath)
-    if bgen_file == ffi.NULL:
+    bfile = bgen_open(filepath)
+    if bfile == ffi.NULL:
         raise RuntimeError("Could not read {}.".format(filepath))
 
-    if bgen_sample_ids_presence(bgen_file) == 0:
+    if bgen_sample_ids_presence(bfile) == 0:
         if verbose:
             print("Sample IDs are not present in this file.")
             msg = "I will generate them on my own:"
             msg += " sample_1, sample_2, and so on."
             print(msg)
-        samples = _generate_samples(bgen_file)
+        samples = _generate_samples(bfile)
     else:
-        samples = _read_samples(bgen_file, verbose)
+        samples = _read_samples(bfile, verbose)
 
-    variants, indexing = _read_variants(
-        bgen_file, filepath, metadata_file, verbose)
-    nalleless = variants['nalleles'].values
+    variants, index = _read_variants(bfile, filepath, metadata_file, verbose)
+    nalls = variants['nalleles'].values
 
     nsamples = samples.shape[0]
     nvariants = variants.shape[0]
-    bgen_close(bgen_file)
+    bgen_close(bfile)
 
-    genotype = _read_genotype(indexing, nsamples, nvariants, nalleless, size,
-                              verbose)
+    genotype = _read_genotype(index, nsamples, nvariants, nalls, size, verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
 
@@ -262,8 +246,15 @@ def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
     else:
         verbose = 0
 
-    bgen_filepath = _make_sure_bytes(bgen_filepath)
-    metadata_filepath = _make_sure_bytes(metadata_filepath)
+    bgen_filepath = make_sure_bytes(bgen_filepath)
+    metadata_filepath = make_sure_bytes(metadata_filepath)
+
+    check_file_exist(bgen_filepath)
+    check_file_readable(bgen_filepath)
+
+    if exists(metadata_filepath):
+        raise ValueError(
+            "The file {} already exists.".format(metadata_filepath))
 
     e = bgen_create_variants_metadata_file(bgen_filepath, metadata_filepath,
                                            verbose)
@@ -294,21 +285,3 @@ def convert_to_dosage(G):
     ncombs = G.shape[2]
     mult = da.arange(ncombs, chunks=ncombs, dtype=float64)
     return da.sum(mult * G, axis=2)
-
-
-def _group_readable(filepath):
-    st = os.stat(filepath)
-    return bool(st.st_mode & stat.S_IRGRP)
-
-
-def _make_sure_dir_exists(p):
-    p = os.path.dirname(p)
-    if PY3:
-        os.makedirs(p, exist_ok=True)
-    else:
-        try:
-            os.makedirs(p)
-        except OSError as e:
-            t, v, tb = sys.exc_info()
-            if e.errno != 17:
-                raise(t, v, tb)
