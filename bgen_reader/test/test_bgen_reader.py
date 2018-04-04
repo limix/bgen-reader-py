@@ -76,14 +76,8 @@ def test_bgen_reader_with_wrong_metadata():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"example.32bits.bgen")
     metadata_file = os.path.join(folder, b"wrong.metadata")
-    bgen = read_bgen(filepath, verbose=False, metadata_file=metadata_file)
-    # variants = bgen['variants']
-    # samples = bgen['samples']
-    # assert_('genotype' in bgen)
-    # assert_equal(variants.loc[7, 'allele_ids'], "A,G")
-    # n = samples.shape[0]
-    # assert_equal(samples.loc[n - 1, 'id'], 'sample_500')
-    # assert_(not os.path.exists(filepath + b'.metadata'))
+    with pytest.raises(RuntimeError):
+        read_bgen(filepath, verbose=False, metadata_file=metadata_file)
 
 
 def test_bgen_reader_file_notfound():
@@ -112,3 +106,7 @@ def test_create_metadata_file():
     create_metadata_file(filepath, metadata_file, verbose=False)
     assert_(os.path.exists(metadata_file))
     os.remove(metadata_file)
+
+
+if __name__ == '__main__':
+    test_bgen_reader_with_wrong_metadata()

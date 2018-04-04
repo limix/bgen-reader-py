@@ -41,27 +41,30 @@ def _create_string(v):
 
 def _read_variants(bgen_file, verbose, metadata_file):
     if verbose:
-        verbose = 1
+        v = 1
     else:
-        verbose = 0
+        v = 0
 
+    bfile = bgen_file
+    mfile = metadata_file
     index = ffi.new("struct bgen_vi **")
-    nvariants = bgen_nvariants(bgen_file)
+    nvariants = bgen_nvariants(bfile)
 
-    if metadata_file is None:
-        variants = bgen_read_variants_metadata(bgen_file, index, verbose)
-    elif os.path.exists(metadata_file):
-        variants = bgen_load_variants_metadata(
-            bgen_file, metadata_file, index, verbose)
+    if mfile is None:
+        variants = bgen_read_variants_metadata(bfile, index, v)
+    elif os.path.exists(mfile):
+        variants = bgen_load_variants_metadata(bfile, mfile, index, v)
+        if variants == ffi.NULL:
+            msg = "Could not read the metadata file {}.".format(mfile)
+            raise RuntimeError(msg)
     else:
-        variants = bgen_read_variants_metadata(bgen_file, index, verbose)
-        if verbose == 1:
-            print("Creating metadata file {}...".format(metadata_file))
-        e = bgen_store_variants_metadata(
-            bgen_file, variants, index[0], metadata_file)
+        variants = bgen_read_variants_metadata(bfile, index, v)
+        if v == 1:
+            print("Creating metadata file {}...".format(mfile))
+        e = bgen_store_variants_metadata(bfile, variants, index[0], mfile)
         if e != 0:
-            raise RuntimeError(
-                "Error while creating metadata file: {}".format(e))
+            msg = "Error while creating metadata file: {}".format(e)
+            raise RuntimeError(msg)
 
     data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
     for i in range(nvariants):
@@ -77,7 +80,7 @@ def _read_variants(bgen_file, verbose, metadata_file):
             alleles.append(_create_string(variants[i].allele_ids[j]))
         data['allele_ids'].append(','.join(alleles))
 
-    bgen_free_variants_metadata(bgen_file, variants)
+    bgen_free_variants_metadata(bfile, variants)
 
     return (DataFrame(data=data), index)
 
