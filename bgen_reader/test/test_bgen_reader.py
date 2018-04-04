@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import os
 
 import pytest
-from bgen_reader import convert_to_dosage, read_bgen
+from bgen_reader import convert_to_dosage, read_bgen, create_metadata_file
 from numpy import array
 from numpy.testing import assert_, assert_allclose, assert_equal
 
@@ -49,6 +49,15 @@ def test_bgen_reader():
     n = samples.shape[0]
     assert_equal(samples.loc[n - 1, 'id'], 'sample_500')
 
+    bgen = read_bgen(filepath, verbose=False)
+    variants = bgen['variants']
+    assert_('samples' in bgen)
+    assert_('genotype' in bgen)
+
+    assert_equal(variants.loc[0, 'chrom'], '01')
+    if os.path.exists(filepath + b'.metadata'):
+        os.remove(filepath + b'.metadata')
+
 
 def test_bgen_reader_file_notfound():
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
@@ -64,3 +73,15 @@ def test_bgen_reader_convert_to_dosage():
     genotype = bgen['genotype']
     dosage = convert_to_dosage(genotype)
     assert_allclose(dosage[0, 1:3], array([1.93575854, 1.91558579]), rtol=1e-5)
+    if os.path.exists(filepath + b'.metadata'):
+        os.remove(filepath + b'.metadata')
+
+
+def test_create_metadata_file():
+    folder = os.path.dirname(os.path.abspath(__file__))
+    filepath = os.path.join(folder, "example.32bits.bgen")
+    metadata_file = os.path.join(folder, filepath + '.metadata')
+
+    create_metadata_file(filepath, metadata_file, verbose=False)
+    assert_(os.path.exists(metadata_file))
+    os.remove(metadata_file)

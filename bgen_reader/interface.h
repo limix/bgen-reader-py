@@ -39,3 +39,12 @@ void bgen_read_variant_genotype(struct bgen_vi *index, struct bgen_vg *vg,
                                 double *probabilities);
 int bgen_ncombs(const struct bgen_vg *vg);
 void bgen_close_variant_genotype(struct bgen_vi *index, struct bgen_vg *vg);
+
+int bgen_store_variants_metadata(const struct bgen_file *bgen,
+                                 struct bgen_var *variants, struct bgen_vi *vi,
+                                 const char *filepath);
+struct bgen_var *bgen_load_variants_metadata(const struct bgen_file *bgen,
+                                             const char *filepath,
+                                             struct bgen_vi **vi, int verbose);
+int bgen_create_variants_metadata_file(const char *bgen_fp, const char *vi_fp,
+                                       int verbose);

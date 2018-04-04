@@ -2,6 +2,8 @@ import errno
 import os
 import stat
 import sys
+import platform
+from os.path import join
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
 
@@ -18,7 +20,10 @@ from ._ffi.lib import (bgen_close, bgen_close_variant_genotype,
                        bgen_ncombs, bgen_nsamples, bgen_nvariants, bgen_open,
                        bgen_open_variant_genotype, bgen_read_samples,
                        bgen_read_variant_genotype, bgen_read_variants_metadata,
-                       bgen_sample_ids_presence)
+                       bgen_sample_ids_presence,
+                       bgen_create_variants_metadata_file,
+                       bgen_load_variants_metadata,
+                       bgen_store_variants_metadata)
 
 dask.set_options(pool=ThreadPool(cpu_count()))
 
@@ -34,15 +39,29 @@ def _create_string(v):
     return ffi.string(s, v.len).decode()
 
 
-def _read_variants(bgen_file, verbose):
+def _read_variants(bgen_file, verbose, metadata_file):
     if verbose:
         verbose = 1
     else:
         verbose = 0
 
-    indexing = ffi.new("struct bgen_vi **")
+    index = ffi.new("struct bgen_vi **")
     nvariants = bgen_nvariants(bgen_file)
-    variants = bgen_read_variants_metadata(bgen_file, indexing, verbose)
+
+    if metadata_file is None:
+        variants = bgen_read_variants_metadata(bgen_file, index, verbose)
+    elif os.path.exists(metadata_file):
+        variants = bgen_load_variants_metadata(
+            bgen_file, metadata_file, index, verbose)
+    else:
+        variants = bgen_read_variants_metadata(bgen_file, index, verbose)
+        if verbose == 1:
+            print("Creating metadata file {}...".format(metadata_file))
+        e = bgen_store_variants_metadata(
+            bgen_file, variants, index[0], metadata_file)
+        if e != 0:
+            raise RuntimeError(
+                "Error while creating metadata file: {}".format(e))
 
     data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
     for i in range(nvariants):
@@ -60,7 +79,7 @@ def _read_variants(bgen_file, verbose):
 
     bgen_free_variants_metadata(bgen_file, variants)
 
-    return (DataFrame(data=data), indexing)
+    return (DataFrame(data=data), index)
 
 
 def _read_samples(bgen_file, verbose):
@@ -138,7 +157,16 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
     return da.concatenate(genotype)
 
 
-def read_bgen(filepath, size=50, verbose=True):
+def _make_sure_bytes(p):
+    if PY3:
+        try:
+            p = p.encode()
+        except AttributeError:
+            pass
+    return p
+
+
+def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
     r"""Read a given BGEN file.
 
     Args
@@ -149,6 +177,8 @@ def read_bgen(filepath, size=50, verbose=True):
         Chunk size in megabytes. Defaults to ``50``.
     verbose : bool
         ``True`` to show progress; ``False`` otherwise.
+    metadata_file : bool, str
+        If ``True``, it look for
 
     Returns
     -------
@@ -158,11 +188,7 @@ def read_bgen(filepath, size=50, verbose=True):
         genotype : Array of genotype references.
     """
 
-    if PY3:
-        try:
-            filepath = filepath.encode()
-        except AttributeError:
-            pass
+    filepath = _make_sure_bytes(filepath)
 
     if (not os.path.exists(filepath)):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
@@ -172,6 +198,8 @@ def read_bgen(filepath, size=50, verbose=True):
         msg = "You don't have file"
         msg += " permission for reading {}.".format(filepath)
         raise RuntimeError(msg)
+
+    metadata_file = _infer_metadata_file(filepath, metadata_file)
 
     bgen_file = bgen_open(filepath)
     if bgen_file == ffi.NULL:
@@ -187,7 +215,7 @@ def read_bgen(filepath, size=50, verbose=True):
     else:
         samples = _read_samples(bgen_file, verbose)
 
-    variants, indexing = _read_variants(bgen_file, verbose)
+    variants, indexing = _read_variants(bgen_file, verbose, metadata_file)
     nalleless = variants['nalleles'].values
 
     nsamples = samples.shape[0]
@@ -198,6 +226,22 @@ def read_bgen(filepath, size=50, verbose=True):
                               verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
+
+
+def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
+    if verbose:
+        verbose = 1
+    else:
+        verbose = 0
+
+    bgen_filepath = _make_sure_bytes(bgen_filepath)
+    metadata_filepath = _make_sure_bytes(metadata_filepath)
+
+    e = bgen_create_variants_metadata_file(bgen_filepath, metadata_filepath,
+                                           verbose)
+
+    if e != 0:
+        raise RuntimeError("Error while creating metadata file: {}".format(e))
 
 
 def convert_to_dosage(G):
@@ -227,3 +271,52 @@ def convert_to_dosage(G):
 def _group_readable(filepath):
     st = os.stat(filepath)
     return bool(st.st_mode & stat.S_IRGRP)
+
+
+def _make_sure_dir_exists(p):
+    p = os.path.dirname(p)
+    if PY3:
+        os.makedirs(p, exist_ok=True)
+    else:
+        try:
+            os.makedirs(p)
+        except OSError as e:
+            t, v, tb = sys.exc_info()
+            if e.errno != 17:
+                raise(t, v, tb)
+
+
+def _infer_metadata_file(bgen_file, metadata_file):
+    if metadata_file is False:
+        return None
+
+    if metadata_file is not True:
+        return metadata_file
+
+    filename = os.path.basename(bgen_file) + b".metadata"
+    opts = [join(os.path.dirname(bgen_file), filename)]
+
+    if platform.system() == 'Windows':
+        folder = join(os.getenv('LOCALAPPDATA'), 'bgen')
+    else:
+        folder = join(os.path.expanduser('~'), '.cache', 'bgen')
+
+    folder = _make_sure_bytes(folder)
+    opts += [join(folder, filename)]
+
+    for opt in opts:
+        if os.path.exists(opt):
+            return opt
+
+    exceptions = []
+    for opt in opts:
+        try:
+            _make_sure_dir_exists(opt)
+        except Exception as e:
+            exceptions += [e]
+        else:
+            return opt
+
+    msg = "Could not infer a index file. Possible reasons:\n"
+    msg += '\n'.join(exceptions)
+    raise RuntimeError(msg)
