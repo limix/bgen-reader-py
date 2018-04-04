@@ -2,8 +2,7 @@ import errno
 import os
 import stat
 import sys
-import platform
-from os.path import join
+from os.path import join, dirname, basename, exists
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
 
@@ -39,7 +38,38 @@ def _create_string(v):
     return ffi.string(s, v.len).decode()
 
 
-def _read_variants(bgen_file, verbose, metadata_file):
+def _read_variants_from_bgen_file(bfile, index, v):
+    variants = bgen_read_variants_metadata(bfile, index, v)
+    if variants == ffi.NULL:
+        raise RuntimeError("Could not read variants metadata.")
+    return variants
+
+
+def _try_read_variants_metadata_file(bfile, mfilepath, index, v):
+    if exists(mfilepath):
+        variants = bgen_load_variants_metadata(bfile, mfilepath, index, v)
+        if variants == ffi.NULL:
+            if v == 1:
+                msg = "Warning: could not read variants"
+                msg += " metadata from {}.".format(mfilepath)
+                print(msg)
+            variants = bgen_read_variants_metadata(bfile, index, v)
+    else:
+        variants = bgen_read_variants_metadata(bfile, index, v)
+
+    if variants == ffi.NULL:
+        raise RuntimeError("Could not read variants metadata.")
+
+    if not exists(mfilepath):
+        e = bgen_store_variants_metadata(bfile, variants, index[0], mfilepath)
+        if e != 0 and v == 1:
+            msg = "Warning: could not create"
+            msg += " the metadata file {}.".format(mfilepath)
+            print(msg)
+    return variants
+
+
+def _read_variants(bgen_file, filepath, metadata_file, verbose):
     if verbose:
         v = 1
     else:
@@ -50,21 +80,17 @@ def _read_variants(bgen_file, verbose, metadata_file):
     index = ffi.new("struct bgen_vi **")
     nvariants = bgen_nvariants(bfile)
 
-    if mfile is None:
-        variants = bgen_read_variants_metadata(bfile, index, v)
-    elif os.path.exists(mfile):
-        variants = bgen_load_variants_metadata(bfile, mfile, index, v)
-        if variants == ffi.NULL:
-            msg = "Could not read the metadata file {}.".format(mfile)
-            raise RuntimeError(msg)
+    if mfile is False:
+        variants = _read_variants_from_bgen_file(bfile, index, v)
+    elif mfile is True:
+        mfile = join(dirname(filepath), basename(filepath) + b".metadata")
+        variants = _try_read_variants_metadata_file(bfile, mfile, index, v)
     else:
-        variants = bgen_read_variants_metadata(bfile, index, v)
-        if v == 1:
-            print("Creating metadata file {}...".format(mfile))
-        e = bgen_store_variants_metadata(bfile, variants, index[0], mfile)
-        if e != 0:
-            msg = "Error while creating metadata file: {}".format(e)
-            raise RuntimeError(msg)
+        variants = bgen_load_variants_metadata(bfile, mfile, index, v)
+
+    if variants == ffi.NULL:
+        msg = "Could not read the metadata file {}.".format(mfile)
+        raise RuntimeError(msg)
 
     data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
     for i in range(nvariants):
@@ -193,7 +219,7 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
 
     filepath = _make_sure_bytes(filepath)
 
-    if (not os.path.exists(filepath)):
+    if (not exists(filepath)):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                                 filepath)
 
@@ -201,8 +227,6 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
         msg = "You don't have file"
         msg += " permission for reading {}.".format(filepath)
         raise RuntimeError(msg)
-
-    metadata_file = _infer_metadata_file(filepath, metadata_file)
 
     bgen_file = bgen_open(filepath)
     if bgen_file == ffi.NULL:
@@ -218,7 +242,8 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
     else:
         samples = _read_samples(bgen_file, verbose)
 
-    variants, indexing = _read_variants(bgen_file, verbose, metadata_file)
+    variants, indexing = _read_variants(
+        bgen_file, filepath, metadata_file, verbose)
     nalleless = variants['nalleles'].values
 
     nsamples = samples.shape[0]
@@ -287,39 +312,3 @@ def _make_sure_dir_exists(p):
             t, v, tb = sys.exc_info()
             if e.errno != 17:
                 raise(t, v, tb)
-
-
-def _infer_metadata_file(bgen_file, metadata_file):
-    if metadata_file is False:
-        return None
-
-    if metadata_file is not True:
-        return metadata_file
-
-    filename = os.path.basename(bgen_file) + b".metadata"
-    opts = [join(os.path.dirname(bgen_file), filename)]
-
-    if platform.system() == 'Windows':
-        folder = join(os.getenv('LOCALAPPDATA'), 'bgen')
-    else:
-        folder = join(os.path.expanduser('~'), '.cache', 'bgen')
-
-    folder = _make_sure_bytes(folder)
-    opts += [join(folder, filename)]
-
-    for opt in opts:
-        if os.path.exists(opt):
-            return opt
-
-    exceptions = []
-    for opt in opts:
-        try:
-            _make_sure_dir_exists(opt)
-        except Exception as e:
-            exceptions += [e]
-        else:
-            return opt
-
-    msg = "Could not infer a index file. Possible reasons:\n"
-    msg += '\n'.join(exceptions)
-    raise RuntimeError(msg)
