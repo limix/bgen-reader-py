@@ -1,7 +1,6 @@
 cffi>=1.11.4
 dask>=0.16.1
 pandas>=0.22.0
-pypandoc>=1.4.0
 pytest-pep8>=1.0.6
 pytest-runner>=3.0
 pytest>=3.3.2
