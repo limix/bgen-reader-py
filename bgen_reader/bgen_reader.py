@@ -177,8 +177,8 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
 def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
     r"""Read a given BGEN file.
 
-    Args
-    ----
+    Parameters
+    ----------
     filepath : str
         A BGEN file path.
     size : float
@@ -241,6 +241,20 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
 
 
 def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
+    r"""Create variants metadata file.
+
+    Variants metadata file helps speed up subsequent reads of the associated
+    BGEN file.
+
+    Parameters
+    ----------
+    bgen_filepath : str
+        BGEN file path.
+    metadata_file : bool, str
+        Metadata file path.
+    verbose : bool
+        ``True`` to show progress; ``False`` otherwise.
+    """
     if verbose:
         verbose = 1
     else:
@@ -272,8 +286,8 @@ def convert_to_dosage(G):
     This function will return a bi-dimensional array ``X`` such that
     :math:`X_{i, j}` is the dosage of the `j`-th sample for the `i`-th locus.
 
-    Args
-    ----
+    Parameters
+    ----------
     G : array_like
         A three-dimensional array.
 
