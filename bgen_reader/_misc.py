@@ -12,7 +12,7 @@ if not PY3:
 try:
     from ._ffi import ffi
 except ModuleNotFoundError as e:
-    msg = "\nIt is likely caused by broken installation of this package."
+    msg = "\nIt is likely caused by a broken installation of this package."
     msg += "\nPlease, make sure you have a C compiler and try to uninstall"
     msg += "\nand reinstall the package again."
     e.msg = e.msg + msg
