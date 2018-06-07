@@ -66,9 +66,8 @@ def _try_read_variants_metadata_file(bfile, mfilepath, index, v):
 
     if not exists(mfilepath):
         if access("/path/to/folder", W_OK):
-            e = bgen_store_variants_metadata(
-                bfile, variants, index[0], mfilepath
-            )
+            e = bgen_store_variants_metadata(bfile, variants, index[0],
+                                             mfilepath)
             if e != 0 and v == 1:
                 print(errmsg)
         elif v == 1:
@@ -167,7 +166,7 @@ class ReadGenotypeVariant(object):
         G = zeros((nvariants, nsamples, max(ncombss)), dtype=float64)
 
         for i in range(0, nvariants):
-            G[i, :, : ncombss[i]] = variants[i]
+            G[i, :, :ncombss[i]] = variants[i]
 
         return G
 
@@ -183,7 +182,7 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
 
     for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
         size = min(step, nvariants - i)
-        tup = nsamples, nalleless[i : i + size], i, size
+        tup = nsamples, nalleless[i:i + size], i, size
         delayed_kwds = dict(pure=True, traverse=False)
         g = delayed(rgv, **delayed_kwds)(*tup)
         # TODO: THIS IS A HACK
@@ -288,12 +287,10 @@ def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
 
     if exists(metadata_filepath):
         raise ValueError(
-            "The file {} already exists.".format(metadata_filepath)
-        )
+            "The file {} already exists.".format(metadata_filepath))
 
-    e = bgen_create_variants_metadata_file(
-        bgen_filepath, metadata_filepath, verbose
-    )
+    e = bgen_create_variants_metadata_file(bgen_filepath, metadata_filepath,
+                                           verbose)
 
     if e != 0:
         raise RuntimeError("Error while creating metadata file: {}".format(e))
