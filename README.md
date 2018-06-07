@@ -1,6 +1,6 @@
 # bgen-reader
 
-[![Travis](https://img.shields.io/travis/limix/bgen-reader-py.svg?style=flat-square&label=linux%20%2F%20macos%20build)](https://travis-ci.org/limix/bgen-reader-py) [![AppVeyor](https://img.shields.io/appveyor/ci/Horta/bgen-reader-py.svg?style=flat-square&label=windows%20build)](https://ci.appveyor.com/project/Horta/bgen-reader-py) [![Gitter](https://img.shields.io/gitter/room/limix/bgen-reader-py.js.svg?style=flat-square)](https://gitter.im/bgen-reader-py/Lobby)
+[![Travis](https://img.shields.io/travis/limix/bgen-reader-py.svg?style=flat-square&label=linux%20%2F%20macos%20build)](https://travis-ci.org/limix/bgen-reader-py) [![AppVeyor](https://img.shields.io/appveyor/ci/Horta/bgen-reader-py.svg?style=flat-square&label=windows%20build)](https://ci.appveyor.com/project/Horta/bgen-reader-py)
 
 A [BGEN file format](http://www.well.ox.ac.uk/~gav/bgen_format/) reader.
 
