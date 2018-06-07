@@ -1,9 +1,10 @@
 include bgen_reader/interface.h
 include bgen_reader/test/example.32bits.bgen
+include bgen_reader/test/wrong.metadata
 include build_ext.py
-include libpath.py
 include example/example.bgen
 include example/example.py
+include libpath.py
 include LICENSE.md
 include README.md
 include version.py
