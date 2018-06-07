@@ -2,10 +2,21 @@ import errno
 import stat
 import sys
 import os
-from ._ffi import ffi
 from os.path import exists
 
-PY3 = sys.version_info >= (3, )
+PY3 = sys.version_info >= (3,)
+
+if not PY3:
+    ModuleNotFoundError = ImportError
+
+try:
+    from ._ffi import ffi
+except ModuleNotFoundError as e:
+    msg = "\nIt is likely caused by broken installation of this package."
+    msg += "\nPlease, make sure you have a C compiler and try to uninstall"
+    msg += "\nand reinstall the package again."
+    e.msg = e.msg + msg
+    raise e
 
 if not PY3:
     FileNotFoundError = IOError
@@ -32,9 +43,10 @@ def create_string(v):
 
 
 def check_file_exist(filepath):
-    if (not exists(filepath)):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
-                                filepath)
+    if not exists(filepath):
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), filepath
+        )
 
 
 def check_file_readable(filepath):
