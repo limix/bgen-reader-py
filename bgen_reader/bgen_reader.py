@@ -1,8 +1,13 @@
+from os import access, W_OK
 from os.path import join, dirname, basename, exists
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
-from ._misc import (make_sure_bytes, create_string,
-                    check_file_exist, check_file_readable)
+from ._misc import (
+    make_sure_bytes,
+    create_string,
+    check_file_exist,
+    check_file_readable,
+)
 
 import dask
 import dask.array as da
@@ -12,15 +17,24 @@ from pandas import DataFrame
 from tqdm import tqdm
 
 from ._ffi import ffi
-from ._ffi.lib import (bgen_close, bgen_close_variant_genotype,
-                       bgen_free_samples, bgen_free_variants_metadata,
-                       bgen_ncombs, bgen_nsamples, bgen_nvariants, bgen_open,
-                       bgen_open_variant_genotype, bgen_read_samples,
-                       bgen_read_variant_genotype, bgen_read_variants_metadata,
-                       bgen_sample_ids_presence,
-                       bgen_create_variants_metadata_file,
-                       bgen_load_variants_metadata,
-                       bgen_store_variants_metadata)
+from ._ffi.lib import (
+    bgen_close,
+    bgen_close_variant_genotype,
+    bgen_free_samples,
+    bgen_free_variants_metadata,
+    bgen_ncombs,
+    bgen_nsamples,
+    bgen_nvariants,
+    bgen_open,
+    bgen_open_variant_genotype,
+    bgen_read_samples,
+    bgen_read_variant_genotype,
+    bgen_read_variants_metadata,
+    bgen_sample_ids_presence,
+    bgen_create_variants_metadata_file,
+    bgen_load_variants_metadata,
+    bgen_store_variants_metadata,
+)
 
 dask.set_options(pool=ThreadPool(cpu_count()))
 
@@ -47,29 +61,35 @@ def _try_read_variants_metadata_file(bfile, mfilepath, index, v):
     if variants == ffi.NULL:
         raise RuntimeError("Could not read variants metadata.")
 
+    errmsg = "Warning: could not create"
+    errmsg += " the metadata file {}.".format(mfilepath)
+
     if not exists(mfilepath):
-        e = bgen_store_variants_metadata(bfile, variants, index[0], mfilepath)
-        if e != 0 and v == 1:
-            msg = "Warning: could not create"
-            msg += " the metadata file {}.".format(mfilepath)
-            print(msg)
+        if access("/path/to/folder", W_OK):
+            e = bgen_store_variants_metadata(
+                bfile, variants, index[0], mfilepath
+            )
+            if e != 0 and v == 1:
+                print(errmsg)
+        elif v == 1:
+            print(errmsg)
     return variants
 
 
 def _create_variants_dataframe(variants, nvariants):
     data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
     for i in range(nvariants):
-        data['id'].append(create_string(variants[i].id))
-        data['rsid'].append(create_string(variants[i].rsid))
-        data['chrom'].append(create_string(variants[i].chrom))
+        data["id"].append(create_string(variants[i].id))
+        data["rsid"].append(create_string(variants[i].rsid))
+        data["chrom"].append(create_string(variants[i].chrom))
 
-        data['pos'].append(variants[i].position)
+        data["pos"].append(variants[i].position)
         nalleles = variants[i].nalleles
-        data['nalleles'].append(nalleles)
+        data["nalleles"].append(nalleles)
         alleles = []
         for j in range(nalleles):
             alleles.append(create_string(variants[i].allele_ids[j]))
-        data['allele_ids'].append(','.join(alleles))
+        data["allele_ids"].append(",".join(alleles))
     return data
 
 
@@ -118,7 +138,7 @@ def _read_samples(bgen_file, verbose):
 
 def _generate_samples(bgen_file):
     nsamples = bgen_nsamples(bgen_file)
-    return DataFrame(data=dict(id=['sample_%d' % i for i in range(nsamples)]))
+    return DataFrame(data=dict(id=["sample_%d" % i for i in range(nsamples)]))
 
 
 class ReadGenotypeVariant(object):
@@ -147,7 +167,7 @@ class ReadGenotypeVariant(object):
         G = zeros((nvariants, nsamples, max(ncombss)), dtype=float64)
 
         for i in range(0, nvariants):
-            G[i, :, :ncombss[i]] = variants[i]
+            G[i, :, : ncombss[i]] = variants[i]
 
         return G
 
@@ -159,11 +179,11 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
 
     c = int((1024 * 1024 * size / 8) // nsamples)
     step = min(c, nvariants)
-    tqdm_kwds = dict(desc='Variant mapping', disable=not verbose)
+    tqdm_kwds = dict(desc="Variant mapping", disable=not verbose)
 
     for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
         size = min(step, nvariants - i)
-        tup = nsamples, nalleless[i:i + size], i, size
+        tup = nsamples, nalleless[i : i + size], i, size
         delayed_kwds = dict(pure=True, traverse=False)
         g = delayed(rgv, **delayed_kwds)(*tup)
         # TODO: THIS IS A HACK
@@ -229,7 +249,7 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
         samples = _read_samples(bfile, verbose)
 
     variants, index = _read_variants(bfile, filepath, metadata_file, verbose)
-    nalls = variants['nalleles'].values
+    nalls = variants["nalleles"].values
 
     nsamples = samples.shape[0]
     nvariants = variants.shape[0]
@@ -268,10 +288,12 @@ def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
 
     if exists(metadata_filepath):
         raise ValueError(
-            "The file {} already exists.".format(metadata_filepath))
+            "The file {} already exists.".format(metadata_filepath)
+        )
 
-    e = bgen_create_variants_metadata_file(bgen_filepath, metadata_filepath,
-                                           verbose)
+    e = bgen_create_variants_metadata_file(
+        bgen_filepath, metadata_filepath, verbose
+    )
 
     if e != 0:
         raise RuntimeError("Error while creating metadata file: {}".format(e))
