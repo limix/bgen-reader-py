@@ -28,11 +28,10 @@ def _group_readable(filepath):
 
 
 def make_sure_bytes(p):
-    if PY3:
-        try:
-            p = p.encode()
-        except AttributeError:
-            pass
+    try:
+        p = p.encode()
+    except AttributeError:
+        pass
     return p
 
 
