@@ -15,7 +15,11 @@ from dask.delayed import delayed
 from numpy import empty, float64, zeros, asarray
 from pandas import DataFrame
 from tqdm import tqdm
-from functools import lru_cache
+
+try:
+    from functools import lru_cache
+except ImportError:
+    from ._pylru import lrudecorator as lru_cache
 
 from ._ffi import ffi
 from ._ffi.lib import (
@@ -142,7 +146,7 @@ def _generate_samples(bgen_file):
     return DataFrame(data=dict(id=["sample_%d" % i for i in range(nsamples)]))
 
 
-@lru_cache(maxsize=1)
+@lru_cache(1)
 def _read_genotype_variant(
     indexing, nsamples, nalleles, variant_idx, nvariants
 ):

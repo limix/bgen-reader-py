@@ -1,7 +1,9 @@
 os: linux
 language: python
 sudo: required
-python: 3.6
+python:
+  - 2.7
+  - 3.6
 env:
 - PKG_NAME=bgen_reader
 addons:
