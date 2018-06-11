@@ -12,7 +12,7 @@ from ._misc import (
 import dask
 import dask.array as da
 from dask.delayed import delayed
-from numpy import empty, float64, zeros, asarray
+from numpy import float64, nan, full, inf
 from pandas import DataFrame
 from tqdm import tqdm
 
@@ -147,11 +147,9 @@ def _generate_samples(bgen_file):
 
 
 @lru_cache(1)
-def _read_genotype_variant(
-    indexing, nsamples, nalleles, variant_idx, nvariants
-):
+def _read_genotype_variant(indexing, nsamples, variant_idx, nvariants):
 
-    nalleles = asarray(nalleles, int)
+    max_ncombs = -inf
     ncombss = []
     variants = []
 
@@ -159,8 +157,10 @@ def _read_genotype_variant(
         vg = bgen_open_variant_genotype(indexing[0], i)
 
         ncombs = bgen_ncombs(vg)
+        max_ncombs = max(max_ncombs, ncombs)
         ncombss.append(ncombs)
-        g = empty((nsamples, ncombs), dtype=float64)
+
+        g = full((nsamples, ncombs), nan, dtype=float64)
 
         pg = ffi.cast("double *", g.ctypes.data)
         bgen_read_variant_genotype(indexing[0], vg, pg)
@@ -169,7 +169,7 @@ def _read_genotype_variant(
 
         variants.append(g)
 
-    G = zeros((nvariants, nsamples, max(ncombss)), dtype=float64)
+    G = full((nvariants, nsamples, max_ncombs), nan, dtype=float64)
 
     for i in range(0, nvariants):
         G[i, :, : ncombss[i]] = variants[i]
@@ -188,10 +188,9 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
     delcall = delayed(_read_genotype_variant, pure=True, traverse=False)
     for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
         size = min(step, nvariants - i)
-        tup = indexing, nsamples, tuple(nalleless[i : i + size]), i, size
-        # TODO: THIS IS A HACK
-        ncombs = 3
-        g = da.from_delayed(delcall(*tup), (size, nsamples, ncombs), float64)
+        tup = indexing, nsamples, i, size
+        shape = size, nsamples, nan
+        g = da.from_delayed(delcall(*tup), shape, float64)
         genotype.append(g)
 
     return da.concatenate(genotype)
@@ -300,27 +299,3 @@ def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
 
     if e != 0:
         raise RuntimeError("Error while creating metadata file: {}".format(e))
-
-
-def convert_to_dosage(G):
-    r"""Convert probabilities to dosage.
-
-    Let :math:`\mathbf G` be a three-dimensional array for which
-    :math:`G_{i, j, l}` is the probability of the `j`-th sample having the
-    `l`-th genotype (or haplotype) for the `i`-th locus.
-    This function will return a bi-dimensional array ``X`` such that
-    :math:`X_{i, j}` is the dosage of the `j`-th sample for the `i`-th locus.
-
-    Parameters
-    ----------
-    G : array_like
-        A three-dimensional array.
-
-    Returns
-    -------
-    dask_array
-        Matrix representing dosages.
-    """
-    ncombs = G.shape[2]
-    mult = da.arange(ncombs, chunks=ncombs, dtype=float64)
-    return da.sum(mult * G, axis=2)

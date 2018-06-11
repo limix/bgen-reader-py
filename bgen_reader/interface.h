@@ -37,7 +37,13 @@ struct bgen_vg *bgen_open_variant_genotype(struct bgen_vi *index,
                                            size_t variant_idx);
 void bgen_read_variant_genotype(struct bgen_vi *index, struct bgen_vg *vg,
                                 double *probabilities);
+int bgen_nalleles(const struct bgen_vg *vg);
+int bgen_missing(const struct bgen_vg *vg, size_t index);
+int bgen_ploidy(const struct bgen_vg *vg, size_t index);
+int bgen_min_ploidy(const struct bgen_vg *vg);
+int bgen_max_ploidy(const struct bgen_vg *vg);
 int bgen_ncombs(const struct bgen_vg *vg);
+int bgen_phased(const struct bgen_vg *vg);
 void bgen_close_variant_genotype(struct bgen_vi *index, struct bgen_vg *vg);
 
 int bgen_store_variants_metadata(const struct bgen_file *bgen,
