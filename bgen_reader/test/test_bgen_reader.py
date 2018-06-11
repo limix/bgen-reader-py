@@ -61,6 +61,11 @@ def test_bgen_reader_variants_info():
     assert_("genotype" in bgen)
 
     assert_equal(variants.loc[0, "chrom"], "01")
+    G = bgen["genotype"].compute()
+    assert_(all(isnan(G[0, 0, :])))
+    a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
+    assert_allclose(G[0, 1, :], a)
+
     if os.path.exists(filepath + b".metadata"):
         os.remove(filepath + b".metadata")
 
@@ -93,12 +98,28 @@ def test_bgen_reader_phased_genotype():
     n = samples.shape[0]
     assert_equal(samples.loc[n - 1, "id"], "sample_3")
 
+    G = bgen["genotype"].compute()
+    a = [1.0, 0.0, 1.0, 0.0]
+    assert_allclose(G[0, 0, :], a)
+    k = len(variants)
+    n = len(samples)
+    a = [1.0, 0.0, 0.0, 1.0]
+    assert_allclose(G[k - 1, n - 1, :], a)
+
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"]
     assert_("samples" in bgen)
     assert_("genotype" in bgen)
 
     assert_equal(variants.loc[0, "chrom"], "1")
+    G = bgen["genotype"].compute()
+    a = [1.0, 0.0, 1.0, 0.0]
+    assert_allclose(G[0, 0, :], a)
+    k = len(variants)
+    n = len(samples)
+    a = [1.0, 0.0, 0.0, 1.0]
+    assert_allclose(G[k - 1, n - 1, :], a)
+
     if os.path.exists(filepath + b".metadata"):
         os.remove(filepath + b".metadata")
 
