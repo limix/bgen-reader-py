@@ -9,8 +9,9 @@ Bgen file format reader.
 
 from __future__ import absolute_import as _
 
-from .bgen_reader import create_metadata_file, read_bgen
-from .testit import test
+from ._reader import read_bgen
+from ._metadata import create_metadata_file
+from ._testit import test
 
 __version__ = "2.0.0"
 

@@ -1,5 +1,4 @@
-from os import access, W_OK
-from os.path import join, dirname, basename, exists
+from os.path import join, dirname, basename
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
 from ._misc import (
@@ -15,6 +14,7 @@ from dask.delayed import delayed
 from numpy import float64, nan, full, inf
 from pandas import DataFrame
 from tqdm import tqdm
+from ._metadata import try_read_variants_metadata_file
 
 try:
     from functools import lru_cache
@@ -36,9 +36,7 @@ from ._ffi.lib import (
     bgen_read_variant_genotype,
     bgen_read_variants_metadata,
     bgen_sample_ids_presence,
-    bgen_create_variants_metadata_file,
     bgen_load_variants_metadata,
-    bgen_store_variants_metadata,
 )
 
 dask.set_options(pool=ThreadPool(cpu_count()))
@@ -48,36 +46,6 @@ def _read_variants_from_bgen_file(bfile, index, v):
     variants = bgen_read_variants_metadata(bfile, index, v)
     if variants == ffi.NULL:
         raise RuntimeError("Could not read variants metadata.")
-    return variants
-
-
-def _try_read_variants_metadata_file(bfile, mfilepath, index, v):
-    if exists(mfilepath):
-        variants = bgen_load_variants_metadata(bfile, mfilepath, index, v)
-        if variants == ffi.NULL:
-            if v == 1:
-                msg = "Warning: could not read variants"
-                msg += " metadata from {}.".format(mfilepath)
-                print(msg)
-            variants = bgen_read_variants_metadata(bfile, index, v)
-    else:
-        variants = bgen_read_variants_metadata(bfile, index, v)
-
-    if variants == ffi.NULL:
-        raise RuntimeError("Could not read variants metadata.")
-
-    errmsg = "Warning: could not create"
-    errmsg += " the metadata file {}.".format(mfilepath)
-
-    if not exists(mfilepath):
-        if access("/path/to/folder", W_OK):
-            e = bgen_store_variants_metadata(
-                bfile, variants, index[0], mfilepath
-            )
-            if e != 0 and v == 1:
-                print(errmsg)
-        elif v == 1:
-            print(errmsg)
     return variants
 
 
@@ -112,7 +80,7 @@ def _read_variants(bfile, filepath, metadata_file, verbose):
         variants = _read_variants_from_bgen_file(bfile, index, v)
     elif mfile is True:
         mfile = join(dirname(filepath), basename(filepath) + b".metadata")
-        variants = _try_read_variants_metadata_file(bfile, mfile, index, v)
+        variants = try_read_variants_metadata_file(bfile, mfile, index, v)
     else:
         variants = bgen_load_variants_metadata(bfile, mfile, index, v)
 
@@ -260,42 +228,3 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
     genotype = _read_genotype(index, nsamples, nvariants, nalls, size, verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
-
-
-def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
-    r"""Create variants metadata file.
-
-    Variants metadata file helps speed up subsequent reads of the associated
-    BGEN file.
-
-    Parameters
-    ----------
-    bgen_filepath : str
-        BGEN file path.
-    metadata_file : bool, str
-        Metadata file path.
-    verbose : bool
-        ``True`` to show progress; ``False`` otherwise.
-    """
-    if verbose:
-        verbose = 1
-    else:
-        verbose = 0
-
-    bgen_filepath = make_sure_bytes(bgen_filepath)
-    metadata_filepath = make_sure_bytes(metadata_filepath)
-
-    check_file_exist(bgen_filepath)
-    check_file_readable(bgen_filepath)
-
-    if exists(metadata_filepath):
-        raise ValueError(
-            "The file {} already exists.".format(metadata_filepath)
-        )
-
-    e = bgen_create_variants_metadata_file(
-        bgen_filepath, metadata_filepath, verbose
-    )
-
-    if e != 0:
-        raise RuntimeError("Error while creating metadata file: {}".format(e))
