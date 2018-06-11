@@ -1,6 +1,4 @@
 from os.path import join, dirname, basename
-from multiprocessing import cpu_count
-from multiprocessing.pool import ThreadPool
 from ._misc import (
     make_sure_bytes,
     create_string,
@@ -8,7 +6,6 @@ from ._misc import (
     check_file_readable,
 )
 
-import dask
 import dask.array as da
 from dask.delayed import delayed
 from numpy import float64, nan, full, inf
@@ -38,8 +35,6 @@ from ._ffi.lib import (
     bgen_sample_ids_presence,
     bgen_load_variants_metadata,
 )
-
-dask.set_options(pool=ThreadPool(cpu_count()))
 
 
 def _read_variants_from_bgen_file(bfile, index, v):

@@ -16,22 +16,21 @@ as well as their optional compressed formats.
 
 ## Install
 
-It requires the bgen C library which can be installed via [conda](https://conda.io/docs/)
+The recommended way to install this package is via [conda](https://conda.io/docs/)
 
 ```bash
-conda install -c conda-forge bgen
+conda install -c conda-forge bgen-reader
 ```
 
-Alternatively, the [bgen-reader repository](https://github.com/limix/bgen) provides instructions for
-manual installation.
-
-Once bgen C library is installed, simply enter
+Alternatively, it can be installed using the pip command
 
 ```bash
 pip install bgen-reader
 ```
 
-from the command-line.
+However, this method will require that
+the [bgen](https://github.com/limix/bgen) C library has
+been installed before.
 
 ## Usage
 
