@@ -113,8 +113,8 @@ def _generate_samples(bgen_file):
     return DataFrame(data=dict(id=["sample_%d" % i for i in range(nsamples)]))
 
 
-@lru_cache(1)
-def _read_genotype_block(indexing, nsamples, variant_idx, nvariants):
+@lru_cache(2)
+def _genotype_block(indexing, nsamples, variant_idx, nvariants):
 
     max_ncombs = -inf
     ncombss = []
@@ -150,48 +150,50 @@ def _read_genotype_block(indexing, nsamples, variant_idx, nvariants):
     for i in range(0, nvariants):
         G[i, :, : ncombss[i]] = variants[i]
 
-    phased = asarray(phased, int).T
-    ploidy = asarray(ploidy, int).T
-    missing = asarray(missing, int).T
+    phased = asarray(phased, int)
+    ploidy = asarray(ploidy, int)
+    missing = asarray(missing, int)
 
     variant_idxs = range(variant_idx, variant_idx + nvariants)
 
     data = stack([phased, ploidy, missing], axis=2)
 
     coords = {
-        "sample": range(nsamples),
         "variant": variant_idxs,
+        "sample": range(nsamples),
         "data": ["phased", "ploidy", "missing"],
     }
-    dims = ("sample", "variant", "data")
+    dims = ("variant", "sample", "data")
     X = xr.DataArray(data, coords=coords, dims=dims)
 
     return G, X
 
 
-def _read_genotype_variant(indexing, nsamples, variant_idx, nvariants):
-
-    G = _read_genotype_block(indexing, nsamples, variant_idx, nvariants)[0]
-    return G
-
-
 def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
 
     genotype = []
+    X = []
 
     c = int((1024 * 1024 * size / 8) // nsamples)
     step = min(c, nvariants)
     tqdm_kwds = dict(desc="Variant mapping", disable=not verbose)
 
-    delcall = delayed(_read_genotype_variant, pure=True, traverse=False)
+    kws = {"pure": True, "traverse": False}
+    Gcall = delayed(lambda *args: _genotype_block(*args)[0], **kws)
+    Xcall = delayed(lambda *args: _genotype_block(*args)[1], **kws)
     for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
         size = min(step, nvariants - i)
         tup = indexing, nsamples, i, size
-        shape = size, nsamples, nan
-        g = da.from_delayed(delcall(*tup), shape, float64)
+        shape0 = size, nsamples, nan
+        shape1 = size, nsamples, 3
+
+        g = da.from_delayed(Gcall(*tup), shape0, float64)
         genotype.append(g)
 
-    return da.concatenate(genotype)
+        x = da.from_delayed(Xcall(*tup), shape1, float64)
+        X.append(x)
+
+    return da.concatenate(genotype), da.concatenate(X)
 
 
 def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
@@ -255,6 +257,6 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
     nvariants = variants.shape[0]
     bgen_close(bfile)
 
-    genotype = _read_genotype(index, nsamples, nvariants, nalls, size, verbose)
+    G, X = _read_genotype(index, nsamples, nvariants, nalls, size, verbose)
 
-    return dict(variants=variants, samples=samples, genotype=genotype)
+    return dict(variants=variants, samples=samples, genotype=G, X=X)

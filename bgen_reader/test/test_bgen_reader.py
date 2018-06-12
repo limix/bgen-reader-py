@@ -185,8 +185,6 @@ def test_bgen_reader_complex():
     samples = bgen["samples"]
     assert_("genotype" in bgen)
 
-    import pdb
-
     assert_equal(variants.loc[0, "chrom"], "01")
     assert_equal(variants.loc[0, "id"], "")
     assert_equal(variants.loc[0, "nalleles"], 2)
@@ -212,28 +210,28 @@ def test_bgen_reader_complex():
     assert_equal(samples.loc[0, "id"], "sample_0")
     assert_equal(samples.loc[3, "id"], "sample_3")
 
-    G = bgen["genotype"].compute()
+    G = bgen["genotype"][0, 0, :].compute()
+    assert_allclose(G[:2], [1, 0])
+    assert_(isnan(G[2]))
 
-    # assert_(all(isnan(G[0, 0, :])))
-    # a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
-    # assert_allclose(G[0, 1, :], a)
-    # b = [
-    #     0.97970582847010945215516,
-    #     0.01947019668749305418287,
-    #     0.00082397484239749366197,
-    # ]
-    # assert_allclose(G[1, 2, :], b)
+    G = bgen["genotype"][0, 1, :].compute()
+    assert_allclose(G[:3], [1, 0, 0])
 
-    # bgen = read_bgen(filepath, verbose=False)
-    # variants = bgen["variants"]
-    # assert_("samples" in bgen)
-    # assert_("genotype" in bgen)
+    G = bgen["genotype"][-1, -1, :].compute()
+    assert_allclose(G[:5], [0, 0, 0, 1, 0])
 
-    # assert_equal(variants.loc[0, "chrom"], "01")
-    # G = bgen["genotype"].compute()
-    # assert_(all(isnan(G[0, 0, :])))
-    # a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
-    # assert_allclose(G[0, 1, :], a)
+    X = bgen["X"]
 
-    # if os.path.exists(filepath + b".metadata"):
-    #     os.remove(filepath + b".metadata")
+    assert_allclose(X[0].compute().sel(data="ploidy"), [1, 2, 2, 2])
+    assert_allclose(X[-1].compute().sel(data="ploidy"), [4, 4, 4, 4])
+
+    assert_allclose(
+        X[:, 0].compute().sel(data="phased"), [0, 1, 1, 0, 1, 1, 1, 1, 0, 0]
+    )
+
+    X = X.compute()
+
+    x = X.sel(sample=0, data="phased")
+    assert_allclose(
+        x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7]
+    )
