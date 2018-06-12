@@ -6,10 +6,11 @@ from ._misc import (
     check_file_readable,
 )
 
+import xarray as xr
 import dask.array as da
 from dask.delayed import delayed
-from numpy import float64, nan, full, inf
-from pandas import DataFrame
+from numpy import float64, nan, full, inf, asarray, concatenate, stack
+from pandas import DataFrame, concat
 from tqdm import tqdm
 from ._metadata import try_read_variants_metadata_file
 
@@ -25,6 +26,9 @@ from ._ffi.lib import (
     bgen_free_samples,
     bgen_free_variants_metadata,
     bgen_ncombs,
+    bgen_phased,
+    bgen_missing,
+    bgen_ploidy,
     bgen_nsamples,
     bgen_nvariants,
     bgen_open,
@@ -110,11 +114,14 @@ def _generate_samples(bgen_file):
 
 
 @lru_cache(1)
-def _read_genotype_variant(indexing, nsamples, variant_idx, nvariants):
+def _read_genotype_block(indexing, nsamples, variant_idx, nvariants):
 
     max_ncombs = -inf
     ncombss = []
     variants = []
+    phased = []
+    ploidy = []
+    missing = []
 
     for i in range(variant_idx, variant_idx + nvariants):
         vg = bgen_open_variant_genotype(indexing[0], i)
@@ -122,6 +129,12 @@ def _read_genotype_variant(indexing, nsamples, variant_idx, nvariants):
         ncombs = bgen_ncombs(vg)
         max_ncombs = max(max_ncombs, ncombs)
         ncombss.append(ncombs)
+
+        phased.append([bgen_phased(vg)] * nsamples)
+
+        ploidy.append([bgen_ploidy(vg, j) for j in range(nsamples)])
+
+        missing.append([bgen_missing(vg, j) for j in range(nsamples)])
 
         g = full((nsamples, ncombs), nan, dtype=float64)
 
@@ -137,6 +150,28 @@ def _read_genotype_variant(indexing, nsamples, variant_idx, nvariants):
     for i in range(0, nvariants):
         G[i, :, : ncombss[i]] = variants[i]
 
+    phased = asarray(phased, int).T
+    ploidy = asarray(ploidy, int).T
+    missing = asarray(missing, int).T
+
+    variant_idxs = range(variant_idx, variant_idx + nvariants)
+
+    data = stack([phased, ploidy, missing], axis=2)
+
+    coords = {
+        "sample": range(nsamples),
+        "variant": variant_idxs,
+        "data": ["phased", "ploidy", "missing"],
+    }
+    dims = ("sample", "variant", "data")
+    X = xr.DataArray(data, coords=coords, dims=dims)
+
+    return G, X
+
+
+def _read_genotype_variant(indexing, nsamples, variant_idx, nvariants):
+
+    G = _read_genotype_block(indexing, nsamples, variant_idx, nvariants)[0]
     return G
 
 

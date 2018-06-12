@@ -9,3 +9,4 @@ sphinx>=1.6.6
 sphinx_rtd_theme>=0.2.4
 toolz>=0.9.0
 tqdm>=4.19.5
+xarray>=0.10.6

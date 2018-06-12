@@ -175,3 +175,65 @@ def test_create_metadata_file():
     create_metadata_file(filepath, metadata_file, verbose=False)
     assert_(os.path.exists(metadata_file))
     os.remove(metadata_file)
+
+
+def test_bgen_reader_complex():
+    folder = os.path.dirname(os.path.abspath(__file__)).encode()
+    filepath = os.path.join(folder, b"complex.23bits.bgen")
+    bgen = read_bgen(filepath, verbose=False)
+    variants = bgen["variants"]
+    samples = bgen["samples"]
+    assert_("genotype" in bgen)
+
+    import pdb
+
+    assert_equal(variants.loc[0, "chrom"], "01")
+    assert_equal(variants.loc[0, "id"], "")
+    assert_equal(variants.loc[0, "nalleles"], 2)
+    assert_equal(variants.loc[0, "allele_ids"], "A,G")
+    assert_equal(variants.loc[0, "pos"], 1)
+    assert_equal(variants.loc[0, "rsid"], "V1")
+
+    assert_equal(variants.loc[7, "chrom"], "01")
+    assert_equal(variants.loc[7, "id"], "")
+    assert_equal(variants.loc[7, "nalleles"], 7)
+    assert_equal(variants.loc[7, "allele_ids"], "A,G,GT,GTT,GTTT,GTTTT,GTTTTT")
+    assert_equal(variants.loc[7, "pos"], 8)
+    assert_equal(variants.loc[7, "rsid"], "M8")
+
+    n = variants.shape[0]
+    assert_equal(variants.loc[n - 1, "chrom"], "01")
+    assert_equal(variants.loc[n - 1, "id"], "")
+    assert_equal(variants.loc[n - 1, "nalleles"], 2)
+    assert_equal(variants.loc[n - 1, "allele_ids"], "A,G")
+    assert_equal(variants.loc[n - 1, "pos"], 10)
+    assert_equal(variants.loc[n - 1, "rsid"], "M10")
+
+    assert_equal(samples.loc[0, "id"], "sample_0")
+    assert_equal(samples.loc[3, "id"], "sample_3")
+
+    G = bgen["genotype"].compute()
+
+    # assert_(all(isnan(G[0, 0, :])))
+    # a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
+    # assert_allclose(G[0, 1, :], a)
+    # b = [
+    #     0.97970582847010945215516,
+    #     0.01947019668749305418287,
+    #     0.00082397484239749366197,
+    # ]
+    # assert_allclose(G[1, 2, :], b)
+
+    # bgen = read_bgen(filepath, verbose=False)
+    # variants = bgen["variants"]
+    # assert_("samples" in bgen)
+    # assert_("genotype" in bgen)
+
+    # assert_equal(variants.loc[0, "chrom"], "01")
+    # G = bgen["genotype"].compute()
+    # assert_(all(isnan(G[0, 0, :])))
+    # a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
+    # assert_allclose(G[0, 1, :], a)
+
+    # if os.path.exists(filepath + b".metadata"):
+    #     os.remove(filepath + b".metadata")
