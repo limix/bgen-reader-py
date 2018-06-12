@@ -37,7 +37,7 @@ been installed before.
 It is as simple as
 
 ```python
-# example.py file
+# example/example.py file
 from bgen_reader import read_bgen
 
 bgen = read_bgen("example.bgen", verbose=False)
