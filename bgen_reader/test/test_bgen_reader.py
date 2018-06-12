@@ -51,9 +51,16 @@ def test_bgen_reader_variants_info():
     assert_equal(samples.loc[n - 1, "id"], "sample_500")
 
     G = bgen["genotype"].compute()
+
     assert_(all(isnan(G[0, 0, :])))
     a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
     assert_allclose(G[0, 1, :], a)
+    b = [
+        0.97970582847010945215516,
+        0.01947019668749305418287,
+        0.00082397484239749366197,
+    ]
+    assert_allclose(G[1, 2, :], b)
 
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"]
