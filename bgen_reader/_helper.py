@@ -27,12 +27,3 @@ def genotypes_to_allele_counts(genotypes):
             count[gi - 1] += 1
         counts.append(count)
     return counts
-
-
-# if __name__ == "__main__":
-#     for g in get_genotypes(2, 3):
-#         print(g)
-
-#     g = get_genotypes(2, 3)
-#     for c in genotypes_to_allele_counts(g):
-#         print(c)

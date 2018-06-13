@@ -34,43 +34,143 @@ been installed before.
 
 ## Usage
 
-It is as simple as
+### Unphased genotype
 
 ```python
-# example/example.py file
-from bgen_reader import read_bgen
-
-bgen = read_bgen("example.bgen", verbose=False)
-
-print(bgen['variants'].head())
-print(bgen['samples'].head())
-print(len(bgen['genotype']))
-print(bgen['genotype'][0].compute())
-```
-
-The output should something similar to
-
-```
-chrom       id  nalleles   pos    rsid
-0    01  SNPID_2         2  2000  RSID_2
-1    01  SNPID_3         2  3000  RSID_3
-2    01  SNPID_4         2  4000  RSID_4
-3    01  SNPID_5         2  5000  RSID_5
-4    01  SNPID_6         2  6000  RSID_6
-         id
+>>> from bgen_reader import read_bgen
+>>>
+>>> bgen = read_bgen("example.bgen", verbose=False)
+>>>
+>>> print(bgen["variants"].head())
+        id    rsid chrom   pos  nalleles allele_ids
+0  SNPID_2  RSID_2    01  2000         2        A,G
+1  SNPID_3  RSID_3    01  3000         2        A,G
+2  SNPID_4  RSID_4    01  4000         2        A,G
+3  SNPID_5  RSID_5    01  5000         2        A,G
+4  SNPID_6  RSID_6    01  6000         2        A,G
+>>> print(bgen["samples"].head())
+           id
 0  sample_001
 1  sample_002
 2  sample_003
 3  sample_004
 4  sample_005
+>>> print(len(bgen["genotype"]))
 199
-[[        nan         nan         nan]
-[ 0.02780236  0.00863674  0.9635609 ]
-[ 0.01736504  0.04968414  0.93295083]
-...,
-[ 0.01419069  0.02810669  0.95770262]
-[ 0.91949463  0.05206298  0.02844239]
-[ 0.00244141  0.98410029  0.0134583 ]]
+>>> p = bgen["genotype"][0].compute()
+>>> print(p)
+[[       nan        nan        nan]
+ [0.02780236 0.00863674 0.9635609 ]
+ [0.01736504 0.04968414 0.93295083]
+ ...
+ [0.01419069 0.02810669 0.95770262]
+ [0.91949463 0.05206298 0.02844239]
+ [0.00244141 0.98410029 0.0134583 ]]
+>>> print(p.shape)
+(500, 3)
+```
+
+The ``example.bgen`` file can be found in the ``example`` folder, as
+well as the next ones.
+
+### Phased genotype
+
+```python
+>>> from bgen_reader import read_bgen
+>>> bgen = read_bgen("haplotypes.bgen", verbose=False)
+>>>
+>>> print(bgen["variants"].head())
+     id rsid chrom  pos  nalleles allele_ids
+0  SNP1  RS1     1    1         2        A,G
+1  SNP2  RS2     1    2         2        A,G
+2  SNP3  RS3     1    3         2        A,G
+3  SNP4  RS4     1    4         2        A,G
+>>> print(bgen["samples"].head())
+         id
+0  sample_0
+1  sample_1
+2  sample_2
+3  sample_3
+>>> # Print the estimated probabilities for the first variant
+>>> # and second individual.
+>>> print(bgen["genotype"][0, 1].compute())
+[0. 1. 1. 0.]
+>>> # Is it a phased one?
+>>> print(bgen["X"][0, 1].compute().sel(data="phased").item())
+1
+>>> # How many haplotypes?
+>>> print(bgen["X"][0, 1].compute().sel(data="ploidy").item())
+2
+>>> # And how many alleles?
+>>> print(bgen["variants"].loc[0, "nalleles"])
+2
+>>> # Therefore, the first haplotype has probability 100%
+>>> # of having the allele
+>>> print(bgen["variants"].loc[0, "allele_ids"].split(",")[1])
+G
+>>> # And the second haplotype has probability 100% of having
+>>> # the first allele
+>>> print(bgen["variants"].loc[0, "allele_ids"].split(",")[0])
+A
+```
+
+### Complex file
+
+```python
+>>> from bgen_reader import read_bgen, convert_to_dosage
+>>>
+>>> bgen = read_bgen("complex.bgen", verbose=False)
+>>>
+>>> print(bgen["variants"])
+     id rsid chrom  pos  nalleles                            allele_ids
+0         V1    01    1         2                                   A,G
+1  V2.1   V2    01    2         2                                   A,G
+2         V3    01    3         2                                   A,G
+3         M4    01    4         3                                 A,G,T
+4         M5    01    5         2                                   A,G
+5         M6    01    7         4                            A,G,GT,GTT
+6         M7    01    7         6                 A,G,GT,GTT,GTTT,GTTTT
+7         M8    01    8         7          A,G,GT,GTT,GTTT,GTTTT,GTTTTT
+8         M9    01    9         8  A,G,GT,GTT,GTTT,GTTTT,GTTTTT,GTTTTTT
+9        M10    01   10         2                                   A,G
+>>> print(bgen["samples"])
+         id
+0  sample_0
+1  sample_1
+2  sample_2
+3  sample_3
+>>> # Print the estimated probabilities for the first variant
+>>> # and second individual.
+>>> print(bgen["genotype"][0, 1].compute())
+[ 1.  0.  0. nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+ nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan]
+>>> # The NaN elements are a by-product of the heterogenous
+>>> # ploidy and number of alleles across variants and samples.
+>>> # For example, the 9th variant for the 4th individual
+>>> # has ploidy
+>>> ploidy = bgen["X"][8, 3].compute().sel(data="ploidy").item()
+>>> print(ploidy)
+2
+>>> # and number of alleles equal to
+>>> nalleles = bgen["variants"].loc[8, "nalleles"]
+>>> print(nalleles)
+8
+>>> # Its probability distribution is given by the array
+>>> p = bgen["genotype"][8, 3].compute()
+>>> print(p)
+[0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0.
+ 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+>>> # of size
+>>> print(len(p))
+36
+>>> # Since the 9th variant for the 4th individual is
+>>> # unphased,
+>>> print(bgen["X"][8, 3].compute().sel(data="phased").item())
+0
+>>> # the estimated probabilities imply the dosage
+>>> # (or expected number of alleles)
+>>> print(convert_to_dosage(p, nalleles, ploidy))
+[0. 1. 0. 0. 0. 1. 0. 0.]
 ```
 
 ## Problems

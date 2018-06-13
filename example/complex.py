@@ -4,8 +4,8 @@ if __name__ == "__main__":
 
     bgen = read_bgen("complex.bgen", verbose=False)
 
-    print(bgen["variants"].head())
-    print(bgen["samples"].head())
+    print(bgen["variants"])
+    print(bgen["samples"])
 
     # Print the estimated probabilities for the first variant
     # and second individual.
@@ -29,7 +29,6 @@ if __name__ == "__main__":
     # Since the 9th variant for the 4th individual is
     # unphased,
     print(bgen["X"][8, 3].compute().sel(data="phased").item())
-    # the estimated probabilities
-    p = bgen["genotype"][8, 3].compute()
-    # imply the dosage (or expected number of alleles)
+    # the estimated probabilities imply the dosage
+    # (or expected number of alleles)
     print(convert_to_dosage(p, nalleles, ploidy))

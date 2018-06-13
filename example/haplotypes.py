@@ -20,10 +20,10 @@ if __name__ == "__main__":
     # And how many alleles?
     print(bgen["variants"].loc[0, "nalleles"])
 
-    # Therefore, the allele
+    # Therefore, the first haplotype has probability 100%
+    # of having the allele
     print(bgen["variants"].loc[0, "allele_ids"].split(",")[1])
-    # has probability 100% of pertaining to the first haplotype.
 
-    # And the allele
+    # And the second haplotype has probability 100% of having
+    # the first allele
     print(bgen["variants"].loc[0, "allele_ids"].split(",")[0])
-    # has probability 100% of pertaining to the second haplotype.
