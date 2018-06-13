@@ -42,12 +42,16 @@ been installed before.
 >>> bgen = read_bgen("example.bgen", verbose=False)
 >>>
 >>> print(bgen["variants"].head())
+```
+```
         id    rsid chrom   pos  nalleles allele_ids
 0  SNPID_2  RSID_2    01  2000         2        A,G
 1  SNPID_3  RSID_3    01  3000         2        A,G
 2  SNPID_4  RSID_4    01  4000         2        A,G
 3  SNPID_5  RSID_5    01  5000         2        A,G
 4  SNPID_6  RSID_6    01  6000         2        A,G
+```
+```python
 >>> print(bgen["samples"].head())
            id
 0  sample_001
