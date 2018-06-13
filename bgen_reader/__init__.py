@@ -21,8 +21,9 @@ except Exception as e:
 from ._reader import read_bgen
 from ._metadata import create_metadata_file
 from ._testit import test
+from . import helper
 
 __version__ = "2.0.0"
 
 __all__ = ['__version__', 'test', 'read_bgen',
-           'create_metadata_file']
+           'create_metadata_file', 'helper']
