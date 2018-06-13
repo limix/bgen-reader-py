@@ -1,4 +1,4 @@
-from bgen_reader import read_bgen
+from bgen_reader import read_bgen, convert_to_dosage
 
 if __name__ == "__main__":
 
@@ -15,43 +15,21 @@ if __name__ == "__main__":
     # ploidy and number of alleles across variants and samples.
     # For example, the 9th variant for the 4th individual
     # has ploidy
-    print(bgen["X"][8, 3].compute().sel(data="ploidy").item())
+    ploidy = bgen["X"][8, 3].compute().sel(data="ploidy").item()
+    print(ploidy)
     # and number of alleles equal to
-    print(bgen["variants"].loc[8, "nalleles"])
+    nalleles = bgen["variants"].loc[8, "nalleles"]
+    print(nalleles)
     # Its probability distribution is given by the array
-    print(bgen["genotype"][8, 3].compute())
+    p = bgen["genotype"][8, 3].compute()
+    print(p)
     # of size
-    print(len(bgen["genotype"][8, 3].compute()))
+    print(len(p))
 
     # Since the 9th variant for the 4th individual is
     # unphased,
     print(bgen["X"][8, 3].compute().sel(data="phased").item())
-    # the estimated probabilities imply the genotype
-
-    # # Is it a phased one?
-    # print(bgen["X"][0, 1].compute().sel(data="phased").item())
-
-    # # How many haplotypes?
-    # print(bgen["X"][0, 1].compute().sel(data="ploidy").item())
-
-    # # And how many alleles?
-    # print(bgen["variants"].loc[0, "nalleles"])
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # (2, 0, 0, 0, 0, 0, 0, 0)
-    # # Therefore, the allele
-    # print(bgen["variants"].loc[0, "allele_ids"].split(",")[1])
-    # # has probability 100% of pertaining to the first haplotype.
-
-    # # And the allele
-    # print(bgen["variants"].loc[0, "allele_ids"].split(",")[0])
-    # # has probability 100% of pertaining to the second haplotype.
+    # the estimated probabilities
+    p = bgen["genotype"][8, 3].compute()
+    # imply the dosage (or expected number of alleles)
+    print(convert_to_dosage(p, nalleles, ploidy))
