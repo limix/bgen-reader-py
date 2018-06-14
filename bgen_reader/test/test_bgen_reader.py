@@ -7,7 +7,6 @@ from bgen_reader import read_bgen, create_metadata_file
 from numpy import isnan
 from numpy.testing import assert_, assert_equal, assert_allclose
 
-
 try:
     FileNotFoundError
 except NameError:
@@ -78,9 +77,14 @@ def test_bgen_reader_variants_info():
 
 
 def test_bgen_reader_phased_genotype():
+    _test_bgen_reader_phased_genotype(50)
+    _test_bgen_reader_phased_genotype(0.0001)
+
+
+def _test_bgen_reader_phased_genotype(size):
     folder = os.path.dirname(os.path.abspath(__file__)).encode()
     filepath = os.path.join(folder, b"haplotypes.bgen")
-    bgen = read_bgen(filepath, verbose=False)
+    bgen = read_bgen(filepath, verbose=False, size=size)
     variants = bgen["variants"]
     samples = bgen["samples"]
     assert_("genotype" in bgen)
@@ -226,12 +230,10 @@ def test_bgen_reader_complex():
     assert_allclose(X[-1].compute().sel(data="ploidy"), [4, 4, 4, 4])
 
     assert_allclose(
-        X[:, 0].compute().sel(data="phased"), [0, 1, 1, 0, 1, 1, 1, 1, 0, 0]
-    )
+        X[:, 0].compute().sel(data="phased"), [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])
 
     X = X.compute()
 
     x = X.sel(sample=0, data="phased")
     assert_allclose(
-        x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7]
-    )
+        x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])

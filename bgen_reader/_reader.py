@@ -148,7 +148,7 @@ def _genotype_block(indexing, nsamples, variant_idx, nvariants):
     G = full((nvariants, nsamples, max_ncombs), nan, dtype=float64)
 
     for i in range(0, nvariants):
-        G[i, :, : ncombss[i]] = variants[i]
+        G[i, :, :ncombss[i]] = variants[i]
 
     phased = asarray(phased, int)
     ploidy = asarray(ploidy, int)
@@ -193,7 +193,9 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
         x = da.from_delayed(Xcall(*tup), shape1, float64)
         X.append(x)
 
-    return da.concatenate(genotype), da.concatenate(X)
+    a = da.concatenate(genotype, allow_unknown_chunksizes=True)
+    b = da.concatenate(X, allow_unknown_chunksizes=True)
+    return a, b
 
 
 def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
