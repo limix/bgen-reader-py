@@ -30,12 +30,12 @@ install:
 - bash <(curl -fsSL https://raw.githubusercontent.com/horta/almosthere/master/install)
 - bash <(curl -fsSL https://raw.githubusercontent.com/limix/bgen/master/install)
 script:
-- bash <(curl -fsSL https://raw.githubusercontent.com/horta/ci/master/travis.sh)
 - |
   if [ "${TRAVIS_OS_NAME}" == "osx" ]; then
     sudo mkdir -p /usr/local/man
     sudo chown -R "${USER}:admin" /usr/local/man
   fi
+- bash <(curl -fsSL https://raw.githubusercontent.com/horta/ci/master/travis.sh)
 - |
   if [ "${TRAVIS_TAG:-}" != "" ]; then
     python -m pip install cibuildwheel>=0.9.1
