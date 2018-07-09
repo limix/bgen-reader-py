@@ -1,4 +1,4 @@
-ci\set-win-path.bat
+call ci\set-win-path.bat
 
 powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install-zlib.bat')"
 powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zstd.install/master/install.bat', 'install-zstd.bat')"
