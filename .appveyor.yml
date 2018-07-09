@@ -21,6 +21,7 @@ install:
 
 build_script:
     - cd %APPVEYOR_BUILD_FOLDER%
+    - ci\set-win-path.bat
     - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/ci/master/appveyor.bat', 'appveyor.bat')" && appveyor.bat
     - copy "%programfiles%\\zstd\\bin\\zstd.dll" bgen_reader\
     - copy "%programfiles%\\zlib\\bin\\zlib.dll" bgen_reader\
