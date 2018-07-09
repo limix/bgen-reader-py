@@ -16,7 +16,6 @@ environment:
       CIBW_SKIP: cp27-* cp33-* cp34-* cp35-* *-win_amd64
 
 install:
-    - mkdir build.%BDIR% && cd build.%BDIR%
     - ci\before-build-win.bat
     - "%PYTHON%\\python.exe -m pip install cibuildwheel>=0.9.1"
 

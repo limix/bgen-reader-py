@@ -1,3 +1,4 @@
+set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
 powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install-zlib.bat')" && install-zlib.bat
 set PATH=%programfiles%\zlib\bin;%PATH%
 set LIBRARY_INC=%programfiles%\zlib\include;%LIBRARY_INC%
