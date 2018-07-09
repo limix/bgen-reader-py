@@ -19,7 +19,7 @@ matrix:
         - brew unlink python && brew link python
         - export PATH="/usr/local/opt/python/libexec/bin:$PATH"
         - hash -r
-        - pip install --upgrade pip setuptools wheel
+        - python -m pip install --upgrade pip setuptools wheel
 addons:
   apt:
     packages:
@@ -38,9 +38,9 @@ script:
   fi
 - |
   if [ "${TRAVIS_TAG:-}" != "" ]; then
-    pip install cibuildwheel>=0.9.1
+    python -m pip install cibuildwheel>=0.9.1
     cibuildwheel --output-dir wheelhouse
-    pip install twine
+    python -m pip install twine
     python -m twine upload --skip-existing wheelhouse/*
   fi
 notifications:
