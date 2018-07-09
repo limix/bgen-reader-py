@@ -10,10 +10,6 @@ environment:
       ARCH: x64
       PYTHON: C:\Python36-x64
       CIBW_SKIP: cp27-* cp33-* cp34-* cp35-* *-win32
-    - platform: x86
-      ARCH: x86
-      PYTHON: C:\Python36
-      CIBW_SKIP: cp27-* cp33-* cp34-* cp35-* *-win_amd64
 
 install:
     - call ci\before-build-win.bat
