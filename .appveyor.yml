@@ -4,7 +4,7 @@ configuration: Release
 
 environment:
   PKG_NAME: bgen_reader
-  CIBW_BEFORE_BUILD_WINDOWS: ci\before-build-win.bat
+  CIBW_BEFORE_BUILD_WINDOWS: ci\before-build-win.bat && install-zlib.bat && call install-zstd.bat && call install-athr.bat && install-bgen.bat
   matrix:
     - platform: x64
       ARCH: x64
@@ -16,7 +16,7 @@ environment:
       CIBW_SKIP: cp27-* cp33-* cp34-* cp35-* *-win_amd64
 
 install:
-    - ci\before-build-win.bat
+    - ci\before-build-win.bat && install-zlib.bat && call install-zstd.bat && call install-athr.bat && install-bgen.bat
     - "%PYTHON%\\python.exe -m pip install cibuildwheel>=0.9.1"
 
 build_script:
