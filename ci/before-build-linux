@@ -1,3 +1,8 @@
-bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
-bash <(curl -fsSL https://raw.githubusercontent.com/horta/almosthere/master/install)
-bash <(curl -fsSL https://raw.githubusercontent.com/limix/bgen/master/install)
+curl https://raw.githubusercontent.com/horta/zstd.install/master/install --output install-zstd
+bash install-zstd
+
+curl https://raw.githubusercontent.com/horta/almosthere/master/install --output install-athr
+bash install-athr
+
+curl https://raw.githubusercontent.com/limix/bgen/master/install --output install-bgen
+bash install-bgen
