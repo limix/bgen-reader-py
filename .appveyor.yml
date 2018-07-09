@@ -1,32 +1,41 @@
 build: off
 clone_depth: 5
-platform: x64
 configuration: Release
 
 environment:
-    PKG_NAME: bgen_reader
-    PYTHON: "C:\\Python36-x64"
-    ARCH: x64
+  PKG_NAME: bgen_reader
+  CIBW_BEFORE_BUILD_WINDOWS: ci\before-build-win.bat
+  matrix:
+    - platform: x64
+      ARCH: x64
+      PYTHON: C:\Python36-x64
+      CIBW_SKIP: cp27-* cp33-* cp34-* cp35-* *-win32
+    - platform: x86
+      ARCH: x86
+      PYTHON: C:\Python36
+      CIBW_SKIP: cp27-* cp33-* cp34-* cp35-* *-win_amd64
 
 install:
     - mkdir build.%BDIR% && cd build.%BDIR%
-    - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install-zlib.bat')" && install-zlib.bat
-    - set PATH=%programfiles%\zlib\bin;%PATH%
-    - set LIBRARY_INC=%programfiles%\zlib\include;%LIBRARY_INC%
-    - set LIBRARY_LIB=%programfiles%\zlib\lib;%LIBRARY_LIB%
-    - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zstd.install/master/install.bat', 'install-zstd.bat')" && call install-zstd.bat
-    - set PATH=%programfiles%\zstd\bin;%PATH%
-    - set LIBRARY_INC=%programfiles%\zstd\include;%LIBRARY_INC%
-    - set LIBRARY_LIB=%programfiles%\zstd\lib;%LIBRARY_LIB%
-    - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/almosthere/master/install.bat', 'install-athr.bat')" && call install-athr.bat
-    - set PATH=%programfiles%\athr\bin;%PATH%
-    - set LIBRARY_INC=%programfiles%\athr\include;%LIBRARY_INC%
-    - set LIBRARY_LIB=%programfiles%\athr\lib;%LIBRARY_LIB%
-    - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/limix/bgen/master/install.bat', 'install-bgen.bat')" && install-bgen.bat
-    - set PATH=%programfiles%\bgen\bin;%PATH%
-    - set LIBRARY_INC=%programfiles%\bgen\include;%LIBRARY_INC%
-    - set LIBRARY_LIB=%programfiles%\bgen\lib;%LIBRARY_LIB%
+    - ci\before-build-win.bat
+    - "%PYTHON%\\python.exe -m pip install cibuildwheel>=0.9.1"
 
 build_script:
     - cd %APPVEYOR_BUILD_FOLDER%
     - powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/ci/master/appveyor.bat', 'appveyor.bat')" && appveyor.bat
+    - copy "%programfiles%\\zstd\\bin\\zstd.dll" bgen_reader\
+    - copy "%programfiles%\\zlib\\bin\\zlib.dll" bgen_reader\
+    - copy "%programfiles%\\athr\\bin\\athr.dll" bgen_reader\
+    - copy "%programfiles%\\bgen\\bin\\bgen.dll" bgen_reader\
+    - "%PYTHON%\\python.exe -m cibuildwheel --output-dir wheelhouse"
+    - FOR %%F IN (wheelhouse\*.whl) DO set filename=%%F
+    - "%PYTHON%\\python.exe -m pip install %filename%"
+    - cd ..
+    - rd /s /q "%programfiles%\\bgen"
+    - "%PYTHON%\\python.exe -c \"import bgen_reader; import sys; sys.exit(bgen_reader.test())\""
+    - cd %APPVEYOR_BUILD_FOLDER%
+    - if [%APPVEYOR_REPO_TAG%]==[true] (%PYTHON%\python.exe -m pip install twine && %PYTHON%\python.exe -m twine upload --skip-existing wheelhouse/*)
+
+artifacts:
+  - path: "wheelhouse\\*.whl"
+    name: Wheels
