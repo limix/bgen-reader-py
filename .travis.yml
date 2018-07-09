@@ -1,5 +1,6 @@
 python: 3.6
 language: python
+compiler: gcc
 env:
   global:
   - PKG_NAME=bgen_reader
