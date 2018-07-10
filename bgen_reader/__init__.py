@@ -23,7 +23,7 @@ from ._metadata import create_metadata_file
 from ._testit import test
 from ._dosage import convert_to_dosage
 
-__version__ = "2.0.2"
+__version__ = "2.0.3"
 
 __all__ = [
     '__version__', 'test', 'read_bgen', 'create_metadata_file',
