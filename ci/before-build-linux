@@ -1,4 +1,4 @@
-yum install -y libffi libffi-devel
+yum install -y libffi libffi-devel zlib-devel
 
 if [ $(uname -m) == 'x86_64' ];
 then
