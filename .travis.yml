@@ -37,10 +37,15 @@ script:
     sudo chown -R "${USER}:admin" /usr/local/man
   fi
 - bash <(curl -fsSL https://raw.githubusercontent.com/horta/ci/master/travis.sh)
+- python -m pip install cibuildwheel>=0.9.1
+- cibuildwheel --output-dir wheelhouse
+- python -m pip uninstall $PKG_NAME -q || true
+- files=( wheelhouse/*.whl )
+- python -m pip install "${files[0]}"
+- cd .. && python -c "import $PKG_NAME; import sys; sys.exit($PKG_NAME.test())"
+- cd $TRAVIS_BUILD_DIR
 - |
   if [ "${TRAVIS_TAG:-}" != "" ]; then
-    python -m pip install cibuildwheel>=0.9.1
-    cibuildwheel --output-dir wheelhouse
     python -m pip install twine
     python -m twine upload --skip-existing wheelhouse/*
   fi
