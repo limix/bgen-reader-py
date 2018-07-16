@@ -34,6 +34,10 @@ been installed before.
 
 ## Usage
 
+The following examples assume you have downloaded the ``example.bgen``,
+``haplotypes.bgen``, and ``complex.bgen`` files (found in this repository) to the
+directory you are executing Python.
+
 ### Unphased genotype
 
 ```python
