@@ -12,7 +12,7 @@ def test(verbose=True):
         Exit code: ``0`` for success.
     """
 
-    args = ["--doctest-modules", "-x"]
+    args = ["--doctest-modules", "-x", '--ignore="doc/conf.py"']
     if not verbose:
         args += ["--quiet"]
 
