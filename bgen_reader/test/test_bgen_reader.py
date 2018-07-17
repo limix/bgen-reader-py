@@ -230,10 +230,45 @@ def test_bgen_reader_complex():
     assert_allclose(X[-1].compute().sel(data="ploidy"), [4, 4, 4, 4])
 
     assert_allclose(
-        X[:, 0].compute().sel(data="phased"), [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])
+        X[:, 0].compute().sel(data="phased"), [0, 1, 1, 0, 1, 1, 1, 1, 0, 0]
+    )
 
     X = X.compute()
 
     x = X.sel(sample=0, data="phased")
-    assert_allclose(
-        x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])
+    assert_allclose(x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])
+
+
+def test_bgen_reader_complex_sample_file():
+    folder = os.path.dirname(os.path.abspath(__file__)).encode()
+    filepath = os.path.join(folder, b"complex.23bits.bgen")
+    sample_file = os.path.join(folder, b"complex.sample")
+    bgen = read_bgen(filepath, sample_file=sample_file, verbose=False)
+    variants = bgen["variants"]
+    samples = bgen["samples"]
+    assert_("genotype" in bgen)
+
+    assert_equal(variants.loc[0, "chrom"], "01")
+    assert_equal(variants.loc[0, "id"], "")
+    assert_equal(variants.loc[0, "nalleles"], 2)
+    assert_equal(variants.loc[0, "allele_ids"], "A,G")
+    assert_equal(variants.loc[0, "pos"], 1)
+    assert_equal(variants.loc[0, "rsid"], "V1")
+
+    assert_equal(variants.loc[7, "chrom"], "01")
+    assert_equal(variants.loc[7, "id"], "")
+    assert_equal(variants.loc[7, "nalleles"], 7)
+    assert_equal(variants.loc[7, "allele_ids"], "A,G,GT,GTT,GTTT,GTTTT,GTTTTT")
+    assert_equal(variants.loc[7, "pos"], 8)
+    assert_equal(variants.loc[7, "rsid"], "M8")
+
+    n = variants.shape[0]
+    assert_equal(variants.loc[n - 1, "chrom"], "01")
+    assert_equal(variants.loc[n - 1, "id"], "")
+    assert_equal(variants.loc[n - 1, "nalleles"], 2)
+    assert_equal(variants.loc[n - 1, "allele_ids"], "A,G")
+    assert_equal(variants.loc[n - 1, "pos"], 10)
+    assert_equal(variants.loc[n - 1, "rsid"], "M10")
+
+    assert_equal(samples.loc[0, "id"], "sample_0")
+    assert_equal(samples.loc[3, "id"], "sample_3")

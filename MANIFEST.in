@@ -2,6 +2,7 @@ include bgen_reader/athr.dll
 include bgen_reader/bgen.dll
 include bgen_reader/interface.h
 include bgen_reader/test/complex.23bits.bgen
+include bgen_reader/test/complex.sample
 include bgen_reader/test/example.32bits.bgen
 include bgen_reader/test/haplotypes.bgen
 include bgen_reader/test/wrong.metadata

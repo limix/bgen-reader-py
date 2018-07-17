@@ -31,11 +31,13 @@
 # lookup of values by key.
 
 import sys
+import functools
 
 if sys.version_info < (3, 3):
     from collections import Mapping
 else:
     from collections.abc import Mapping
+
 
 # Class for the node objects.
 class _dlnode(object):
@@ -550,18 +552,13 @@ def lruwrap(store, size, writeback=False):
         return WriteThroughCacheManager(store, size)
 
 
-import functools
-
-
 class lrudecorator(object):
     def __init__(self, size):
         self.cache = lrucache(size)
 
     def __call__(self, func):
         def wrapper(*args, **kwargs):
-            kwtuple = tuple(
-                (key, kwargs[key]) for key in sorted(kwargs.keys())
-            )
+            kwtuple = tuple((key, kwargs[key]) for key in sorted(kwargs.keys()))
             key = (args, kwtuple)
             try:
                 return self.cache[key]

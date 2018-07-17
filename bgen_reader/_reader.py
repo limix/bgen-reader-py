@@ -4,13 +4,14 @@ from ._misc import (
     create_string,
     check_file_exist,
     check_file_readable,
+    make_sure_str,
 )
 
 import xarray as xr
 import dask.array as da
 from dask.delayed import delayed
-from numpy import float64, nan, full, inf, asarray, concatenate, stack
-from pandas import DataFrame, concat, read_csv
+from numpy import float64, nan, full, inf, asarray, stack
+from pandas import DataFrame, read_csv
 from tqdm import tqdm
 from ._metadata import try_read_variants_metadata_file
 
@@ -107,12 +108,12 @@ def _read_samples(bgen_file, verbose):
     bgen_free_samples(bgen_file, samples)
     return DataFrame(data=dict(id=ids))
 
+
 def _read_samples_from_file(sample_file, verbose):
     if verbose:
         print("Sample IDs are read from {}.".format(sample_file))
 
-    samples = read_csv(sample_file, sep=" ", skiprows=[1])['ID_1'].astype('str')
-    nsamples = samples.shape[0]
+    samples = read_csv(sample_file, sep=" ", skiprows=[1]).iloc[:, 0].astype("str")
 
     return DataFrame(data=dict(id=samples))
 
@@ -157,7 +158,7 @@ def _genotype_block(indexing, nsamples, variant_idx, nvariants):
     G = full((nvariants, nsamples, max_ncombs), nan, dtype=float64)
 
     for i in range(0, nvariants):
-        G[i, :, :ncombss[i]] = variants[i]
+        G[i, :, : ncombss[i]] = variants[i]
 
     phased = asarray(phased, int)
     ploidy = asarray(ploidy, int)
@@ -207,8 +208,7 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
     return a, b
 
 
-def read_bgen(filepath, size=50, verbose=True, metadata_file=True,
-        sample_file=None):
+def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=None):
     r"""Read a given BGEN file.
 
     Parameters
@@ -230,9 +230,9 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True,
         therefore it will read variants metadata from that file only. Defaults
         to ``True``.
     sample_file : str, optional
-        A sample file in `GEN format <http://www.stats.ox.ac.uk/~marchini/
-        software/gwas/file_format.html>`_. If sample_file is provided, sample
-        IDs are read from this file.
+        A sample file in `GEN format <http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html>`_.
+        If sample_file is provided, sample IDs are read from this file. Otherwise, it
+        reads from the BGEN file itself if present. Defaults to ``None``.
 
     Returns
     -------
@@ -243,6 +243,8 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True,
     """
 
     filepath = make_sure_bytes(filepath)
+    if sample_file is not None:
+        sample_file = make_sure_str(sample_file)
 
     check_file_exist(filepath)
     check_file_readable(filepath)
@@ -257,6 +259,7 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True,
         raise RuntimeError("Could not read {}.".format(filepath))
 
     if sample_file is not None:
+        check_file_exist(sample_file)
         samples = _read_samples_from_file(sample_file, verbose)
     elif bgen_sample_ids_presence(bfile) == 0:
         if verbose:

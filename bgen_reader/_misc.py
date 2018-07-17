@@ -24,6 +24,14 @@ def make_sure_bytes(p):
     return p
 
 
+def make_sure_str(p):
+    try:
+        p = p.decode()
+    except AttributeError:
+        pass
+    return p
+
+
 def create_string(v):
     s = ffi.new("char[]", v.len)
     ffi.memmove(s, v.str, v.len)
@@ -32,9 +40,7 @@ def create_string(v):
 
 def check_file_exist(filepath):
     if not exists(filepath):
-        raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), filepath
-        )
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
 
 
 def check_file_readable(filepath):
