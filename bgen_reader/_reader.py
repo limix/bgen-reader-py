@@ -10,7 +10,7 @@ import xarray as xr
 import dask.array as da
 from dask.delayed import delayed
 from numpy import float64, nan, full, inf, asarray, concatenate, stack
-from pandas import DataFrame, concat
+from pandas import DataFrame, concat, read_csv
 from tqdm import tqdm
 from ._metadata import try_read_variants_metadata_file
 
@@ -107,6 +107,15 @@ def _read_samples(bgen_file, verbose):
     bgen_free_samples(bgen_file, samples)
     return DataFrame(data=dict(id=ids))
 
+def _read_samples_from_file(sample_file, verbose):
+    if verbose:
+        print("Sample IDs are read from {}.".format(sample_file))
+
+    samples = read_csv(sample_file, sep=" ", skiprows=[1])['ID_1'].astype('str')
+    nsamples = samples.shape[0]
+
+    return DataFrame(data=dict(id=samples))
+
 
 def _generate_samples(bgen_file):
     nsamples = bgen_nsamples(bgen_file)
@@ -198,7 +207,8 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
     return a, b
 
 
-def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
+def read_bgen(filepath, size=50, verbose=True, metadata_file=True,
+        sample_file=None):
     r"""Read a given BGEN file.
 
     Parameters
@@ -219,6 +229,10 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
         it assumes that the specified metadata file is valid and readable and
         therefore it will read variants metadata from that file only. Defaults
         to ``True``.
+    sample_file : str, optional
+        A sample file in `GEN format <http://www.stats.ox.ac.uk/~marchini/
+        software/gwas/file_format.html>`_. If sample_file is provided, sample
+        IDs are read from this file.
 
     Returns
     -------
@@ -242,7 +256,9 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True):
     if bfile == ffi.NULL:
         raise RuntimeError("Could not read {}.".format(filepath))
 
-    if bgen_sample_ids_presence(bfile) == 0:
+    if sample_file is not None:
+        samples = _read_samples_from_file(sample_file, verbose)
+    elif bgen_sample_ids_presence(bfile) == 0:
         if verbose:
             print("Sample IDs are not present in this file.")
             msg = "I will generate them on my own:"
