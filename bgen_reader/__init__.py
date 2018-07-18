@@ -1,10 +1,19 @@
 """
-*******************
-bgen_reader package
-*******************
+BGEN file format reader
+=======================
 
-Bgen file format reader.
+`BGEN <http://www.well.ox.ac.uk/~gav/bgen_format/>`_ is a file format for storing large
+genetic datasets. It supports both unphased genotypes and phased haplotype data with
+variable ploidy and number of alleles. It was designed to provides a compact data
+representation without sacrificing variant access performance.
 
+Functions
+---------
+create_metadata_file  Create variants metadata file.
+read_bgen             Read a given BGEN file.
+test                  Verify this package's integrity.
+
+Documentation can be found at <https://github.com/limix/bgen-reader-py>.
 """
 
 from __future__ import absolute_import as _

@@ -1,3 +1,4 @@
+import sys
 from os.path import join, dirname, basename
 from ._misc import (
     make_sure_bytes,
@@ -40,6 +41,11 @@ from ._ffi.lib import (
     bgen_sample_ids_presence,
     bgen_load_variants_metadata,
 )
+
+PY3 = sys.version_info >= (3,)
+
+if not PY3:
+    FileNotFoundError = IOError
 
 
 def _read_variants_from_bgen_file(bfile, index, v):
@@ -240,6 +246,14 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=N
         variants : Variant position, chromossomes, RSIDs, etc.
         samples : Sample identifications.
         genotype : Array of genotype references.
+
+    Notes
+    -----
+    Metadata files can speed up subsequent reads tremendously. But often the user does
+    not have write permission for the default metadata file location
+    ``filepath + ".metadata"``. We thus provide the
+    :function:`bgen_reader.create_metadata_file` function for creating one at the
+    given path.
     """
 
     filepath = make_sure_bytes(filepath)
@@ -251,7 +265,16 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=N
 
     if metadata_file not in [True, False]:
         metadata_file = make_sure_bytes(metadata_file)
-        check_file_exist(metadata_file)
+        try:
+            check_file_exist(metadata_file)
+        except FileNotFoundError as e:
+            msg = (
+                "\n\nMetadata file `{}` does not exist.\nIf you want to create a "
+                "metadata file in a custom location, please use "
+                "`bgen_reader.create_metadata_file`.\n"
+            )
+            print(msg.format(metadata_file))
+            raise e
         check_file_readable(metadata_file)
 
     bfile = bgen_open(filepath)
