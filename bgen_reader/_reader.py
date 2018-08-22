@@ -221,11 +221,11 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=N
     ----------
     filepath : str
         A BGEN file path.
-    size : float
+    size : float, optional
         Chunk size in megabytes. Defaults to ``50``.
-    verbose : bool
+    verbose : bool, optional
         ``True`` to show progress; ``False`` otherwise.
-    metadata_file : bool, str
+    metadata_file : bool, str, optional
         If ``True``, it will try to read the variants metadata from the
         metadata file ``filepath + ".metadata"``. If this is not possible,
         the variants metadata will be read from the BGEN file itself. If
@@ -242,13 +242,17 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=N
 
     Returns
     -------
-    dict
-        variants : Variant position, chromossomes, RSIDs, etc.
-        samples : Sample identifications.
-        genotype : Array of genotype references.
+    variants : :class:`pandas.DataFrame`
+        Variant position, chromossomes, RSIDs, etc.
+    samples : :class:`pandas.DataFrame`
+        Sample identifications.
+    genotype : :class:`dask.array.Array`
+        Array of genotype references.
+    X : :class:`dask.array.Array`
+        Allele probabilities.
 
-    Notes
-    -----
+    Note
+    ----
     Metadata files can speed up subsequent reads tremendously. But often the user does
     not have write permission for the default metadata file location
     ``filepath + ".metadata"``. We thus provide the
