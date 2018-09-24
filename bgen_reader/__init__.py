@@ -16,7 +16,7 @@ test                  Verify this package's integrity.
 Documentation can be found at <https://github.com/limix/bgen-reader-py>.
 """
 
-from __future__ import absolute_import as _
+from __future__ import absolute_import
 
 try:
     from ._ffi import ffi as _
@@ -30,11 +30,15 @@ except Exception as e:
 from ._reader import read_bgen
 from ._metadata import create_metadata_file
 from ._testit import test
-from ._dosage import convert_to_dosage
+from ._dosage import convert_to_dosage, allele_expectation
 
 __version__ = "2.0.5"
 
 __all__ = [
-    '__version__', 'test', 'read_bgen', 'create_metadata_file',
-    'convert_to_dosage'
+    "__version__",
+    "test",
+    "read_bgen",
+    "create_metadata_file",
+    "convert_to_dosage",
+    "allele_expectation",
 ]
