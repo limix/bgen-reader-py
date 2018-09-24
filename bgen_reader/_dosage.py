@@ -1,5 +1,6 @@
-from ._helper import get_genotypes, genotypes_to_allele_counts
-from numpy import asarray, newaxis, where, ones, empty, stack, arange, ix_
+from numpy import asarray, newaxis
+
+from ._helper import genotypes_to_allele_counts, get_genotypes
 
 
 def convert_to_dosage(p, nalleles, ploidy):
