@@ -18,6 +18,17 @@ Documentation can be found at <https://github.com/limix/bgen-reader-py>.
 
 from __future__ import absolute_import
 
+from ._dosage import (
+    allele_expectation,
+    convert_to_dosage,
+    compute_dosage,
+    allele_frequency,
+)
+from ._example import example_files
+from ._metadata import create_metadata_file
+from ._reader import read_bgen
+from ._testit import test
+
 try:
     from ._ffi import ffi as _
 except Exception as e:
@@ -27,12 +38,8 @@ except Exception as e:
     e.msg = e.msg + msg
     raise e
 
-from ._reader import read_bgen
-from ._metadata import create_metadata_file
-from ._testit import test
-from ._dosage import convert_to_dosage, allele_expectation
 
-__version__ = "2.0.5"
+__version__ = "2.0.6"
 
 __all__ = [
     "__version__",
@@ -41,4 +48,7 @@ __all__ = [
     "create_metadata_file",
     "convert_to_dosage",
     "allele_expectation",
+    "example_files",
+    "compute_dosage",
+    "allele_frequency",
 ]
