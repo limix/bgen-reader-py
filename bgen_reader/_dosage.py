@@ -30,6 +30,18 @@ def convert_to_dosage(p, nalleles, ploidy):
 
 
 def allele_frequency(expec):
+    r"""Compute allele frequency from its expectation.
+    
+    Parameters
+    ----------
+    expec : array_like
+        Allele expectations enconded as a variants-by-samples-by-alleles matrix.
+    
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        
+    """
     ploidy = expec.shape[-1]
     if expec.ndim < 3:
         n = 1
@@ -39,6 +51,23 @@ def allele_frequency(expec):
 
 
 def compute_dosage(expec, ref=None):
+    r"""Compute dosage from allele expectation.
+
+    Parameters
+    ----------
+    expec : array_like
+        Allele expectations enconded as a variants-by-samples-by-alleles matrix.
+    ref : array_like
+        Allele reference of each locus. The allele having the minor allele frequency
+        for the provided ``expec`` is used as the reference if `None`. Defaults to
+        `None`.
+
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        Dosage enconded as a variants-by-samples matrix.
+    """
+    expec = asarray(expec, float)
     freq = allele_frequency(expec)
     if ref is None:
         ma = freq.argmin(1)
