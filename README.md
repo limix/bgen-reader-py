@@ -331,6 +331,9 @@ The following example demonstrate that case.
 ...     dosage = compute_dosage(e)
 ...     print(dosage.shape)
 ...     print(dosage)
+```
+
+```bash
 (199, 500)
 [[       nan 0.06424146 0.08441421 ... 0.05648808 1.89105224 0.98898311]
 [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]
@@ -404,6 +407,9 @@ Another example now querying specific locus and sample.
 >>> print()
 >>> print("Dosage: {:f}".format(dos[locus, sample]))
 >>> print()
+```
+
+```bash
 +----+-------+-------+-------+-------+
 |    |  AA   |  AG   |  GG   | E[.]  |
 +====+=======+=======+=======+=======+
