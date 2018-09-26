@@ -435,7 +435,7 @@ Dosage: 0.088409
 ### fatal error: bgen.h: No such file or directory
 
 This means that bgen C library is not installed (or could not be found). Please,
-follow the instructions in https://github.com/limix/bgen to install it, and try
+follow the instructions in <https://github.com/limix/bgen> to install it, and try
 installing bgen-reader again.
 
 ## Problems
