@@ -14,6 +14,21 @@ a low-memory footprint reader that efficiently reads BGEN files.
 It fully supports the BGEN format specifications: 1.2 and 1.3;
 as well as their optional compressed formats.
 
+Table of Contents
+=================
+
+   * [bgen-reader](#bgen-reader)
+      * [Install](#install)
+      * [Usage](#usage)
+         * [Unphased genotype](#unphased-genotype)
+         * [Phased genotype](#phased-genotype)
+         * [Complex file](#complex-file)
+      * [Troubleshooting](#troubleshooting)
+         * [fatal error: bgen.h: No such file or directory](#fatal-error-bgenh-no-such-file-or-directory)
+      * [Problems](#problems)
+      * [Authors](#authors)
+      * [License](#license)
+
 ## Install
 
 The recommended way to install this package is via [conda](https://conda.io/docs/)
