@@ -14,21 +14,19 @@ a low-memory footprint reader that efficiently reads BGEN files.
 It fully supports the BGEN format specifications: 1.2 and 1.3;
 as well as their optional compressed formats.
 
-Table of Contents
-=================
+## Table of Contents
 
-   * [bgen-reader](#bgen-reader)
-      * [Install](#install)
-      * [Usage](#usage)
-         * [Unphased genotype](#unphased-genotype)
-         * [Phased genotype](#phased-genotype)
-         * [Complex file](#complex-file)
-         * [Dosage](#dosage)
-      * [Troubleshooting](#troubleshooting)
-         * [fatal error: bgen.h: No such file or directory](#fatal-error-bgenh-no-such-file-or-directory)
-      * [Problems](#problems)
-      * [Authors](#authors)
-      * [License](#license)
+* [Install](#install)
+* [Usage](#usage)
+  * [Unphased genotype](#unphased-genotype)
+  * [Phased genotype](#phased-genotype)
+  * [Complex file](#complex-file)
+  * [Dosage](#dosage)
+* [Troubleshooting](#troubleshooting)
+  * [fatal error: bgen.h: No such file or directory](#fatal-error-bgenh-no-such-file-or-directory)
+* [Problems](#problems)
+* [Authors](#authors)
+* [License](#license)
 
 ## Install
 
@@ -317,6 +315,12 @@ A
 
 ### Dosage
 
+For a genotype with ploidy two and locus with two possible alleles, the dosage
+is defined as the expectation of the number of the reference alleles.
+It is common to define the reference allele as being the one has lower frequency
+under the given dataset.
+The following example demonstrate that case.
+
 ```python
 >>> from bgen_reader import read_bgen, allele_expectation, example_files
 >>> from bgen_reader import compute_dosage
@@ -336,6 +340,10 @@ A
 [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]
 [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]]
 ```
+
+The function `compute_dosage` also accepts the argument `ref` from which the reference
+alleles can be specified. (Consult `help(bgen_reader.compute_dosage)` for the full
+specification.)
 
 ## Troubleshooting
 
