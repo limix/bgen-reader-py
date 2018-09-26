@@ -70,6 +70,29 @@ def compute_dosage(expec, ref=None):
     -------
     :class:`numpy.ndarray`
         Dosage encoded as a variants-by-samples matrix.
+
+    Examples
+    --------
+
+    .. doctest::
+
+    >>> from bgen_reader import read_bgen, allele_expectation, example_files
+    >>> from bgen_reader import compute_dosage
+    >>>
+    >>> with example_files("example.32bits.bgen") as filepath:
+    ...     bgen = read_bgen(filepath, verbose=False)
+    ...     e = allele_expectation(bgen["genotype"], nalleles=2, ploidy=2)
+    ...     dosage = compute_dosage(e)
+    ...     print(dosage.shape)
+    ...     print(dosage)
+    (199, 500)
+    [[       nan 0.06424146 0.08441421 ... 0.05648808 1.89105224 0.98898311]
+     [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]
+     [       nan 0.06424146 0.08441421 ... 0.05648808 1.89105224 0.98898311]
+     ...
+     [       nan 0.06424146 0.08441421 ... 0.05648808 1.89105224 0.98898311]
+     [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]
+     [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]]
     """
     expec = asarray(expec, float)
     freq = allele_frequency(expec)
