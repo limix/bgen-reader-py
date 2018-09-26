@@ -345,6 +345,84 @@ The function `compute_dosage` also accepts the argument `ref` from which the ref
 alleles can be specified. (Consult `help(bgen_reader.compute_dosage)` for the full
 specification.)
 
+Another example now querying specific locus and sample.
+
+```python
+>>> from texttable import Texttable
+>>>
+>>> from bgen_reader import (
+>>>     read_bgen,
+>>>     allele_expectation,
+>>>     example_files,
+>>>     compute_dosage,
+>>>     allele_frequency,
+>>> )
+>>>
+>>> sampleid = "sample_005"
+>>> rsid = "RSID_6"
+>>>
+>>> with example_files("example.32bits.bgen") as filepath:
+...     bgen = read_bgen(filepath, verbose=False)
+...
+...     locus = bgen["variants"].query("rsid == '{}'".format(rsid)).index[0]
+...     sample = bgen["samples"].query("id == '{}'".format(sampleid)).index[0]
+...
+...     nalleles = bgen["variants"].loc[locus, "nalleles"].item()
+...     ploidy = 2
+...
+...     p = bgen["genotype"][locus, sample].compute()
+...     # For unphased genotypes only.
+...     e = allele_expectation(bgen["genotype"][locus, sample], nalleles, ploidy)
+...
+...     alleles = bgen["variants"].loc[locus, "allele_ids"].split(",")
+...
+...     tab = Texttable()
+...
+...     tab.add_rows(
+...         [
+...             ["", "AA", "AG", "GG", "E[.]"],
+...             ["p"] + list(p) + [1.0],
+...             ["#" + alleles[0], 2, 1, 0, e[0]],
+...             ["#" + alleles[1], 0, 1, 2, e[1]],
+...         ]
+...     )
+>>>
+>>> print(tab.draw())
+>>> print("variant: {}".format(rsid))
+>>> print("sample : {}".format(sampleid))
+>>>
+>>> e = allele_expectation(bgen["genotype"], nalleles, ploidy)
+>>>
+>>> freq = allele_frequency(e)[locus]
+>>> print("Frequency of locus {}:".format(rsid))
+>>> print("    {}: {:f}".format(alleles[0], freq[0]))
+>>> print("    {}: {:f}".format(alleles[1], freq[1]))
+>>>
+>>> # Alleles with minor allele frequencies accordong to the provided expections are used
+>>> # references by default.
+>>> dos = compute_dosage(e)
+>>> print()
+>>> print("Dosage: {:f}".format(dos[locus, sample]))
+>>> print()
++----+-------+-------+-------+-------+
+|    |  AA   |  AG   |  GG   | E[.]  |
++====+=======+=======+=======+=======+
+| p  | 0.012 | 0.987 | 0.001 | 1     |
++----+-------+-------+-------+-------+
+| #A | 2     | 1     | 0     | 1.011 |
++----+-------+-------+-------+-------+
+| #G | 0     | 1     | 2     | 0.989 |
++----+-------+-------+-------+-------+
+variant: RSID_6
+sample : sample_005
+
+Frequency of locus RSID_6:
+    A: 0.458462
+    G: 0.541538
+
+Dosage: 0.088409
+```
+
 ## Troubleshooting
 
 ### fatal error: bgen.h: No such file or directory
