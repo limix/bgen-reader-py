@@ -152,6 +152,7 @@ well as the next ones.
 >>> # and second individual.
 >>> print(bgen["genotype"][0, 1].compute())
 ```
+
 ```bash
 [0. 1. 1. 0.]
 ```
@@ -269,7 +270,7 @@ A
 >>> print(nalleles)
 ```
 
-```
+```bash
 8
 ```
 
