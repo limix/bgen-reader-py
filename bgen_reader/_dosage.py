@@ -1,3 +1,4 @@
+import warnings
 from numpy import asarray, newaxis
 
 from ._helper import genotypes_to_allele_counts, get_genotypes
@@ -20,10 +21,13 @@ def convert_to_dosage(p, nalleles, ploidy):
     :class:`numpy.ndarray`
         Dosage matrix.
 
-    Warning
-    -------
-    This is a new function that needs more testing. Please, report any problem.
+    Deprecated
+    ----------
+    Since version 2.0.5. Please use :func:`compute_dosage` instead.
     """
+    warnings.warn(
+        "Deprecated in favor of `bgen_reader.compute_dosage.", DeprecationWarning
+    )
     g = get_genotypes(ploidy, nalleles)
     c = genotypes_to_allele_counts(g)
     return (asarray(c, float).T * p).sum(1)
@@ -31,16 +35,16 @@ def convert_to_dosage(p, nalleles, ploidy):
 
 def allele_frequency(expec):
     r"""Compute allele frequency from its expectation.
-    
+
     Parameters
     ----------
     expec : array_like
-        Allele expectations enconded as a variants-by-samples-by-alleles matrix.
-    
+        Allele expectations encoded as a variants-by-samples-by-alleles matrix.
+
     Returns
     -------
     :class:`numpy.ndarray`
-        
+        Allele frequencies encoded as a variants-by-alleles matrix.
     """
     ploidy = expec.shape[-1]
     if expec.ndim < 3:
@@ -56,7 +60,7 @@ def compute_dosage(expec, ref=None):
     Parameters
     ----------
     expec : array_like
-        Allele expectations enconded as a variants-by-samples-by-alleles matrix.
+        Allele expectations encoded as a variants-by-samples-by-alleles matrix.
     ref : array_like
         Allele reference of each locus. The allele having the minor allele frequency
         for the provided ``expec`` is used as the reference if `None`. Defaults to
@@ -65,7 +69,7 @@ def compute_dosage(expec, ref=None):
     Returns
     -------
     :class:`numpy.ndarray`
-        Dosage enconded as a variants-by-samples matrix.
+        Dosage encoded as a variants-by-samples matrix.
     """
     expec = asarray(expec, float)
     freq = allele_frequency(expec)
@@ -80,9 +84,9 @@ def allele_expectation(p, nalleles, ploidy):
 
     Compute the expectation of each allele from the given probabilities.
     It accepts three shapes of matrices:
-    - unidimensional probability array;
-    - bidimensional sample-by-probability array; and
-    - three dimensional locus-by-sample-by-probability array.
+    - unidimensional array of probabilities;
+    - bidimensional samples-by-alleles probabilities array;
+    - and three dimensional variants-by-samples-by-alleles array.
 
     Parameters
     ----------
@@ -101,7 +105,7 @@ def allele_expectation(p, nalleles, ploidy):
     Examples
     --------
 
-    .. codetest::
+    .. doctest::
 
     >>> from texttable import Texttable
     >>> from bgen_reader import read_bgen, allele_expectation, example_files
@@ -149,8 +153,8 @@ def allele_expectation(p, nalleles, ploidy):
     >>> print("sample : {}".format(sampleid))
     sample : sample_005
 
-    Warning
-    -------
+    Note
+    ----
     This function supports unphased genotypes only.
     """
     g = get_genotypes(ploidy, nalleles)
