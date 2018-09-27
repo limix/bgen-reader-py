@@ -1,7 +1,8 @@
 import warnings
-from numpy import asarray, newaxis
+from numpy import asarray, newaxis, full
 
 from ._helper import genotypes_to_allele_counts, get_genotypes
+from ._dask import array_shape_reveal
 
 
 def convert_to_dosage(p, nalleles, ploidy):
@@ -54,7 +55,7 @@ def allele_frequency(expec):
     return expec.sum(-2) / (ploidy * n)
 
 
-def compute_dosage(expec, ref=None):
+def compute_dosage(expec, alt=None):
     r"""Compute dosage from allele expectation.
 
     Parameters
@@ -82,24 +83,26 @@ def compute_dosage(expec, ref=None):
     >>> with example_files("example.32bits.bgen") as filepath:
     ...     bgen = read_bgen(filepath, verbose=False)
     ...     e = allele_expectation(bgen["genotype"], nalleles=2, ploidy=2)
-    ...     dosage = compute_dosage(e)
+    ...     dosage = compute_dosage(e).compute()
     ...     print(dosage.shape)
     ...     print(dosage)
     (199, 500)
-    [[       nan 0.06424146 0.08441421 ... 0.05648808 1.89105224 0.98898311]
+    [[       nan 1.93575854 1.91558579 ... 1.94351192 0.10894776 1.01101689]
      [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]
-     [       nan 0.06424146 0.08441421 ... 0.05648808 1.89105224 0.98898311]
+     [0.01550294 0.99383543 1.97933958 ... 1.98681641 1.99041748 1.99603272]
      ...
-     [       nan 0.06424146 0.08441421 ... 0.05648808 1.89105224 0.98898311]
-     [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]
-     [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]]
+     [1.99319479 1.980896   1.98767124 ... 1.9943846  1.99716186 1.98712159]
+     [0.01263467 0.09661863 0.00869752 ... 0.00643921 0.00494384 0.01504517]
+     [0.99185182 1.94860838 0.99734497 ... 0.02914425 1.97827146 0.9515991 ]]
     """
-    expec = asarray(expec, float)
     freq = allele_frequency(expec)
-    if ref is None:
-        ma = freq.argmin(1)
-    ma = asarray(ma, int)
-    return expec[ma, :, ma]
+    if alt is None:
+        return expec[..., -1]
+    try:
+        return expec[alt, :, alt]
+    except NotImplementedError:
+        alt = asarray(alt, int)
+        return asarray(expec, float)[alt, :, alt]
 
 
 def allele_expectation(p, nalleles, ploidy):
@@ -183,4 +186,5 @@ def allele_expectation(p, nalleles, ploidy):
     g = get_genotypes(ploidy, nalleles)
     c = asarray(genotypes_to_allele_counts(g), float)
     c = c.T.reshape((1,) * (p.ndim - 1) + (c.shape[1], c.shape[0]))
-    return (c * p.compute()[..., newaxis, :]).sum(-1)
+    p = array_shape_reveal(p)
+    return (c * p[..., newaxis, :]).sum(-1)
