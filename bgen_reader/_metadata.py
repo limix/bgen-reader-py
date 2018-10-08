@@ -1,5 +1,5 @@
 from os import access, W_OK
-from os.path import exists, dirname
+from os.path import exists, dirname, abspath
 from ._misc import make_sure_bytes, check_file_exist, check_file_readable
 
 from ._ffi import ffi
@@ -26,8 +26,6 @@ def try_read_variants_metadata_file(bfile, mfilepath, index, v):
     if variants == ffi.NULL:
         raise RuntimeError("Could not read variants metadata.")
 
-    errmsg = "Warning: could not create"
-    errmsg += " the metadata file {}.".format(mfilepath)
 
     if not exists(mfilepath):
         if access(dirname(mfilepath), W_OK):
@@ -35,8 +33,12 @@ def try_read_variants_metadata_file(bfile, mfilepath, index, v):
                 bfile, variants, index[0], mfilepath
             )
             if e != 0 and v == 1:
+                errmsg = "Warning: could not create"
+                errmsg += " the metadata file {}.".format(abspath(mfilepath))
                 print(errmsg)
         elif v == 1:
+            errmsg = "Warning: you don't have permission to write"
+            errmsg += " the metadata file {}.".format(abspath(mfilepath))
             print(errmsg)
     return variants
 

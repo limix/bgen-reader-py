@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import os
+import sys
 
 import pytest
 from bgen_reader import read_bgen, create_metadata_file, example_files
@@ -173,6 +174,17 @@ def test_create_metadata_file():
         metadata_file = os.path.join(folder, filepath + ".metadata")
 
         create_metadata_file(filepath, metadata_file, verbose=False)
+        assert_(os.path.exists(metadata_file))
+        os.remove(metadata_file)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_create_metadata_file_bytes():
+    with example_files("example.32bits.bgen") as filepath:
+        folder = os.path.dirname(filepath)
+        metadata_file = os.path.join(folder, filepath + ".metadata")
+
+        create_metadata_file(filepath, metadata_file.encode(), verbose=False)
         assert_(os.path.exists(metadata_file))
         os.remove(metadata_file)
 
