@@ -154,17 +154,14 @@ def allele_expectation(p, nalleles, ploidy):
     ...
     ...     alleles = bgen["variants"].loc[locus, "allele_ids"].item().split(",")
     ...
-    ...     tab = Texttable()
-    ...
-    ...     tab.add_rows(
+    ...     print(Texttable().add_rows(
     ...         [
     ...             ["", "AA", "AG", "GG", "E[.]"],
     ...             ["p"] + list(p) + [1.0],
     ...             ["#" + alleles[0], 2, 1, 0, e[0]],
     ...             ["#" + alleles[1], 0, 1, 2, e[1]],
     ...         ]
-    ...     )
-    >>> print(tab.draw())
+    ...     ).draw())
     +----+-------+-------+-------+-------+
     |    |  AA   |  AG   |  GG   | E[.]  |
     +====+=======+=======+=======+=======+
