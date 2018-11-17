@@ -277,3 +277,53 @@ def test_bgen_reader_complex_sample_file():
 
         assert_equal(samples.loc[0, "id"], "sample_0")
         assert_equal(samples.loc[3, "id"], "sample_3")
+
+
+def test_bgen_reader_too_small_chunk_size():
+    with example_files("complex.23bits.bgen") as filepath:
+        read_bgen(filepath, size=1e-10, verbose=False)
+
+
+def test_bgen_reader_concat_chunks():
+    with example_files("complex.23bits.bgen") as filepath:
+        bgen = read_bgen(filepath, size=0.0001, verbose=False)
+        assert_("genotype" in bgen)
+
+        # G = bgen["genotype"][0, 0, :].compute()
+        # print(type(G))
+
+        # G = bgen["genotype"][0, [0, 1]].compute()
+        # print(type(G))
+
+        # G = bgen["genotype"][[0, 1]].compute()
+        # print(type(G))
+
+        # G = bgen["genotype"][[0]].compute()
+        # print(type(G))
+
+        G = bgen["genotype"].compute()
+        print(type(G))
+
+        print(bgen["genotype"].chunks)
+        # assert_allclose(G[:2], [1, 0])
+        # assert_(isnan(G[2]))
+
+        # G = bgen["genotype"][0, 1, :].compute()
+        # assert_allclose(G[:3], [1, 0, 0])
+
+        # G = bgen["genotype"][-1, -1, :].compute()
+        # assert_allclose(G[:5], [0, 0, 0, 1, 0])
+
+        # X = bgen["X"]
+
+        # assert_allclose(X[0].compute().sel(data="ploidy"), [1, 2, 2, 2])
+        # assert_allclose(X[-1].compute().sel(data="ploidy"), [4, 4, 4, 4])
+
+        # assert_allclose(
+        #     X[:, 0].compute().sel(data="phased"), [0, 1, 1, 0, 1, 1, 1, 1, 0, 0]
+        # )
+
+        # X = X.compute()
+
+        # x = X.sel(sample=0, data="phased")
+        # assert_allclose(x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])

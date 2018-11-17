@@ -192,13 +192,14 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
     genotype = []
     X = []
 
-    c = int((1024 * 1024 * size / 8) // nsamples)
+    c = max(int((1024 * 1024 * size / 8) // nsamples), 1)
     step = min(c, nvariants)
     tqdm_kwds = dict(desc="Variant mapping", disable=not verbose)
 
     kws = {"pure": True, "traverse": False}
     Gcall = delayed(lambda *args: _genotype_block(*args)[0], **kws)
     Xcall = delayed(lambda *args: _genotype_block(*args)[1], **kws)
+
     for i in tqdm(range(0, nvariants, step), **tqdm_kwds):
         size = min(step, nvariants - i)
         tup = indexing, nsamples, i, size
