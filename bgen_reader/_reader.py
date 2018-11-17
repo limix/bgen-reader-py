@@ -16,10 +16,8 @@ from pandas import DataFrame, read_csv
 from tqdm import tqdm
 from ._metadata import try_read_variants_metadata_file
 
-try:
-    from functools import lru_cache
-except ImportError:
-    from ._pylru import lrudecorator as lru_cache
+from threading import RLock
+from cachetools import LRUCache, cached
 
 from ._ffi import ffi
 from ._ffi.lib import (
@@ -129,7 +127,11 @@ def _generate_samples(bgen_file):
     return DataFrame(data=dict(id=["sample_%d" % i for i in range(nsamples)]))
 
 
-@lru_cache(2)
+cache = LRUCache(maxsize=2)
+lock = RLock()
+
+
+@cached(cache, lock=lock)
 def _genotype_block(indexing, nsamples, variant_idx, nvariants):
 
     max_ncombs = -inf
