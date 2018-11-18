@@ -38,12 +38,113 @@ from ._ffi.lib import (
     bgen_read_variants_metadata,
     bgen_sample_ids_presence,
     bgen_load_variants_metadata,
+    bgen_max_nalleles,
 )
 
 PY3 = sys.version_info >= (3,)
 
 if not PY3:
     FileNotFoundError = IOError
+
+
+def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=None, ploidy=2):
+    r"""Read a given BGEN file.
+
+    Parameters
+    ----------
+    filepath : str
+        A BGEN file path.
+    size : float, optional
+        Chunk size in megabytes. Defaults to ``50``.
+    verbose : bool, optional
+        ``True`` to show progress; ``False`` otherwise.
+    metadata_file : bool, str, optional
+        If ``True``, it will try to read the variants metadata from the
+        metadata file ``filepath + ".metadata"``. If this is not possible,
+        the variants metadata will be read from the BGEN file itself. If
+        ``filepath + ".metadata"`` does not exist, it will try to create one
+        with the same name to speed up reads. If ``False``, variants metadata
+        will be read only from the BGEN file. If a file path is given instead,
+        it assumes that the specified metadata file is valid and readable and
+        therefore it will read variants metadata from that file only. Defaults
+        to ``True``.
+    sample_file : str, optional
+        A sample file in `GEN format <http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html>`_.
+        If sample_file is provided, sample IDs are read from this file. Otherwise, it
+        reads from the BGEN file itself if present. Defaults to ``None``.
+    ploidy : int, optional
+        Maximum ploidy level. Defaults to ``2``. ``ValueError`` is raised if a genotype
+        with ploidy level greater than the provided is read,
+
+
+    Returns
+    -------
+    variants : :class:`pandas.DataFrame`
+        Variant position, chromossomes, RSIDs, etc.
+    samples : :class:`pandas.DataFrame`
+        Sample identifications.
+    genotype : :class:`dask.array.Array`
+        Array of genotype references.
+    X : :class:`dask.array.Array`
+        Allele probabilities.
+
+    Note
+    ----
+    Metadata files can speed up subsequent reads tremendously. But often the user does
+    not have write permission for the default metadata file location
+    ``filepath + ".metadata"``. We thus provide the
+    :function:`bgen_reader.create_metadata_file` function for creating one at the
+    given path.
+    """
+
+    filepath = make_sure_bytes(filepath)
+    if sample_file is not None:
+        sample_file = make_sure_str(sample_file)
+
+    check_file_exist(filepath)
+    check_file_readable(filepath)
+
+    if metadata_file not in [True, False]:
+        metadata_file = make_sure_bytes(metadata_file)
+        try:
+            check_file_exist(metadata_file)
+        except FileNotFoundError as e:
+            msg = (
+                "\n\nMetadata file `{}` does not exist.\nIf you want to create a "
+                "metadata file in a custom location, please use "
+                "`bgen_reader.create_metadata_file`.\n"
+            )
+            print(msg.format(metadata_file))
+            raise e
+        check_file_readable(metadata_file)
+
+    bfile = bgen_open(filepath)
+    if bfile == ffi.NULL:
+        raise RuntimeError("Could not read {}.".format(filepath))
+
+    if sample_file is not None:
+        check_file_exist(sample_file)
+        samples = _read_samples_from_file(sample_file, verbose)
+    elif bgen_sample_ids_presence(bfile) == 0:
+        if verbose:
+            print("Sample IDs are not present in this file.")
+            msg = "I will generate them on my own:"
+            msg += " sample_1, sample_2, and so on."
+            print(msg)
+        samples = _generate_samples(bfile)
+    else:
+        samples = _read_samples(bfile, verbose)
+
+    variants, index = _read_variants(bfile, filepath, metadata_file, verbose)
+    nalls = variants["nalleles"].values
+
+    nsamples = samples.shape[0]
+    nvariants = variants.shape[0]
+    bgen_close(bfile)
+
+    G, X = _read_genotype(index, nsamples, nvariants, nalls, size, verbose, ploidy)
+
+    return dict(variants=variants, samples=samples, genotype=G, X=X)
 
 
 def _read_variants_from_bgen_file(bfile, index, v):
@@ -187,8 +288,9 @@ def _genotype_block(indexing, nsamples, variant_idx, nvariants):
     return G, X
 
 
-def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
+def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose, ploidy):
 
+    max_nalleles = bgen_max_nalleles(indexing)
     genotype = []
     X = []
 
@@ -215,99 +317,3 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
     a = da.concatenate(genotype, allow_unknown_chunksizes=True)
     b = da.concatenate(X, allow_unknown_chunksizes=True)
     return a, b
-
-
-def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=None):
-    r"""Read a given BGEN file.
-
-    Parameters
-    ----------
-    filepath : str
-        A BGEN file path.
-    size : float, optional
-        Chunk size in megabytes. Defaults to ``50``.
-    verbose : bool, optional
-        ``True`` to show progress; ``False`` otherwise.
-    metadata_file : bool, str, optional
-        If ``True``, it will try to read the variants metadata from the
-        metadata file ``filepath + ".metadata"``. If this is not possible,
-        the variants metadata will be read from the BGEN file itself. If
-        ``filepath + ".metadata"`` does not exist, it will try to create one
-        with the same name to speed up reads. If ``False``, variants metadata
-        will be read only from the BGEN file. If a file path is given instead,
-        it assumes that the specified metadata file is valid and readable and
-        therefore it will read variants metadata from that file only. Defaults
-        to ``True``.
-    sample_file : str, optional
-        A sample file in `GEN format <http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html>`_.
-        If sample_file is provided, sample IDs are read from this file. Otherwise, it
-        reads from the BGEN file itself if present. Defaults to ``None``.
-
-    Returns
-    -------
-    variants : :class:`pandas.DataFrame`
-        Variant position, chromossomes, RSIDs, etc.
-    samples : :class:`pandas.DataFrame`
-        Sample identifications.
-    genotype : :class:`dask.array.Array`
-        Array of genotype references.
-    X : :class:`dask.array.Array`
-        Allele probabilities.
-
-    Note
-    ----
-    Metadata files can speed up subsequent reads tremendously. But often the user does
-    not have write permission for the default metadata file location
-    ``filepath + ".metadata"``. We thus provide the
-    :function:`bgen_reader.create_metadata_file` function for creating one at the
-    given path.
-    """
-
-    filepath = make_sure_bytes(filepath)
-    if sample_file is not None:
-        sample_file = make_sure_str(sample_file)
-
-    check_file_exist(filepath)
-    check_file_readable(filepath)
-
-    if metadata_file not in [True, False]:
-        metadata_file = make_sure_bytes(metadata_file)
-        try:
-            check_file_exist(metadata_file)
-        except FileNotFoundError as e:
-            msg = (
-                "\n\nMetadata file `{}` does not exist.\nIf you want to create a "
-                "metadata file in a custom location, please use "
-                "`bgen_reader.create_metadata_file`.\n"
-            )
-            print(msg.format(metadata_file))
-            raise e
-        check_file_readable(metadata_file)
-
-    bfile = bgen_open(filepath)
-    if bfile == ffi.NULL:
-        raise RuntimeError("Could not read {}.".format(filepath))
-
-    if sample_file is not None:
-        check_file_exist(sample_file)
-        samples = _read_samples_from_file(sample_file, verbose)
-    elif bgen_sample_ids_presence(bfile) == 0:
-        if verbose:
-            print("Sample IDs are not present in this file.")
-            msg = "I will generate them on my own:"
-            msg += " sample_1, sample_2, and so on."
-            print(msg)
-        samples = _generate_samples(bfile)
-    else:
-        samples = _read_samples(bfile, verbose)
-
-    variants, index = _read_variants(bfile, filepath, metadata_file, verbose)
-    nalls = variants["nalleles"].values
-
-    nsamples = samples.shape[0]
-    nvariants = variants.shape[0]
-    bgen_close(bfile)
-
-    G, X = _read_genotype(index, nsamples, nvariants, nalls, size, verbose)
-
-    return dict(variants=variants, samples=samples, genotype=G, X=X)
