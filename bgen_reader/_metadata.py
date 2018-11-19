@@ -26,12 +26,9 @@ def try_read_variants_metadata_file(bfile, mfilepath, index, v):
     if variants == ffi.NULL:
         raise RuntimeError("Could not read variants metadata.")
 
-
     if not exists(mfilepath):
-        if access(dirname(mfilepath), W_OK):
-            e = bgen_store_variants_metadata(
-                bfile, variants, index[0], mfilepath
-            )
+        if access(abspath(dirname(mfilepath)), W_OK):
+            e = bgen_store_variants_metadata(bfile, variants, index[0], mfilepath)
             if e != 0 and v == 1:
                 errmsg = "Warning: could not create"
                 errmsg += " the metadata file {}.".format(abspath(mfilepath))
@@ -70,13 +67,9 @@ def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
     check_file_readable(bgen_filepath)
 
     if exists(metadata_filepath):
-        raise ValueError(
-            "The file {} already exists.".format(metadata_filepath)
-        )
+        raise ValueError("The file {} already exists.".format(metadata_filepath))
 
-    e = bgen_create_variants_metadata_file(
-        bgen_filepath, metadata_filepath, verbose
-    )
+    e = bgen_create_variants_metadata_file(bgen_filepath, metadata_filepath, verbose)
 
     if e != 0:
         raise RuntimeError("Error while creating metadata file: {}".format(e))

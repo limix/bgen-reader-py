@@ -4,7 +4,7 @@ import os
 import sys
 
 import pytest
-from bgen_reader import read_bgen, create_metadata_file, example_files
+from bgen_reader import read_bgen, create_metadata_file, example_files, read_bgen2
 from numpy import isnan
 from numpy.testing import assert_, assert_equal, assert_allclose
 
@@ -12,6 +12,72 @@ try:
     FileNotFoundError
 except NameError:
     FileNotFoundError = IOError
+
+
+def test_bgen_reader_phased_genotype2():
+    _test_bgen_reader_phased_genotype2(50)
+    _test_bgen_reader_phased_genotype2(0.0001)
+
+
+def _test_bgen_reader_phased_genotype2(size):
+    with example_files("haplotypes.bgen") as filepath:
+        bgen = read_bgen2(filepath, verbose=False, size=size)
+        variants = bgen["variants"]
+        samples = bgen["samples"]
+
+        v = variants.loc[0].compute()
+        assert_equal(v["chrom"].item(), "1")
+        assert_equal(v["id"].item(), "SNP1")
+        assert_equal(v["nalleles"].item(), 2)
+        assert_equal(v["allele_ids"].item(), "A,G")
+        assert_equal(v["pos"].item(), 1)
+        assert_equal(v["rsid"].item(), "RS1")
+
+        v = variants.loc[2].compute()
+        assert_equal(v["chrom"].item(), "1")
+        assert_equal(v["id"].item(), "SNP3")
+        assert_equal(v["nalleles"].item(), 2)
+        assert_equal(v["allele_ids"].item(), "A,G")
+        assert_equal(v["pos"].item(), 3)
+        assert_equal(v["rsid"].item(), "RS3")
+
+        assert_equal(samples.loc[0], "sample_0")
+        assert_equal(samples.loc[2], "sample_2")
+
+        n = samples.shape[0]
+        assert_equal(samples.loc[n - 1], "sample_3")
+
+        a = [1.0, 0.0, 1.0, 0.0]
+        assert_allclose(
+            bgen["variants"]["genotype"].loc[0].compute().item().compute()[0], a
+        )
+        k = len(variants)
+        n = len(samples)
+        a = [1.0, 0.0, 0.0, 1.0]
+        assert_allclose(
+            bgen["variants"]["genotype"].loc[k - 1].compute().item().compute()[n - 1], a
+        )
+
+    with example_files("haplotypes.bgen") as filepath:
+        bgen = read_bgen2(filepath, verbose=False)
+        variants = bgen["variants"]
+        assert_("samples" in bgen)
+
+        v = variants.loc[0].compute()
+        assert_equal(v["chrom"].item(), "1")
+        a = [1.0, 0.0, 1.0, 0.0]
+        assert_allclose(
+            bgen["variants"]["genotype"].loc[0].compute().item().compute()[0], a
+        )
+        k = len(variants)
+        n = len(samples)
+        a = [1.0, 0.0, 0.0, 1.0]
+        assert_allclose(
+            bgen["variants"]["genotype"].loc[k - 1].compute().item().compute()[n - 1], a
+        )
+
+    if os.path.exists(filepath + ".metadata"):
+        os.remove(filepath + ".metadata")
 
 
 def test_bgen_reader_variants_info():
@@ -72,6 +138,72 @@ def test_bgen_reader_variants_info():
         assert_(all(isnan(G[0, 0, :])))
         a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
         assert_allclose(G[0, 1, :], a)
+
+    if os.path.exists(filepath + ".metadata"):
+        os.remove(filepath + ".metadata")
+
+
+def test_bgen_reader_variants_info2():
+    with example_files("example.32bits.bgen") as filepath:
+        bgen = read_bgen2(filepath, verbose=False)
+        variants = bgen["variants"]
+        samples = bgen["samples"]
+
+        v = variants.loc[0].compute()
+        assert_equal(v["chrom"].item(), "01")
+        assert_equal(v["id"].item(), "SNPID_2")
+        assert_equal(v["nalleles"].item(), 2)
+        assert_equal(v["allele_ids"].item(), "A,G")
+        assert_equal(v["pos"].item(), 2000)
+        assert_equal(v["rsid"].item(), "RSID_2")
+
+        v = variants.loc[7].compute()
+        assert_equal(v["chrom"].item(), "01")
+        assert_equal(v["id"].item(), "SNPID_9")
+        assert_equal(v["nalleles"].item(), 2)
+        assert_equal(v["allele_ids"].item(), "A,G")
+        assert_equal(v["pos"].item(), 9000)
+        assert_equal(v["rsid"].item(), "RSID_9")
+
+        n = variants.shape[0].compute()
+        v = variants.loc[n - 1].compute()
+        assert_equal(v["chrom"].item(), "01")
+        assert_equal(v["id"].item(), "SNPID_200")
+        assert_equal(v["nalleles"].item(), 2)
+        assert_equal(v["allele_ids"].item(), "A,G")
+        assert_equal(v["pos"].item(), 100001)
+        assert_equal(v["rsid"].item(), "RSID_200")
+
+        assert_equal(samples.loc[0], "sample_001")
+        assert_equal(samples.loc[7], "sample_008")
+
+        n = samples.shape[0]
+        assert_equal(samples.loc[n - 1], "sample_500")
+
+        X = bgen["variants"]["genotype"].loc[0].compute().item().compute()
+        assert_(all(isnan(X.values[0])))
+        a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
+        assert_allclose(X.values[1], a)
+        b = [
+            0.97970582847010945215516,
+            0.01947019668749305418287,
+            0.00082397484239749366197,
+        ]
+        X = bgen["variants"]["genotype"].loc[1].compute().item().compute()
+        assert_allclose(X.values[2], b)
+
+    with example_files("example.32bits.bgen") as filepath:
+        bgen = read_bgen2(filepath, verbose=False)
+        variants = bgen["variants"]
+        assert_("samples" in bgen)
+
+        v = variants.loc[0].compute()
+        assert_equal(v["chrom"].item(), "01")
+
+        X = bgen["variants"]["genotype"].loc[0].compute().item().compute()
+        assert_(all(isnan(X.values[0])))
+        a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
+        assert_allclose(X.values[1], a)
 
     if os.path.exists(filepath + ".metadata"):
         os.remove(filepath + ".metadata")
@@ -148,7 +280,24 @@ def test_bgen_reader_without_metadata():
         assert_(not os.path.exists(filepath + ".metadata"))
 
 
+def test_bgen_reader_without_metadata2():
+    with example_files("example.32bits.bgen") as filepath:
+        bgen = read_bgen2(filepath, verbose=False, metadata_file=False)
+        variants = bgen["variants"]
+        samples = bgen["samples"]
+        assert_equal(variants.loc[7, "allele_ids"].compute().item(), "A,G")
+        n = samples.shape[0]
+        assert_equal(samples.loc[n - 1], "sample_500")
+        assert_(not os.path.exists(filepath + ".metadata"))
+
+
 def test_bgen_reader_with_wrong_metadata_file():
+    with example_files(["example.32bits.bgen", "wrong.metadata"]) as filepaths:
+        with pytest.raises(RuntimeError):
+            read_bgen(filepaths[0], verbose=False, metadata_file=filepaths[1])
+
+
+def test_bgen_reader_with_wrong_metadata_file2():
     with example_files(["example.32bits.bgen", "wrong.metadata"]) as filepaths:
         with pytest.raises(RuntimeError):
             read_bgen(filepaths[0], verbose=False, metadata_file=filepaths[1])
@@ -163,7 +312,21 @@ def test_bgen_reader_with_nonexistent_metadata_file():
             read_bgen(filepath, verbose=False, metadata_file=metadata_file)
 
 
+def test_bgen_reader_with_nonexistent_metadata_file2():
+    with example_files("example.32bits.bgen") as filepath:
+        folder = os.path.dirname(filepath)
+        metadata_file = os.path.join(folder, "nonexistent.metadata")
+
+        with pytest.raises(FileNotFoundError):
+            read_bgen2(filepath, verbose=False, metadata_file=metadata_file)
+
+
 def test_bgen_reader_file_notfound():
+    with pytest.raises(FileNotFoundError):
+        read_bgen("/1/2/3/example.32bits.bgen", verbose=False)
+
+
+def test_bgen_reader_file_notfound2():
     with pytest.raises(FileNotFoundError):
         read_bgen("/1/2/3/example.32bits.bgen", verbose=False)
 
@@ -246,6 +409,69 @@ def test_bgen_reader_complex():
         assert_allclose(x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])
 
 
+def test_bgen_reader_complex2():
+    with example_files("complex.23bits.bgen") as filepath:
+        bgen = read_bgen2(filepath, verbose=False)
+        variants = bgen["variants"]
+        samples = bgen["samples"]
+
+        assert_equal(variants.loc[0, "chrom"].compute().item(), "01")
+        assert_equal(variants.loc[0, "id"].compute().item(), "")
+        assert_equal(variants.loc[0, "nalleles"].compute().item(), 2)
+        assert_equal(variants.loc[0, "allele_ids"].compute().item(), "A,G")
+        assert_equal(variants.loc[0, "pos"].compute().item(), 1)
+        assert_equal(variants.loc[0, "rsid"].compute().item(), "V1")
+
+        assert_equal(variants.loc[7, "chrom"].compute().item(), "01")
+        assert_equal(variants.loc[7, "id"].compute().item(), "")
+        assert_equal(variants.loc[7, "nalleles"].compute().item(), 7)
+        assert_equal(
+            variants.loc[7, "allele_ids"].compute().item(),
+            "A,G,GT,GTT,GTTT,GTTTT,GTTTTT",
+        )
+        assert_equal(variants.loc[7, "pos"].compute().item(), 8)
+        assert_equal(variants.loc[7, "rsid"].compute().item(), "M8")
+
+        n = variants.shape[0].compute()
+        assert_equal(variants.loc[n - 1, "chrom"].compute().item(), "01")
+        assert_equal(variants.loc[n - 1, "id"].compute().item(), "")
+        assert_equal(variants.loc[n - 1, "nalleles"].compute().item(), 2)
+        assert_equal(variants.loc[n - 1, "allele_ids"].compute().item(), "A,G")
+        assert_equal(variants.loc[n - 1, "pos"].compute().item(), 10)
+        assert_equal(variants.loc[n - 1, "rsid"].compute().item(), "M10")
+
+        assert_equal(samples.loc[0], "sample_0")
+        assert_equal(samples.loc[3], "sample_3")
+
+        G = bgen["variants"]["genotype"].loc[0].compute().item().compute()
+        assert_allclose(G[0, :2], [1, 0])
+        assert_(isnan(G[0, 2]))
+
+        G = bgen["variants"]["genotype"].loc[0].compute().item().compute()
+        assert_allclose(G[2, :3], [1, 0, 0])
+
+        G = bgen["variants"]["genotype"].compute().values[-1].compute()
+        assert_allclose(G[-1, :5], [0, 0, 0, 1, 0])
+
+        assert_allclose(
+            bgen["variants"]["genotype"].loc[0].compute().item().compute().ploidy,
+            [1, 2, 2, 2],
+        )
+        assert_allclose(
+            bgen["variants"]["genotype"].compute().values[-1].compute().ploidy,
+            [4, 4, 4, 4],
+        )
+
+        assert_allclose(
+            [bgen["variants"]["genotype"].loc[i].compute().item().compute().phased for i in range(10)],
+            [0, 1, 1, 0, 1, 1, 1, 1, 0, 0],
+        )
+
+        # TODO: fix it
+        # x = X.sel(sample=0, data="phased")
+        # assert_allclose(x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])
+
+
 def test_bgen_reader_complex_sample_file():
     with example_files(["complex.23bits.bgen", "complex.sample"]) as filepaths:
         bgen = read_bgen(filepaths[0], sample_file=filepaths[1], verbose=False)
@@ -279,15 +505,51 @@ def test_bgen_reader_complex_sample_file():
         assert_equal(samples.loc[3, "id"], "sample_3")
 
 
+def test_bgen_reader_complex_sample_file2():
+    with example_files(["complex.23bits.bgen", "complex.sample"]) as filepaths:
+        bgen = read_bgen2(filepaths[0], sample_file=filepaths[1], verbose=False)
+        variants = bgen["variants"]
+        samples = bgen["samples"]
+
+        assert_equal(variants.loc[0, "chrom"].compute().item(), "01")
+        assert_equal(variants.loc[0, "id"].compute().item(), "")
+        assert_equal(variants.loc[0, "nalleles"].compute().item(), 2)
+        assert_equal(variants.loc[0, "allele_ids"].compute().item(), "A,G")
+        assert_equal(variants.loc[0, "pos"].compute().item(), 1)
+        assert_equal(variants.loc[0, "rsid"].compute().item(), "V1")
+
+        assert_equal(variants.loc[7, "chrom"].compute().item(), "01")
+        assert_equal(variants.loc[7, "id"].compute().item(), "")
+        assert_equal(variants.loc[7, "nalleles"].compute().item(), 7)
+        assert_equal(variants.loc[7, "allele_ids"].compute().item(), "A,G,GT,GTT,GTTT,GTTTT,GTTTTT")
+        assert_equal(variants.loc[7, "pos"].compute().item(), 8)
+        assert_equal(variants.loc[7, "rsid"].compute().item(), "M8")
+
+        n = variants.shape[0].compute()
+        assert_equal(variants["chrom"].compute().values[n - 1], "01")
+        assert_equal(variants["id"].compute().values[n - 1], "")
+        assert_equal(variants["nalleles"].compute().values[n - 1], 2)
+        assert_equal(variants["allele_ids"].compute().values[n - 1], "A,G")
+        assert_equal(variants["pos"].compute().values[n - 1], 10)
+        assert_equal(variants["rsid"].compute().values[n - 1], "M10")
+
+        assert_equal(samples.loc[0], "sample_0")
+        assert_equal(samples.loc[3], "sample_3")
+
+
 def test_bgen_reader_too_small_chunk_size():
     with example_files("complex.23bits.bgen") as filepath:
         read_bgen(filepath, size=1e-10, verbose=False)
 
 
+def test_bgen_reader_too_small_chunk_size2():
+    with example_files("complex.23bits.bgen") as filepath:
+        read_bgen2(filepath, size=1e-10, verbose=False)
+
+
 def test_bgen_reader_concat_chunks():
     with example_files("complex.23bits.bgen") as filepath:
-        bgen = read_bgen(filepath, size=0.0001, verbose=False)
-        assert_("genotype" in bgen)
+        bgen = read_bgen2(filepath, size=0.0001, verbose=False)
 
         # G = bgen["genotype"][0, 0, :].compute()
         # print(type(G))
@@ -301,10 +563,10 @@ def test_bgen_reader_concat_chunks():
         # G = bgen["genotype"][[0]].compute()
         # print(type(G))
 
-        G = bgen["genotype"].compute()
-        print(type(G))
+        # G = bgen["genotype"].compute()
+        # print(type(G))
 
-        print(bgen["genotype"].chunks)
+        # print(bgen["genotype"].chunks)
         # assert_allclose(G[:2], [1, 0])
         # assert_(isnan(G[2]))
 

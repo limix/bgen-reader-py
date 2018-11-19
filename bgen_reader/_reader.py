@@ -12,8 +12,9 @@ import xarray as xr
 import dask.array as da
 from dask.delayed import delayed
 from numpy import float64, nan, full, inf, asarray, stack
-from pandas import DataFrame, read_csv
+from pandas import DataFrame, read_csv, Series
 from tqdm import tqdm
+import dask.dataframe as dd
 from ._metadata import try_read_variants_metadata_file
 
 from threading import RLock
@@ -47,7 +48,7 @@ if not PY3:
     FileNotFoundError = IOError
 
 
-def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=None, ploidy=2):
+def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=None):
     r"""Read a given BGEN file.
 
     Parameters
@@ -72,10 +73,6 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=N
         A sample file in `GEN format <http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html>`_.
         If sample_file is provided, sample IDs are read from this file. Otherwise, it
         reads from the BGEN file itself if present. Defaults to ``None``.
-    ploidy : int, optional
-        Maximum ploidy level. Defaults to ``2``. ``ValueError`` is raised if a genotype
-        with ploidy level greater than the provided is read,
-
 
     Returns
     -------
@@ -142,9 +139,109 @@ def read_bgen(filepath, size=50, verbose=True, metadata_file=True, sample_file=N
     nvariants = variants.shape[0]
     bgen_close(bfile)
 
-    G, X = _read_genotype(index, nsamples, nvariants, nalls, size, verbose, ploidy)
+    G, X = _read_genotype(index, nsamples, nvariants, nalls, size, verbose)
 
     return dict(variants=variants, samples=samples, genotype=G, X=X)
+
+
+def read_bgen2(filepath, size=50, verbose=True, metadata_file=True, sample_file=None):
+    r"""Read a given BGEN file.
+
+    Parameters
+    ----------
+    filepath : str
+        A BGEN file path.
+    size : float, optional
+        Chunk size in megabytes. Defaults to ``50``.
+    verbose : bool, optional
+        ``True`` to show progress; ``False`` otherwise.
+    metadata_file : bool, str, optional
+        If ``True``, it will try to read the variants metadata from the
+        metadata file ``filepath + ".metadata"``. If this is not possible,
+        the variants metadata will be read from the BGEN file itself. If
+        ``filepath + ".metadata"`` does not exist, it will try to create one
+        with the same name to speed up reads. If ``False``, variants metadata
+        will be read only from the BGEN file. If a file path is given instead,
+        it assumes that the specified metadata file is valid and readable and
+        therefore it will read variants metadata from that file only. Defaults
+        to ``True``.
+    sample_file : str, optional
+        A sample file in `GEN format <http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html>`_.
+        If sample_file is provided, sample IDs are read from this file. Otherwise, it
+        reads from the BGEN file itself if present. Defaults to ``None``.
+
+    Returns
+    -------
+    variants : :class:`pandas.DataFrame`
+        Variant position, chromossomes, RSIDs, etc.
+    samples : :class:`pandas.DataFrame`
+        Sample identifications.
+    genotype : :class:`dask.array.Array`
+        Array of genotype references.
+    X : :class:`dask.array.Array`
+        Allele probabilities.
+
+    Note
+    ----
+    Metadata files can speed up subsequent reads tremendously. But often the user does
+    not have write permission for the default metadata file location
+    ``filepath + ".metadata"``. We thus provide the
+    :function:`bgen_reader.create_metadata_file` function for creating one at the
+    given path.
+    """
+
+    filepath = make_sure_bytes(filepath)
+    if sample_file is not None:
+        sample_file = make_sure_str(sample_file)
+
+    check_file_exist(filepath)
+    check_file_readable(filepath)
+
+    if metadata_file not in [True, False]:
+        metadata_file = make_sure_bytes(metadata_file)
+        try:
+            check_file_exist(metadata_file)
+        except FileNotFoundError as e:
+            msg = (
+                "\n\nMetadata file `{}` does not exist.\nIf you want to create a "
+                "metadata file in a custom location, please use "
+                "`bgen_reader.create_metadata_file`.\n"
+            )
+            print(msg.format(metadata_file))
+            raise e
+        check_file_readable(metadata_file)
+
+    bfile = bgen_open(filepath)
+    if bfile == ffi.NULL:
+        raise RuntimeError("Could not read {}.".format(filepath))
+
+    if sample_file is not None:
+        check_file_exist(sample_file)
+        samples = _read_samples_from_file(sample_file, verbose)
+    elif bgen_sample_ids_presence(bfile) == 0:
+        if verbose:
+            print("Sample IDs are not present in this file.")
+            msg = "I will generate them on my own:"
+            msg += " sample_1, sample_2, and so on."
+            print(msg)
+        samples = _generate_samples(bfile)
+    else:
+        samples = _read_samples(bfile, verbose)
+
+    samples = samples.loc[:, "id"]
+    variants, index = _read_variants(bfile, filepath, metadata_file, verbose)
+
+    variants = dd.from_pandas(
+        variants, npartitions=max(1, len(variants) // 10), name="variants"
+    )
+
+    nsamples = samples.shape[0]
+    bgen_close(bfile)
+
+    variants = _read_genotype2(index, nsamples, variants, verbose)
+    variants.name = "variants"
+
+    return dict(variants=variants, samples=samples)
 
 
 def _read_variants_from_bgen_file(bfile, index, v):
@@ -288,9 +385,35 @@ def _genotype_block(indexing, nsamples, variant_idx, nvariants):
     return G, X
 
 
-def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose, ploidy):
+# @cached(cache, lock=lock)
+def _genotype_block2(indexing, nsamples, variant_idx):
 
-    max_nalleles = bgen_max_nalleles(indexing)
+    # open("/Users/horta/tmp/{}".format(variant_idx), "w").close()
+    vg = bgen_open_variant_genotype(indexing[0], variant_idx)
+
+    ncombs = bgen_ncombs(vg)
+    phased = bgen_phased(vg)
+
+    ploidy = [bgen_ploidy(vg, j) for j in range(nsamples)]
+    missing = [bgen_missing(vg, j) for j in range(nsamples)]
+
+    prob = full((nsamples, ncombs), nan, dtype=float64)
+
+    bgen_read_variant_genotype(indexing[0], vg, ffi.cast("double *", prob.ctypes.data))
+    bgen_close_variant_genotype(indexing[0], vg)
+
+    prob = xr.DataArray(
+        prob,
+        dims=["sample", "probability"],
+        coords={"ploidy": ("sample", ploidy), "missing": ("sample", missing)},
+        attrs={"phased": phased},
+    )
+
+    return prob
+
+
+def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose):
+
     genotype = []
     X = []
 
@@ -317,3 +440,33 @@ def _read_genotype(indexing, nsamples, nvariants, nalleless, size, verbose, ploi
     a = da.concatenate(genotype, allow_unknown_chunksizes=True)
     b = da.concatenate(X, allow_unknown_chunksizes=True)
     return a, b
+
+
+class VariantGenotype(object):
+    def __init__(self, delayed):
+        self._delayed = delayed
+
+    def compute(self):
+        return self._delayed.compute()
+
+    def __repr__(self):
+        return "<call compute()>"
+
+    def __str__(self):
+        return "<compute()>"
+
+
+def _read_genotype2(indexing, nsamples, variants, verbose):
+    tqdm_kwds = dict(desc="Variant mapping", disable=not verbose)
+    genotype = []
+
+    kws = {"pure": True, "traverse": False}
+    shape = (len(variants),)
+    call = delayed(lambda *args: _genotype_block2(*args), **kws)
+    for i in tqdm(range(len(variants)), **tqdm_kwds):
+        data = da.from_delayed(call(indexing, nsamples, i), shape, object)
+        genotype.append(VariantGenotype(data))
+
+    variants["genotype"] = Series(genotype)
+
+    return variants
