@@ -108,44 +108,44 @@ def noread_permission(path):
         os.chmod(path, perm)
 
 
-# def test_bgen_reader_phased_genotype():
-#     with example_files("haplotypes.bgen") as filepath:
-#         bgen = read_bgen(filepath, verbose=False)
-#         variants = bgen["variants"]
-#         samples = bgen["samples"]
+def test_bgen_reader_phased_genotype():
+    with example_files("haplotypes.bgen") as filepath:
+        bgen = read_bgen(filepath, verbose=False)
+        variants = bgen["variants"]
+        samples = bgen["samples"]
 
-#         v = variants.loc[0].compute()
-#         assert_equal(v["chrom"].item(), "1")
-#         assert_equal(v["id"].item(), "SNP1")
-#         assert_equal(v["nalleles"].item(), 2)
-#         assert_equal(v["allele_ids"].item(), "A,G")
-#         assert_equal(v["pos"].item(), 1)
-#         assert_equal(v["rsid"].item(), "RS1")
+        v = variants.loc[0].compute()
+        assert_equal(v["chrom"].item(), "1")
+        assert_equal(v["id"].item(), "SNP1")
+        assert_equal(v["nalleles"].item(), 2)
+        assert_equal(v["allele_ids"].item(), "A,G")
+        assert_equal(v["pos"].item(), 1)
+        assert_equal(v["rsid"].item(), "RS1")
 
-#         v = variants.loc[2].compute()
-#         assert_equal(v["chrom"].item(), "1")
-#         assert_equal(v["id"].item(), "SNP3")
-#         assert_equal(v["nalleles"].item(), 2)
-#         assert_equal(v["allele_ids"].item(), "A,G")
-#         assert_equal(v["pos"].item(), 3)
-#         assert_equal(v["rsid"].item(), "RS3")
+        v = variants.loc[2].compute()
+        assert_equal(v["chrom"].item(), "1")
+        assert_equal(v["id"].item(), "SNP3")
+        assert_equal(v["nalleles"].item(), 2)
+        assert_equal(v["allele_ids"].item(), "A,G")
+        assert_equal(v["pos"].item(), 3)
+        assert_equal(v["rsid"].item(), "RS3")
 
-#         assert_equal(samples.loc[0], "sample_0")
-#         assert_equal(samples.loc[2], "sample_2")
+        assert_equal(samples.loc[0], "sample_0")
+        assert_equal(samples.loc[2], "sample_2")
 
-#         n = samples.shape[0]
-#         assert_equal(samples.loc[n - 1], "sample_3")
+        n = samples.shape[0]
+        assert_equal(samples.loc[n - 1], "sample_3")
 
-#         a = [1.0, 0.0, 1.0, 0.0]
-#         assert_allclose(
-#             bgen["variants"]["genotype"].loc[0].compute().item().compute()[0],
-#             a)
-#         k = len(variants)
-#         n = len(samples)
-#         a = [1.0, 0.0, 0.0, 1.0]
-#         assert_allclose(
-#             bgen["variants"]["genotype"].loc[k - 1].compute().item().compute()[
-#                 n - 1], a)
+        # a = [1.0, 0.0, 1.0, 0.0]
+        # assert_allclose(
+        #     bgen["variants"]["genotype"].loc[0].compute().item().compute()[0],
+        #     a)
+        # k = len(variants)
+        # n = len(samples)
+        # a = [1.0, 0.0, 0.0, 1.0]
+        # assert_allclose(
+        #     bgen["variants"]["genotype"].loc[k - 1].compute().item().compute()[
+        #         n - 1], a)
 
 #     with example_files("haplotypes.bgen") as filepath:
 #         bgen = read_bgen(filepath, verbose=False)

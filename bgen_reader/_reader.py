@@ -221,15 +221,39 @@ def _get_npartitions(bgen_filepath, metafile_filepath):
 
     return nparts
 
+def _get_nvariants(bgen_filepath):
+    bgen = bgen_open(make_sure_bytes(bgen_filepath))
+    if bgen == ffi.NULL:
+        raise RuntimeError(f"Could not open {bgen_filepath}.")
+
+    nvariants = bgen_nvariants(bgen)
+    bgen_close(bgen)
+
+    return nvariants
+
 
 def _map_metadata(bgen_filepath, metafile_filepath, samples):
     nparts = _get_npartitions(bgen_filepath, metafile_filepath)
+    nvariants = _get_nvariants(bgen_filepath)
     dfs = []
     index_base = 0
+    part_size = nvariants // nparts
+    divisions = []
     for i in range(nparts):
-        dfs.append(_read_partition(bgen_filepath, metafile_filepath, i, index_base))
-        index_base += nparts
-    df = dd.concat(dfs)
+        divisions.append(index_base)
+        d = delayed(_read_partition)(bgen_filepath, metafile_filepath, i, index_base)
+        dfs.append(d)
+        index_base += part_size
+    divisions.append(nvariants - 1)
+    meta = [
+        ("id", str),
+        ("rsid", str),
+        ("chrom", str),
+        ("pos", int),
+        ("nalleles", int),
+        ("allele_ids", str),
+    ]
+    df = dd.from_delayed(dfs, meta=dd.utils.make_meta(meta), divisions=divisions)
     return df
 
 
