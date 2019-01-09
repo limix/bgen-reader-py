@@ -1,7 +1,7 @@
-from os.path import dirname, realpath, join
-import tempfile
 import shutil
+import tempfile
 import warnings
+from os.path import dirname, join, realpath
 
 _filenames = [
     "complex.23bits.bgen",
@@ -13,6 +13,7 @@ _filenames = [
     "haplotypes.bgen.metadata.valid",
     "haplotypes.bgen.metadata.corrupted",
     "wrong.metadata",
+    "complex.23bits.no.samples.bgen",
 ]
 
 

@@ -49,7 +49,7 @@ if not PY3:
     FileNotFoundError = IOError
 
 
-def read_bgen(filepath, metafile_filepath=None, sample_filepath=None, verbose=True):
+def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=True):
     r"""Read a given BGEN file.
 
     Parameters
@@ -69,9 +69,9 @@ def read_bgen(filepath, metafile_filepath=None, sample_filepath=None, verbose=Tr
         it assumes that the specified metadata file is valid and readable and
         therefore it will read variants metadata from that file only. Defaults
         to ``True``.
-    sample_filepath : str, optional
+    samples_filepath : str, optional
         A sample file in `GEN format <https://goo.gl/bCzo7m>`_.
-        If sample_filepath is provided, sample IDs are read from this file. Otherwise,
+        If samples_filepath is provided, sample IDs are read from this file. Otherwise,
         it reads from the BGEN file itself if present. Defaults to ``None``.
     verbose : bool, optional
         ``True`` to show progress; ``False`` otherwise.
@@ -100,25 +100,14 @@ def read_bgen(filepath, metafile_filepath=None, sample_filepath=None, verbose=Tr
     assert_file_readable(filepath)
 
     metafile_filepath = _get_valid_metafile_filepath(filepath, metafile_filepath)
-    return
 
-    bgen = bgen_open(filepath)
+    bgen = bgen_open(make_sure_bytes(filepath))
     if bgen == ffi.NULL:
         raise RuntimeError("Could not read {}.".format(filepath))
 
-    if sample_filepath is not None:
-        assert_file_exist(sample_filepath)
-        samples = _read_samples_from_file(sample_filepath, verbose)
-    elif bgen_contain_samples(bgen) == 0:
-        if verbose:
-            print("Sample IDs are not present in this file.")
-            msg = "I will generate them on my own:"
-            msg += " sample_1, sample_2, and so on."
-            print(msg)
-        samples = _generate_samples(bgen)
-    else:
-        samples = _read_samples(bgen, verbose)
+    samples = _get_samples(bgen, samples_filepath, verbose)
 
+    return dict(variants=None, samples=samples)
     samples = samples.loc[:, "id"]
     # variants, index = _read_variants2(bgen, filepath, metafile_filepath, verbose)
     variants = _map_metadata(bgen, metafile_filepath)
@@ -262,7 +251,7 @@ def _read_samples(bgen_file, verbose):
     ids = [create_string(samples[i]) for i in range(nsamples)]
 
     bgen_free_samples(bgen_file, samples)
-    return DataFrame(data=dict(id=ids))
+    return Series(ids, dtype=str, name="id")
 
 
 def _read_samples_from_file(sample_file, verbose):
@@ -270,13 +259,12 @@ def _read_samples_from_file(sample_file, verbose):
         print("Sample IDs are read from {}.".format(sample_file))
 
     samples = read_csv(sample_file, sep=" ", skiprows=[1]).iloc[:, 0].astype("str")
-
-    return DataFrame(data=dict(id=samples))
+    return Series(samples, dtype=str, name="id")
 
 
 def _generate_samples(bgen_file):
     nsamples = bgen_nsamples(bgen_file)
-    return DataFrame(data=dict(id=["sample_%d" % i for i in range(nsamples)]))
+    return Series([f"sample_{i}" for i in range(nsamples)], dtype=str, name="id")
 
 
 cache = LRUCache(maxsize=2)
@@ -570,3 +558,19 @@ def _infer_metafile_filenames(bgen_filepath):
         "dir": metafile_dir,
         "filename": metafile_filename,
     }
+
+
+def _get_samples(bgen, samples_filepath, verbose):
+    if samples_filepath is not None:
+        assert_file_exist(samples_filepath)
+        samples = _read_samples_from_file(samples_filepath, verbose)
+    elif bgen_contain_samples(bgen) == 0:
+        if verbose:
+            print("Sample IDs are not present in this file.")
+            msg = "I will generate them on my own:"
+            msg += " sample_1, sample_2, and so on."
+            print(msg)
+        samples = _generate_samples(bgen)
+    else:
+        samples = _read_samples(bgen, verbose)
+    return samples

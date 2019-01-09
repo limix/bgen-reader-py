@@ -8,6 +8,7 @@ from contextlib import contextmanager
 import pytest
 from numpy import isnan
 from numpy.testing import assert_, assert_allclose, assert_equal
+from pandas import Series
 
 from bgen_reader import create_metafile, example_files, read_bgen
 
@@ -15,6 +16,34 @@ try:
     FileNotFoundError
 except NameError:
     FileNotFoundError = IOError
+
+
+def test_bgen_samples_inside_bgen():
+    with example_files("haplotypes.bgen") as filepath:
+        data = read_bgen(filepath, verbose=False)
+        samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
+        samples = Series(samples, dtype=str, name="id")
+        assert_(all(data["samples"] == samples))
+
+
+def test_bgen_samples_not_present():
+    with example_files("complex.23bits.no.samples.bgen") as filepath:
+        data = read_bgen(filepath, verbose=False)
+        samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
+        samples = Series(samples, dtype=str, name="id")
+        assert_(all(data["samples"] == samples))
+
+
+def test_bgen_samples_specify_samples_file():
+    with example_files(["complex.23bits.bgen", "complex.sample"]) as filepaths:
+        data = read_bgen(filepaths[0], samples_filepath=filepaths[1], verbose=False)
+        samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
+        samples = Series(samples, dtype=str, name="id")
+        assert_(all(data["samples"] == samples))
+
+
+def test_bgen_samples_outside_bgen_unreadable():
+    pass
 
 
 def test_bgen_file_not_readable():
