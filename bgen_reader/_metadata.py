@@ -8,6 +8,7 @@ from ._ffi.lib import (
     bgen_create_variants_metadata_file,
     bgen_load_variants_metadata,
     bgen_store_variants_metadata,
+    bgen_open_metafile, bgen_create_metafile
 )
 
 
@@ -28,7 +29,8 @@ def try_read_variants_metadata_file(bfile, mfilepath, index, v):
 
     if not exists(mfilepath):
         if access(abspath(dirname(mfilepath)), W_OK):
-            e = bgen_store_variants_metadata(bfile, variants, index[0], mfilepath)
+            e = bgen_store_variants_metadata(bfile, variants, index[0],
+                                             mfilepath)
             if e != 0 and v == 1:
                 errmsg = "Warning: could not create"
                 errmsg += " the metadata file {}.".format(abspath(mfilepath))
@@ -67,9 +69,11 @@ def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
     check_file_readable(bgen_filepath)
 
     if exists(metadata_filepath):
-        raise ValueError("The file {} already exists.".format(metadata_filepath))
+        raise ValueError(
+            "The file {} already exists.".format(metadata_filepath))
 
-    e = bgen_create_variants_metadata_file(bgen_filepath, metadata_filepath, verbose)
+    e = bgen_create_variants_metadata_file(bgen_filepath, metadata_filepath,
+                                           verbose)
 
     if e != 0:
         raise RuntimeError("Error while creating metadata file: {}".format(e))
