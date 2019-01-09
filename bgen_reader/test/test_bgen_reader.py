@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import os
 import stat
 import sys
+from contextlib import contextmanager
 
 import pytest
 from numpy import isnan
@@ -15,8 +16,18 @@ try:
 except NameError:
     FileNotFoundError = IOError
 
+
 def test_bgen_file_not_readable():
-    pass
+    with example_files("haplotypes.bgen") as filepath:
+        with pytest.raises(PermissionError):
+            with noread_permission(filepath):
+                read_bgen(filepath, verbose=False)
+
+
+def test_bgen_file_dont_exist():
+    with pytest.raises(FileNotFoundError):
+        read_bgen("idontexist.bgen", verbose=False)
+
 
 def test_metafile_not_provided():
     with example_files("haplotypes.bgen") as filepath:
@@ -34,14 +45,35 @@ def test_metafile_wrong_filepath():
         fp = "/omg/invalid/haplotypes.bgen.metafile_path"
         with pytest.raises(FileNotFoundError):
             with pytest.warns(UserWarning):
-                read_bgen(filepath[0], metafile_filepath=fp, verbose=False)
+                read_bgen(filepath, metafile_filepath=fp, verbose=False)
 
 
 def test_metafile_not_provided_no_permission_to_create():
     with example_files("haplotypes.bgen") as filepath:
         path = os.path.dirname(filepath)
-        os.chmod(path, stat.S_IXUSR | stat.S_IXGRP | stat.S_IRUSR | stat.S_IRGRP)
-        read_bgen(filepath, verbose=False)
+        with nowrite_permission(path):
+            with pytest.warns(UserWarning):
+                read_bgen(filepath, verbose=False)
+
+
+@contextmanager
+def nowrite_permission(path):
+    perm = os.stat(path).st_mode
+    os.chmod(path, stat.S_IXUSR | stat.S_IXGRP | stat.S_IRUSR | stat.S_IRGRP)
+    try:
+        yield
+    finally:
+        os.chmod(path, perm)
+
+
+@contextmanager
+def noread_permission(path):
+    perm = os.stat(path).st_mode
+    os.chmod(path, stat.S_IXUSR | stat.S_IXGRP)
+    try:
+        yield
+    finally:
+        os.chmod(path, perm)
 
 
 # def test_bgen_reader_phased_genotype():

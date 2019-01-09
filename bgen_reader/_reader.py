@@ -530,7 +530,7 @@ location, please use `bgen_reader.create_metafile`.
 """
 
 _metafile_nowrite_dir = """\
-You don't have permission to write {filepath}.
+You don't have permission to write to `{filepath}`.
 This might prevent speeding-up the reading process in future runs.
 """
 
