@@ -5,11 +5,6 @@ import os
 from os.path import exists
 from ._ffi import ffi
 
-PY3 = sys.version_info >= (3,)
-
-if not PY3:
-    FileNotFoundError = IOError
-
 
 def _group_readable(filepath):
     st = os.stat(filepath)
@@ -40,7 +35,8 @@ def create_string(v):
 
 def check_file_exist(filepath):
     if not exists(filepath):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
+                                filepath)
 
 
 def check_file_readable(filepath):

@@ -10,6 +10,8 @@ _filenames = [
     "example.32bits.bgen",
     "example.32bits.bgen.metadata",
     "haplotypes.bgen",
+    "haplotypes.bgen.metadata.valid",
+    "haplotypes.bgen.metadata.corrupted",
     "wrong.metadata",
 ]
 

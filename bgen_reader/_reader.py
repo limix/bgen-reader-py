@@ -1,45 +1,55 @@
+import os
 import sys
-from os.path import join, dirname, basename
-from ._misc import (
-    make_sure_bytes,
-    create_string,
-    check_file_exist,
-    check_file_readable,
-    make_sure_str,
-)
-
-import xarray as xr
-import dask.array as da
-from dask.delayed import delayed
-from numpy import float64, nan, full, inf, asarray, stack
-from pandas import DataFrame, read_csv, Series
-from tqdm import tqdm
-import dask.dataframe as dd
-from ._metadata import try_read_variants_metadata_file, try_read_variants_metadata_file2
-
+import warnings
+from os.path import basename, dirname, join
 from threading import RLock
+
+import dask.array as da
+import dask.dataframe as dd
+import xarray as xr
 from cachetools import LRUCache, cached
+from dask.delayed import delayed
+from numpy import asarray, float64, full, inf, nan, stack
+from pandas import DataFrame, Series, read_csv
+from tqdm import tqdm
 
 from ._ffi import ffi
 from ._ffi.lib import (
-    bgen_close, bgen_close_variant_genotype, bgen_free_samples,
-    bgen_free_variants_metadata, bgen_ncombs, bgen_phased, bgen_missing,
-    bgen_ploidy, bgen_nsamples, bgen_nvariants, bgen_open,
-    bgen_open_variant_genotype, bgen_read_samples, bgen_read_variant_genotype,
-    bgen_read_variants_metadata, bgen_sample_ids_presence,
-    bgen_load_variants_metadata, bgen_max_nalleles, bgen_contain_samples)
+    bgen_close,
+    bgen_close_variant_genotype,
+    bgen_contain_samples,
+    bgen_free_samples,
+    bgen_free_variants_metadata,
+    bgen_load_variants_metadata,
+    bgen_max_nalleles,
+    bgen_missing,
+    bgen_ncombs,
+    bgen_nsamples,
+    bgen_nvariants,
+    bgen_open,
+    bgen_open_variant_genotype,
+    bgen_phased,
+    bgen_ploidy,
+    bgen_read_samples,
+    bgen_read_variant_genotype,
+    bgen_read_variants_metadata,
+    bgen_sample_ids_presence,
+)
+from ._file import (
+    _get_temp_filepath,
+    assert_file_exist,
+    assert_file_readable,
+    permission_write_file,
+)
+from ._misc import create_string, make_sure_bytes, make_sure_str
 
-PY3 = sys.version_info >= (3, )
+PY3 = sys.version_info >= (3,)
 
 if not PY3:
     FileNotFoundError = IOError
 
 
-def read_bgen(filepath,
-              size=50,
-              verbose=True,
-              metadata_file=True,
-              sample_file=None):
+def read_bgen(filepath, metafile_filepath=None, sample_filepath=None, verbose=True):
     r"""Read a given BGEN file.
 
     Parameters
@@ -48,108 +58,7 @@ def read_bgen(filepath,
         A BGEN file path.
     size : float, optional
         Chunk size in megabytes. Defaults to ``50``.
-    verbose : bool, optional
-        ``True`` to show progress; ``False`` otherwise.
-    metadata_file : bool, str, optional
-        If ``True``, it will try to read the variants metadata from the
-        metadata file ``filepath + ".metadata"``. If this is not possible,
-        the variants metadata will be read from the BGEN file itself. If
-        ``filepath + ".metadata"`` does not exist, it will try to create one
-        with the same name to speed up reads. If ``False``, variants metadata
-        will be read only from the BGEN file. If a file path is given instead,
-        it assumes that the specified metadata file is valid and readable and
-        therefore it will read variants metadata from that file only. Defaults
-        to ``True``.
-    sample_file : str, optional
-        A sample file in `GEN format <https://goo.gl/bCzo7m>`_.
-        If sample_file is provided, sample IDs are read from this file. Otherwise, it
-        reads from the BGEN file itself if present. Defaults to ``None``.
-
-    Returns
-    -------
-    variants : :class:`pandas.DataFrame`
-        Variant position, chromossomes, RSIDs, etc.
-    samples : :class:`pandas.DataFrame`
-        Sample identifications.
-    genotype : :class:`dask.array.Array`
-        Array of genotype references.
-    X : :class:`dask.array.Array`
-        Allele probabilities.
-
-    Note
-    ----
-    Metadata files can speed up subsequent reads tremendously. But often the user does
-    not have write permission for the default metadata file location
-    ``filepath + ".metadata"``. We thus provide the
-    :function:`bgen_reader.create_metadata_file` function for creating one at the
-    given path.
-    """
-
-    filepath = make_sure_bytes(filepath)
-    if sample_file is not None:
-        sample_file = make_sure_str(sample_file)
-
-    check_file_exist(filepath)
-    check_file_readable(filepath)
-
-    if metadata_file not in [True, False]:
-        metadata_file = make_sure_bytes(metadata_file)
-        try:
-            check_file_exist(metadata_file)
-        except FileNotFoundError as e:
-            msg = (
-                "\n\nMetadata file `{}` does not exist.\nIf you want to create a "
-                "metadata file in a custom location, please use "
-                "`bgen_reader.create_metadata_file`.\n")
-            print(msg.format(metadata_file))
-            raise e
-        check_file_readable(metadata_file)
-
-    bfile = bgen_open(filepath)
-    if bfile == ffi.NULL:
-        raise RuntimeError("Could not read {}.".format(filepath))
-
-    if sample_file is not None:
-        check_file_exist(sample_file)
-        samples = _read_samples_from_file(sample_file, verbose)
-    elif bgen_sample_ids_presence(bfile) == 0:
-        if verbose:
-            print("Sample IDs are not present in this file.")
-            msg = "I will generate them on my own:"
-            msg += " sample_1, sample_2, and so on."
-            print(msg)
-        samples = _generate_samples(bfile)
-    else:
-        samples = _read_samples(bfile, verbose)
-
-    variants, index = _read_variants(bfile, filepath, metadata_file, verbose)
-    nalls = variants["nalleles"].values
-
-    nsamples = samples.shape[0]
-    nvariants = variants.shape[0]
-    bgen_close(bfile)
-
-    G, X = _read_genotype(index, nsamples, nvariants, nalls, size, verbose)
-
-    return dict(variants=variants, samples=samples, genotype=G, X=X)
-
-
-def read_bgen2(filepath,
-               size=50,
-               verbose=True,
-               metadata_filepath=None,
-               sample_filepath=None):
-    r"""Read a given BGEN file.
-
-    Parameters
-    ----------
-    filepath : str
-        A BGEN file path.
-    size : float, optional
-        Chunk size in megabytes. Defaults to ``50``.
-    verbose : bool, optional
-        ``True`` to show progress; ``False`` otherwise.
-    metadata_filepath : str, optional
+    metafile_filepath : str, optional
         TODO: fix it
         If ``True``, it will try to read the variants metadata from the
         metadata file ``filepath + ".metadata"``. If this is not possible,
@@ -162,8 +71,10 @@ def read_bgen2(filepath,
         to ``True``.
     sample_filepath : str, optional
         A sample file in `GEN format <https://goo.gl/bCzo7m>`_.
-        If sample_filepath is provided, sample IDs are read from this file. Otherwise, it
-        reads from the BGEN file itself if present. Defaults to ``None``.
+        If sample_filepath is provided, sample IDs are read from this file. Otherwise,
+        it reads from the BGEN file itself if present. Defaults to ``None``.
+    verbose : bool, optional
+        ``True`` to show progress; ``False`` otherwise.
 
     Returns
     -------
@@ -181,39 +92,22 @@ def read_bgen2(filepath,
     Metadata files can speed up subsequent reads tremendously. But often the user does
     not have write permission for the default metadata file location
     ``filepath + ".metadata"``. We thus provide the
-    :function:`bgen_reader.create_metadata_file` function for creating one at the
+    :function:`bgen_reader.create_metafile` function for creating one at the
     given path.
     """
 
-    filepath = make_sure_bytes(filepath)
-    if sample_filepath is not None:
-        sample_filepath = make_sure_str(sample_filepath)
+    assert_file_exist(filepath)
+    assert_file_readable(filepath)
 
-    check_file_exist(filepath)
-    check_file_readable(filepath)
-
-    if metadata_filepath is None:
-        pass
-    metadata_filepath = make_sure_bytes(metadata_filepath)
-    try:
-        check_file_exist(metadata_filepath)
-    except FileNotFoundError as e:
-        msg = (
-            "\n\nMetadata file `{}` does not exist.\nIf you want to create a "
-            "metadata file in a custom location, please use "
-            "`bgen_reader.create_metadata_file`.\n")
-        print(msg.format(metadata_filepath))
-        raise e
-    check_file_readable(metadata_filepath)
-    mfile = join(dirname(filepath), basename(filepath) + b".metadata")
-
+    metafile_filepath = _get_valid_metafile_filepath(filepath, metafile_filepath)
+    return
 
     bgen = bgen_open(filepath)
     if bgen == ffi.NULL:
         raise RuntimeError("Could not read {}.".format(filepath))
 
     if sample_filepath is not None:
-        check_file_exist(sample_filepath)
+        assert_file_exist(sample_filepath)
         samples = _read_samples_from_file(sample_filepath, verbose)
     elif bgen_contain_samples(bgen) == 0:
         if verbose:
@@ -226,8 +120,8 @@ def read_bgen2(filepath,
         samples = _read_samples(bgen, verbose)
 
     samples = samples.loc[:, "id"]
-    # variants, index = _read_variants2(bgen, filepath, metadata_filepath, verbose)
-    variants = _map_metadata(bgen, metadata_filepath)
+    # variants, index = _read_variants2(bgen, filepath, metafile_filepath, verbose)
+    variants = _map_metadata(bgen, metafile_filepath)
     # variants = dd.from_pandas(variants, npartitions=100, name="variants")
 
     nsamples = samples.shape[0]
@@ -319,37 +213,39 @@ def _read_variants2(bfile, filepath, metadata_file, verbose):
 
     return DataFrame(data=data), mf
 
-def _map_metadata(bgen, metadata_filepath):
+
+def _map_metadata(bgen, metafile_filepath):
     v = 1
 
-#     if exists(metadata_filepath):
-#         # variants = bgen_load_variants_metadata(bfile, metadata_filepath, index, v)
-#         variants = bgen_open_metafile(metadata_filepath)
+
+#     if exists(metafile_filepath):
+#         # variants = bgen_load_variants_metadata(bfile, metafile_filepath, index, v)
+#         variants = bgen_open_metafile(metafile_filepath)
 #         if variants == ffi.NULL:
 #             if v == 1:
 #                 msg = "Could not read variants"
-#                 msg += " metadata from {}.".format(metadata_filepath)
+#                 msg += " metadata from {}.".format(metafile_filepath)
 #                 raise RuntimeError(msg)
 #     else:
 #         # variants = bgen_read_variants_metadata(bfile, index, v)
-#         variants = bgen_create_metafile(bfile, metadata_filepath, nparts, v)
+#         variants = bgen_create_metafile(bfile, metafile_filepath, nparts, v)
 #         # BGEN_API struct bgen_mf *bgen_create_metafile(struct bgen_file *, const char *, int,
 #         #                                       int);
 
 #     if variants == ffi.NULL:
 #         raise RuntimeError("Could not read variants metadata.")
 
-#     if not exists(metadata_filepath):
-#         if access(abspath(dirname(metadata_filepath)), W_OK):
+#     if not exists(metafile_filepath):
+#         if access(abspath(dirname(metafile_filepath)), W_OK):
 #             e = bgen_store_variants_metadata(bfile, variants, index[0],
-#                                              metadata_filepath)
+#                                              metafile_filepath)
 #             if e != 0 and v == 1:
 #                 errmsg = "Warning: could not create"
-#                 errmsg += " the metadata file {}.".format(abspath(metadata_filepath))
+#                 errmsg += " the metadata file {}.".format(abspath(metafile_filepath))
 #                 print(errmsg)
 #         elif v == 1:
 #             errmsg = "Warning: you don't have permission to write"
-#             errmsg += " the metadata file {}.".format(abspath(metadata_filepath))
+#             errmsg += " the metadata file {}.".format(abspath(metafile_filepath))
 #             print(errmsg)
 #     return variants
 
@@ -373,8 +269,7 @@ def _read_samples_from_file(sample_file, verbose):
     if verbose:
         print("Sample IDs are read from {}.".format(sample_file))
 
-    samples = read_csv(
-        sample_file, sep=" ", skiprows=[1]).iloc[:, 0].astype("str")
+    samples = read_csv(sample_file, sep=" ", skiprows=[1]).iloc[:, 0].astype("str")
 
     return DataFrame(data=dict(id=samples))
 
@@ -423,7 +318,7 @@ def _genotype_block(indexing, nsamples, variant_idx, nvariants):
     G = full((nvariants, nsamples, max_ncombs), nan, dtype=float64)
 
     for i in range(0, nvariants):
-        G[i, :, :ncombss[i]] = variants[i]
+        G[i, :, : ncombss[i]] = variants[i]
 
     phased = asarray(phased, int)
     ploidy = asarray(ploidy, int)
@@ -458,17 +353,13 @@ def _genotype_block2(indexing, nsamples, variant_idx):
 
     prob = full((nsamples, ncombs), nan, dtype=float64)
 
-    bgen_read_variant_genotype(indexing[0], vg,
-                               ffi.cast("double *", prob.ctypes.data))
+    bgen_read_variant_genotype(indexing[0], vg, ffi.cast("double *", prob.ctypes.data))
     bgen_close_variant_genotype(indexing[0], vg)
 
     prob = xr.DataArray(
         prob,
         dims=["sample", "probability"],
-        coords={
-            "ploidy": ("sample", ploidy),
-            "missing": ("sample", missing)
-        },
+        coords={"ploidy": ("sample", ploidy), "missing": ("sample", missing)},
         attrs={"phased": phased},
     )
 
@@ -524,7 +415,7 @@ def _read_genotype2(indexing, nsamples, variants, verbose):
     genotype = []
 
     kws = {"pure": True, "traverse": False}
-    shape = (len(variants), )
+    shape = (len(variants),)
     call = delayed(lambda *args: _genotype_block2(*args), **kws)
     for i in tqdm(range(len(variants)), **tqdm_kwds):
         data = da.from_delayed(call(indexing, nsamples, i), shape, object)
@@ -533,3 +424,149 @@ def _read_genotype2(indexing, nsamples, variants, verbose):
     variants["genotype"] = Series(genotype)
 
     return variants
+
+
+# def read_bgen_old(
+#     filepath, size=50, verbose=True, metadata_file=True, sample_file=None
+# ):
+#     r"""Read a given BGEN file.
+
+#     Parameters
+#     ----------
+#     filepath : str
+#         A BGEN file path.
+#     size : float, optional
+#         Chunk size in megabytes. Defaults to ``50``.
+#     verbose : bool, optional
+#         ``True`` to show progress; ``False`` otherwise.
+#     metadata_file : bool, str, optional
+#         If ``True``, it will try to read the variants metadata from the
+#         metadata file ``filepath + ".metadata"``. If this is not possible,
+#         the variants metadata will be read from the BGEN file itself. If
+#         ``filepath + ".metadata"`` does not exist, it will try to create one
+#         with the same name to speed up reads. If ``False``, variants metadata
+#         will be read only from the BGEN file. If a file path is given instead,
+#         it assumes that the specified metadata file is valid and readable and
+#         therefore it will read variants metadata from that file only. Defaults
+#         to ``True``.
+#     sample_file : str, optional
+#         A sample file in `GEN format <https://goo.gl/bCzo7m>`_.
+#         If sample_file is provided, sample IDs are read from this file. Otherwise, it
+#         reads from the BGEN file itself if present. Defaults to ``None``.
+
+#     Returns
+#     -------
+#     variants : :class:`pandas.DataFrame`
+#         Variant position, chromossomes, RSIDs, etc.
+#     samples : :class:`pandas.DataFrame`
+#         Sample identifications.
+#     genotype : :class:`dask.array.Array`
+#         Array of genotype references.
+#     X : :class:`dask.array.Array`
+#         Allele probabilities.
+
+#     Note
+#     ----
+#     Metadata files can speed up subsequent reads tremendously. But often the user does
+#     not have write permission for the default metadata file location
+#     ``filepath + ".metadata"``. We thus provide the
+#     :function:`bgen_reader.create_metafile` function for creating one at the
+#     given path.
+#     """
+
+#     filepath = make_sure_bytes(filepath)
+#     if sample_file is not None:
+#         sample_file = make_sure_str(sample_file)
+
+#     assert_file_exist(filepath)
+#     assert_file_readable(filepath)
+
+#     if metadata_file not in [True, False]:
+#         metadata_file = make_sure_bytes(metadata_file)
+#         try:
+#             assert_file_exist(metadata_file)
+#         except FileNotFoundError as e:
+#             msg = (
+#                 "\n\nMetadata file `{}` does not exist.\nIf you want to create a "
+#                 "metadata file in a custom location, please use "
+#                 "`bgen_reader.create_metafile`.\n"
+#             )
+#             print(msg.format(metadata_file))
+#             raise e
+#         assert_file_readable(metadata_file)
+
+#     bfile = bgen_open(filepath)
+#     if bfile == ffi.NULL:
+#         raise RuntimeError("Could not read {}.".format(filepath))
+
+#     if sample_file is not None:
+#         assert_file_exist(sample_file)
+#         samples = _read_samples_from_file(sample_file, verbose)
+#     elif bgen_sample_ids_presence(bfile) == 0:
+#         if verbose:
+#             print("Sample IDs are not present in this file.")
+#             msg = "I will generate them on my own:"
+#             msg += " sample_1, sample_2, and so on."
+#             print(msg)
+#         samples = _generate_samples(bfile)
+#     else:
+#         samples = _read_samples(bfile, verbose)
+
+#     variants, index = _read_variants(bfile, filepath, metadata_file, verbose)
+#     nalls = variants["nalleles"].values
+
+#     nsamples = samples.shape[0]
+#     nvariants = variants.shape[0]
+#     bgen_close(bfile)
+
+#     G, X = _read_genotype(index, nsamples, nvariants, nalls, size, verbose)
+
+#     return dict(variants=variants, samples=samples, genotype=G, X=X)
+
+
+_metafile_not_found = """\
+Metafile `{filepath}` does not exist. If you wish to create a metafile in a custom
+location, please use `bgen_reader.create_metafile`.
+"""
+
+_metafile_nowrite_dir = """\
+You don't have permission to write {filepath}.
+This might prevent speeding-up the reading process in future runs.
+"""
+
+
+def _get_valid_metafile_filepath(bgen_filepath, metafile_filepath):
+    if metafile_filepath is None:
+        metafile = _infer_metafile_filenames(bgen_filepath)
+        if os.path.exists(metafile["filepath"]):
+            try:
+                assert_file_readable(metafile["filepath"])
+                return metafile["filepath"]
+            except RuntimeError as e:
+                warnings.warn(str(e), UserWarning)
+                return _get_temp_filepath(metafile["dir"], metafile["filename"])
+        else:
+            if permission_write_file(metafile["filepath"]):
+                return metafile["filepath"]
+            else:
+                fp = metafile["filepath"]
+                warnings.warn(_metafile_nowrite_dir.format(filepath=fp), UserWarning)
+                return _get_temp_filepath(metafile["dir"], metafile["filename"])
+    else:
+        try:
+            assert_file_exist(metafile_filepath)
+        except FileNotFoundError as e:
+            fp = metafile_filepath
+            warnings.warn(_metafile_not_found.format(filepath=fp), UserWarning)
+            raise e
+
+
+def _infer_metafile_filenames(bgen_filepath):
+    metafile_filepath = os.path.abspath(bgen_filepath + ".metadata")
+    metafile_filename = os.path.basename(metafile_filepath)
+    metafile_dir = os.path.dirname(metafile_filepath)
+    return {
+        "filepath": metafile_filepath,
+        "dir": metafile_dir,
+        "filename": metafile_filename,
+    }

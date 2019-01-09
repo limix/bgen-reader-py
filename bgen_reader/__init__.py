@@ -9,9 +9,9 @@ representation without sacrificing variant access performance.
 
 Functions
 ---------
-create_metadata_file  Create variants metadata file.
-read_bgen             Read a given BGEN file.
-test                  Verify this package's integrity.
+create_metafile  Create variants metadata file.
+read_bgen        Read a given BGEN file.
+test             Verify this package's integrity.
 
 Documentation can be found at <https://github.com/limix/bgen-reader-py>.
 """
@@ -25,8 +25,8 @@ from ._dosage import (
     allele_frequency,
 )
 from ._example import example_files
-from ._metadata import create_metadata_file
-from ._reader import read_bgen, read_bgen2
+from ._metadata import create_metafile
+from ._reader import read_bgen
 from ._testit import test
 
 try:
@@ -38,15 +38,13 @@ except Exception as e:
     e.msg = e.msg + msg
     raise e
 
-
 __version__ = "3.0.0"
 
 __all__ = [
     "__version__",
     "test",
     "read_bgen",
-    "read_bgen2",
-    "create_metadata_file",
+    "create_metafile",
     "convert_to_dosage",
     "allele_expectation",
     "example_files",

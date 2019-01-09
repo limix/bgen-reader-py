@@ -42,7 +42,7 @@ def try_read_variants_metadata_file(bfile, mfilepath, index, v):
     return variants
 
 
-def create_metadata_file(bgen_filepath, metadata_filepath, verbose=True):
+def create_metafile(bgen_filepath, metadata_filepath, verbose=True):
     r"""Create variants metadata file.
 
     Variants metadata file helps speed up subsequent reads of the associated
