@@ -563,6 +563,7 @@ def _infer_metafile_filenames(bgen_filepath):
 def _get_samples(bgen, samples_filepath, verbose):
     if samples_filepath is not None:
         assert_file_exist(samples_filepath)
+        assert_file_readable(samples_filepath)
         samples = _read_samples_from_file(samples_filepath, verbose)
     elif bgen_contain_samples(bgen) == 0:
         if verbose:

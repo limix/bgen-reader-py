@@ -43,7 +43,10 @@ def test_bgen_samples_specify_samples_file():
 
 
 def test_bgen_samples_outside_bgen_unreadable():
-    pass
+    with example_files(["complex.23bits.bgen", "complex.sample"]) as filepaths:
+        with noread_permission(filepaths[1]):
+            with pytest.raises(PermissionError):
+                read_bgen(filepaths[0], samples_filepath=filepaths[1], verbose=False)
 
 
 def test_bgen_file_not_readable():
