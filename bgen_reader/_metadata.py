@@ -1,15 +1,18 @@
-from os import access, W_OK
-from os.path import exists, dirname, abspath
-from ._misc import make_sure_bytes, check_file_exist, check_file_readable
+from math import floor, sqrt
+from os import W_OK, access
+from os.path import abspath, dirname, exists
 
 from ._ffi import ffi
 from ._ffi.lib import (
-    bgen_read_variants_metadata,
-    bgen_create_variants_metadata_file,
-    bgen_load_variants_metadata,
-    bgen_store_variants_metadata,
-    bgen_open_metafile, bgen_create_metafile
+    bgen_close,
+    bgen_close_metafile,
+    bgen_create_metafile,
+    bgen_open,
+    bgen_open_metafile,
+    bgen_nvariants
 )
+from ._file import assert_file_exist, assert_file_readable
+from ._misc import make_sure_bytes
 
 
 def try_read_variants_metadata_file(bfile, mfilepath, index, v):
@@ -29,8 +32,7 @@ def try_read_variants_metadata_file(bfile, mfilepath, index, v):
 
     if not exists(mfilepath):
         if access(abspath(dirname(mfilepath)), W_OK):
-            e = bgen_store_variants_metadata(bfile, variants, index[0],
-                                             mfilepath)
+            e = bgen_store_variants_metadata(bfile, variants, index[0], mfilepath)
             if e != 0 and v == 1:
                 errmsg = "Warning: could not create"
                 errmsg += " the metadata file {}.".format(abspath(mfilepath))
@@ -42,7 +44,7 @@ def try_read_variants_metadata_file(bfile, mfilepath, index, v):
     return variants
 
 
-def create_metafile(bgen_filepath, metadata_filepath, verbose=True):
+def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
     r"""Create variants metadata file.
 
     Variants metadata file helps speed up subsequent reads of the associated
@@ -63,17 +65,30 @@ def create_metafile(bgen_filepath, metadata_filepath, verbose=True):
         verbose = 0
 
     bgen_filepath = make_sure_bytes(bgen_filepath)
-    metadata_filepath = make_sure_bytes(metadata_filepath)
+    metafile_filepath = make_sure_bytes(metafile_filepath)
 
-    check_file_exist(bgen_filepath)
-    check_file_readable(bgen_filepath)
+    assert_file_exist(bgen_filepath)
+    assert_file_readable(bgen_filepath)
 
-    if exists(metadata_filepath):
-        raise ValueError(
-            "The file {} already exists.".format(metadata_filepath))
+    if exists(metafile_filepath):
+        raise ValueError(f"The file {metafile_filepath} already exists.")
 
-    e = bgen_create_variants_metadata_file(bgen_filepath, metadata_filepath,
-                                           verbose)
+    bgen = bgen_open(make_sure_bytes(bgen_filepath))
+    if bgen == ffi.NULL:
+        raise RuntimeError(f"Could not read {bgen_filepath}.")
 
-    if e != 0:
-        raise RuntimeError("Error while creating metadata file: {}".format(e))
+    nparts = _estimate_best_npartitions(bgen_nvariants(bgen))
+    metafile = bgen_create_metafile(bgen, metafile_filepath, nparts, verbose)
+    if metafile == ffi.NULL:
+        raise RuntimeError(f"Error while creating metafile: {metafile_filepath}.")
+
+    if bgen_close_metafile(metafile) != 0:
+        raise RuntimeError(f"Error while closing metafile: {metafile_filepath}.")
+
+    bgen_close(bgen)
+
+
+def _estimate_best_npartitions(nvariants):
+    min_variants = 128
+    m = max(min(min_variants, nvariants), floor(sqrt(nvariants)))
+    return nvariants // m

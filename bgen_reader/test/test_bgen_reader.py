@@ -68,8 +68,8 @@ def test_metafile_not_provided():
 
 def test_metafile_provided():
     filenames = ["haplotypes.bgen", "haplotypes.bgen.metadata.valid"]
-    with example_files(filenames) as filepath:
-        read_bgen(filepath[0], metafile_filepath=filepath[1], verbose=False)
+    with example_files(filenames) as filepaths:
+        read_bgen(filepaths[0], metafile_filepath=filepaths[1], verbose=False)
 
 
 def test_metafile_wrong_filepath():

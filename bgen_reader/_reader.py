@@ -8,6 +8,7 @@ import dask.array as da
 import dask.dataframe as dd
 import xarray as xr
 from cachetools import LRUCache, cached
+from dask.array import concatenate, from_delayed
 from dask.delayed import delayed
 from numpy import asarray, float64, full, inf, nan, stack
 from pandas import DataFrame, Series, read_csv
@@ -16,24 +17,27 @@ from tqdm import tqdm
 from ._ffi import ffi
 from ._ffi.lib import (
     bgen_close,
+    bgen_close_metafile,
     bgen_close_variant_genotype,
     bgen_contain_samples,
     bgen_free_samples,
     bgen_free_variants_metadata,
     bgen_load_variants_metadata,
     bgen_max_nalleles,
+    bgen_metafile_nparts,
     bgen_missing,
     bgen_ncombs,
     bgen_nsamples,
     bgen_nvariants,
     bgen_open,
+    bgen_open_metafile,
     bgen_open_variant_genotype,
     bgen_phased,
     bgen_ploidy,
+    bgen_read_partition,
     bgen_read_samples,
     bgen_read_variant_genotype,
     bgen_read_variants_metadata,
-    bgen_sample_ids_presence,
 )
 from ._file import (
     _get_temp_filepath,
@@ -41,7 +45,8 @@ from ._file import (
     assert_file_readable,
     permission_write_file,
 )
-from ._misc import create_string, make_sure_bytes, make_sure_str
+from ._metadata import create_metafile
+from ._misc import create_string, make_sure_bytes
 
 PY3 = sys.version_info >= (3,)
 
@@ -100,26 +105,21 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
     assert_file_readable(filepath)
 
     metafile_filepath = _get_valid_metafile_filepath(filepath, metafile_filepath)
+    if not os.path.exists(metafile_filepath):
+        create_metafile(filepath, metafile_filepath, verbose)
 
-    bgen = bgen_open(make_sure_bytes(filepath))
-    if bgen == ffi.NULL:
-        raise RuntimeError("Could not read {}.".format(filepath))
-
-    samples = _get_samples(bgen, samples_filepath, verbose)
-
-    return dict(variants=None, samples=samples)
-    samples = samples.loc[:, "id"]
-    # variants, index = _read_variants2(bgen, filepath, metafile_filepath, verbose)
-    variants = _map_metadata(bgen, metafile_filepath)
-    # variants = dd.from_pandas(variants, npartitions=100, name="variants")
-
-    nsamples = samples.shape[0]
-    bgen_close(bgen)
-
-    variants = _read_genotype2(index, nsamples, variants, verbose)
-    variants.name = "variants"
+    samples = _get_samples(filepath, samples_filepath, verbose)
+    variants = _map_metadata(filepath, metafile_filepath, samples)
 
     return dict(variants=variants, samples=samples)
+
+    # nsamples = samples.shape[0]
+    # bgen_close(bgen)
+
+    # variants = _read_genotype2(index, nsamples, variants, verbose)
+    # variants.name = "variants"
+
+    # return dict(variants=variants, samples=samples)
 
 
 def _read_variants_from_bgen_file(bfile, index, v):
@@ -203,40 +203,86 @@ def _read_variants2(bfile, filepath, metadata_file, verbose):
     return DataFrame(data=data), mf
 
 
-def _map_metadata(bgen, metafile_filepath):
-    v = 1
+def _get_npartitions(bgen_filepath, metafile_filepath):
+    bgen = bgen_open(make_sure_bytes(bgen_filepath))
+    if bgen == ffi.NULL:
+        raise RuntimeError(f"Could not open {bgen_filepath}.")
+
+    metafile = bgen_open_metafile(make_sure_bytes(metafile_filepath))
+    if bgen == ffi.NULL:
+        raise RuntimeError(f"Could not open {metafile_filepath}.")
+
+    nparts = bgen_metafile_nparts(metafile)
+
+    if bgen_close_metafile(metafile) != 0:
+        raise RuntimeError(f"Error while closing metafile: {metafile_filepath}.")
+
+    bgen_close(bgen)
+
+    return nparts
 
 
-#     if exists(metafile_filepath):
-#         # variants = bgen_load_variants_metadata(bfile, metafile_filepath, index, v)
-#         variants = bgen_open_metafile(metafile_filepath)
-#         if variants == ffi.NULL:
-#             if v == 1:
-#                 msg = "Could not read variants"
-#                 msg += " metadata from {}.".format(metafile_filepath)
-#                 raise RuntimeError(msg)
-#     else:
-#         # variants = bgen_read_variants_metadata(bfile, index, v)
-#         variants = bgen_create_metafile(bfile, metafile_filepath, nparts, v)
-#         # BGEN_API struct bgen_mf *bgen_create_metafile(struct bgen_file *, const char *, int,
-#         #                                       int);
+def _map_metadata(bgen_filepath, metafile_filepath, samples):
+    nparts = _get_npartitions(bgen_filepath, metafile_filepath)
+    dfs = []
+    index_base = 0
+    for i in range(nparts):
+        dfs.append(_read_partition(bgen_filepath, metafile_filepath, i, index_base))
+        index_base += nparts
+    df = dd.concat(dfs)
+    return df
 
-#     if variants == ffi.NULL:
-#         raise RuntimeError("Could not read variants metadata.")
 
-#     if not exists(metafile_filepath):
-#         if access(abspath(dirname(metafile_filepath)), W_OK):
-#             e = bgen_store_variants_metadata(bfile, variants, index[0],
-#                                              metafile_filepath)
-#             if e != 0 and v == 1:
-#                 errmsg = "Warning: could not create"
-#                 errmsg += " the metadata file {}.".format(abspath(metafile_filepath))
-#                 print(errmsg)
-#         elif v == 1:
-#             errmsg = "Warning: you don't have permission to write"
-#             errmsg += " the metadata file {}.".format(abspath(metafile_filepath))
-#             print(errmsg)
-#     return variants
+def _bgen_str_to_str(s):
+    if s.str == ffi.NULL:
+        return ""
+    return ffi.string(s.str, s.len).decode()
+
+
+def _read_allele_ids(metadata):
+    n = metadata.nalleles
+    alleles = [_bgen_str_to_str(metadata.allele_ids[i]) for i in range(n)]
+    return ",".join(alleles)
+
+
+def _read_partition(bgen_filepath, metafile_filepath, part, index_base):
+    bgen = bgen_open(make_sure_bytes(bgen_filepath))
+    if bgen == ffi.NULL:
+        raise RuntimeError(f"Could not open {bgen_filepath}.")
+
+    metafile = bgen_open_metafile(make_sure_bytes(metafile_filepath))
+    if bgen == ffi.NULL:
+        raise RuntimeError(f"Could not open {metafile_filepath}.")
+
+    nvariants_ptr = ffi.new("int *")
+    metadata = bgen_read_partition(metafile, part, nvariants_ptr)
+    nvariants = nvariants_ptr[0]
+    variants = []
+    for i in range(nvariants):
+        id_ = _bgen_str_to_str(metadata[i].id)
+        rsid = _bgen_str_to_str(metadata[i].rsid)
+        chrom = _bgen_str_to_str(metadata[i].chrom)
+        pos = metadata[i].position
+        nalleles = metadata[i].nalleles
+        allele_ids = _read_allele_ids(metadata[i])
+        variants.append([id_, rsid, chrom, pos, nalleles, allele_ids])
+
+    index = range(index_base, index_base + nvariants)
+    variants = DataFrame(
+        variants,
+        index=index,
+        columns=["id", "rsid", "chrom", "pos", "nalleles", "allele_ids"],
+        dtype=str,
+    )
+    variants["pos"] = variants["pos"].astype(int)
+    variants["nalleles"] = variants["nalleles"].astype(int)
+
+    if bgen_close_metafile(metafile) != 0:
+        raise RuntimeError(f"Error while closing metafile: {metafile_filepath}.")
+
+    bgen_close(bgen)
+
+    return variants
 
 
 def _read_samples(bgen_file, verbose):
@@ -547,6 +593,7 @@ def _get_valid_metafile_filepath(bgen_filepath, metafile_filepath):
             fp = metafile_filepath
             warnings.warn(_metafile_not_found.format(filepath=fp), UserWarning)
             raise e
+    return metafile_filepath
 
 
 def _infer_metafile_filenames(bgen_filepath):
@@ -560,7 +607,11 @@ def _infer_metafile_filenames(bgen_filepath):
     }
 
 
-def _get_samples(bgen, samples_filepath, verbose):
+def _get_samples(bgen_filepath, samples_filepath, verbose):
+    bgen = bgen_open(make_sure_bytes(bgen_filepath))
+    if bgen == ffi.NULL:
+        raise RuntimeError(f"Could not open {bgen_filepath}.")
+
     if samples_filepath is not None:
         assert_file_exist(samples_filepath)
         assert_file_readable(samples_filepath)
@@ -574,4 +625,6 @@ def _get_samples(bgen, samples_filepath, verbose):
         samples = _generate_samples(bgen)
     else:
         samples = _read_samples(bgen, verbose)
+
+    bgen_close(bgen)
     return samples
