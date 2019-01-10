@@ -1,13 +1,9 @@
 from pandas import Series, read_csv
 
-from ._ffi.lib import (
-    bgen_contain_samples,
-    bgen_free_samples,
-    bgen_nsamples,
-    bgen_read_samples,
-)
-from ._file import assert_file_exist, assert_file_readable, bgen_file
-from ._misc import create_string
+from ._ffi import lib
+from ._file import assert_file_exist, assert_file_readable
+from ._bgen import bgen_file
+from ._string import create_string
 
 
 def get_samples(bgen_filepath, samples_filepath, verbose):
@@ -16,7 +12,7 @@ def get_samples(bgen_filepath, samples_filepath, verbose):
             assert_file_exist(samples_filepath)
             assert_file_readable(samples_filepath)
             samples = _read_samples_from_file(samples_filepath, verbose)
-        elif bgen_contain_samples(bgen) == 0:
+        elif lib.bgen_contain_samples(bgen) == 0:
             if verbose:
                 print("Sample IDs are not present in this file.")
                 msg = "I will generate them on my own:"
@@ -35,12 +31,12 @@ def _read_samples(bgen, verbose):
     else:
         verbose = 0
 
-    nsamples = bgen_nsamples(bgen)
-    samples = bgen_read_samples(bgen, verbose)
+    nsamples = lib.bgen_nsamples(bgen)
+    samples = lib.bgen_read_samples(bgen, verbose)
 
     ids = [create_string(samples[i]) for i in range(nsamples)]
 
-    bgen_free_samples(bgen, samples)
+    lib.bgen_free_samples(bgen, samples)
     return Series(ids, dtype=str, name="id")
 
 
@@ -53,5 +49,5 @@ def _read_samples_from_file(sample_file, verbose):
 
 
 def _generate_samples(bgen):
-    nsamples = bgen_nsamples(bgen)
+    nsamples = lib.bgen_nsamples(bgen)
     return Series([f"sample_{i}" for i in range(nsamples)], dtype=str, name="id")

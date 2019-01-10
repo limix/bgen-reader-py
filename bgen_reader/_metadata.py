@@ -1,47 +1,11 @@
 from math import floor, sqrt
-from os import W_OK, access
-from os.path import abspath, dirname, exists
+from os.path import exists
 
 from ._ffi import ffi
-from ._ffi.lib import (
-    bgen_close,
-    bgen_close_metafile,
-    bgen_create_metafile,
-    bgen_open,
-    bgen_open_metafile,
-    bgen_nvariants
-)
+from ._ffi import lib
 from ._file import assert_file_exist, assert_file_readable
-from ._misc import make_sure_bytes
-
-
-def try_read_variants_metadata_file(bfile, mfilepath, index, v):
-    if exists(mfilepath):
-        variants = bgen_load_variants_metadata(bfile, mfilepath, index, v)
-        if variants == ffi.NULL:
-            if v == 1:
-                msg = "Warning: could not read variants"
-                msg += " metadata from {}.".format(mfilepath)
-                print(msg)
-            variants = bgen_read_variants_metadata(bfile, index, v)
-    else:
-        variants = bgen_read_variants_metadata(bfile, index, v)
-
-    if variants == ffi.NULL:
-        raise RuntimeError("Could not read variants metadata.")
-
-    if not exists(mfilepath):
-        if access(abspath(dirname(mfilepath)), W_OK):
-            e = bgen_store_variants_metadata(bfile, variants, index[0], mfilepath)
-            if e != 0 and v == 1:
-                errmsg = "Warning: could not create"
-                errmsg += " the metadata file {}.".format(abspath(mfilepath))
-                print(errmsg)
-        elif v == 1:
-            errmsg = "Warning: you don't have permission to write"
-            errmsg += " the metadata file {}.".format(abspath(mfilepath))
-            print(errmsg)
-    return variants
+from ._string import make_sure_bytes
+from ._bgen import bgen_file
 
 
 def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
@@ -73,19 +37,14 @@ def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
     if exists(metafile_filepath):
         raise ValueError(f"The file {metafile_filepath} already exists.")
 
-    bgen = bgen_open(make_sure_bytes(bgen_filepath))
-    if bgen == ffi.NULL:
-        raise RuntimeError(f"Could not read {bgen_filepath}.")
+    with bgen_file(bgen_filepath) as bgen:
+        nparts = _estimate_best_npartitions(lib.bgen_nvariants(bgen))
+        metafile = lib.bgen_create_metafile(bgen, metafile_filepath, nparts, verbose)
+        if metafile == ffi.NULL:
+            raise RuntimeError(f"Error while creating metafile: {metafile_filepath}.")
 
-    nparts = _estimate_best_npartitions(bgen_nvariants(bgen))
-    metafile = bgen_create_metafile(bgen, metafile_filepath, nparts, verbose)
-    if metafile == ffi.NULL:
-        raise RuntimeError(f"Error while creating metafile: {metafile_filepath}.")
-
-    if bgen_close_metafile(metafile) != 0:
-        raise RuntimeError(f"Error while closing metafile: {metafile_filepath}.")
-
-    bgen_close(bgen)
+        if lib.bgen_close_metafile(metafile) != 0:
+            raise RuntimeError(f"Error while closing metafile: {metafile_filepath}.")
 
 
 def _estimate_best_npartitions(nvariants):

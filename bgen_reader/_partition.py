@@ -1,25 +1,44 @@
+import dask.dataframe as dd
+from dask.delayed import delayed
 from pandas import DataFrame
 
-from ._ffi import ffi
-from ._ffi.lib import (
-    bgen_close_metafile,
-    bgen_metafile_nparts,
-    bgen_open_metafile,
-    bgen_read_partition,
-)
-from ._file import bgen_file
-from ._misc import bgen_str_to_str, make_sure_bytes
+from ._bgen import bgen_file, bgen_metafile
+from ._string import bgen_str_to_str
+from ._ffi import ffi, lib
 
 
-def read_partition(bgen_filepath, metafile_filepath, part, index_base):
-    with bgen_file(bgen_filepath):
+def map_metadata(bgen_filepath, metafile_filepath, samples):
+    with bgen_metafile(metafile_filepath) as mf:
+        nparts = lib.bgen_metafile_nparts(mf)
+    with bgen_file(bgen_filepath) as bgen:
+        nvariants = lib.bgen_nvariants(bgen)
+    dfs = []
+    index_base = 0
+    part_size = nvariants // nparts
+    divisions = []
+    for i in range(nparts):
+        divisions.append(index_base)
+        d = delayed(_read_partition)(bgen_filepath, metafile_filepath, i, index_base)
+        dfs.append(d)
+        index_base += part_size
+    divisions.append(nvariants - 1)
+    meta = [
+        ("id", str),
+        ("rsid", str),
+        ("chrom", str),
+        ("pos", int),
+        ("nalleles", int),
+        ("allele_ids", str),
+    ]
+    df = dd.from_delayed(dfs, meta=dd.utils.make_meta(meta), divisions=divisions)
+    return df
 
-        metafile = bgen_open_metafile(make_sure_bytes(metafile_filepath))
-        if metafile == ffi.NULL:
-            raise RuntimeError(f"Could not open {metafile_filepath}.")
+
+def _read_partition(bgen_filepath, metafile_filepath, part, index_base):
+    with bgen_metafile(metafile_filepath) as mf:
 
         nvariants_ptr = ffi.new("int *")
-        metadata = bgen_read_partition(metafile, part, nvariants_ptr)
+        metadata = lib.bgen_read_partition(mf, part, nvariants_ptr)
         nvariants = nvariants_ptr[0]
         variants = []
         for i in range(nvariants):
@@ -41,24 +60,7 @@ def read_partition(bgen_filepath, metafile_filepath, part, index_base):
         variants["pos"] = variants["pos"].astype(int)
         variants["nalleles"] = variants["nalleles"].astype(int)
 
-        if bgen_close_metafile(metafile) != 0:
-            raise RuntimeError(f"Error while closing metafile: {metafile_filepath}.")
-
     return variants
-
-
-def get_npartitions(bgen_filepath, metafile_filepath):
-    with bgen_file(bgen_filepath) as bgen:
-        metafile = bgen_open_metafile(make_sure_bytes(metafile_filepath))
-        if bgen == ffi.NULL:
-            raise RuntimeError(f"Could not open {metafile_filepath}.")
-
-        nparts = bgen_metafile_nparts(metafile)
-
-        if bgen_close_metafile(metafile) != 0:
-            raise RuntimeError(f"Error while closing metafile: {metafile_filepath}.")
-
-    return nparts
 
 
 def _read_allele_ids(metadata):

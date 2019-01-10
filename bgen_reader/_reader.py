@@ -1,11 +1,6 @@
 import os
 import warnings
 
-import dask.dataframe as dd
-from dask.delayed import delayed
-
-from ._ffi import ffi
-from ._ffi.lib import bgen_close, bgen_nvariants, bgen_open, bgen_read_variants_metadata
 from ._file import (
     _get_temp_filepath,
     assert_file_exist,
@@ -13,9 +8,9 @@ from ._file import (
     permission_write_file,
 )
 from ._metadata import create_metafile
-from ._misc import bgen_str_to_str, create_string, make_sure_bytes
-from ._partition import get_npartitions, read_partition
+from ._partition import map_metadata
 from ._samples import get_samples
+from ._string import create_string
 
 
 def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=True):
@@ -73,16 +68,9 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
         create_metafile(filepath, metafile_filepath, verbose)
 
     samples = get_samples(filepath, samples_filepath, verbose)
-    variants = _map_metadata(filepath, metafile_filepath, samples)
+    variants = map_metadata(filepath, metafile_filepath, samples)
 
     return dict(variants=variants, samples=samples)
-
-
-def _read_variants_from_bgen_file(bfile, index, v):
-    variants = bgen_read_variants_metadata(bfile, index, v)
-    if variants == ffi.NULL:
-        raise RuntimeError("Could not read variants metadata.")
-    return variants
 
 
 def _create_variants_dataframe(variants, nvariants):
@@ -102,42 +90,6 @@ def _create_variants_dataframe(variants, nvariants):
     return data
 
 
-def _get_nvariants(bgen_filepath):
-    bgen = bgen_open(make_sure_bytes(bgen_filepath))
-    if bgen == ffi.NULL:
-        raise RuntimeError(f"Could not open {bgen_filepath}.")
-
-    nvariants = bgen_nvariants(bgen)
-    bgen_close(bgen)
-
-    return nvariants
-
-
-def _map_metadata(bgen_filepath, metafile_filepath, samples):
-    nparts = get_npartitions(bgen_filepath, metafile_filepath)
-    nvariants = _get_nvariants(bgen_filepath)
-    dfs = []
-    index_base = 0
-    part_size = nvariants // nparts
-    divisions = []
-    for i in range(nparts):
-        divisions.append(index_base)
-        d = delayed(read_partition)(bgen_filepath, metafile_filepath, i, index_base)
-        dfs.append(d)
-        index_base += part_size
-    divisions.append(nvariants - 1)
-    meta = [
-        ("id", str),
-        ("rsid", str),
-        ("chrom", str),
-        ("pos", int),
-        ("nalleles", int),
-        ("allele_ids", str),
-    ]
-    df = dd.from_delayed(dfs, meta=dd.utils.make_meta(meta), divisions=divisions)
-    return df
-
-
 def _map_genotype():
     pass
     # genotype[5] = {
@@ -148,8 +100,6 @@ def _map_genotype():
 # "ploidy": array([2, 1, 2]),
 # "missing": array([0, 0, 0]),
 # }
-
-
 
 
 _metafile_not_found = """\
