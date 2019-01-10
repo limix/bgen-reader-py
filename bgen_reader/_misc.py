@@ -1,8 +1,8 @@
 import errno
-import stat
-import sys
 import os
+import stat
 from os.path import exists
+
 from ._ffi import ffi
 
 
@@ -35,8 +35,7 @@ def create_string(v):
 
 def check_file_exist(filepath):
     if not exists(filepath):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
-                                filepath)
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
 
 
 def check_file_readable(filepath):
@@ -44,3 +43,9 @@ def check_file_readable(filepath):
         msg = "You don't have file"
         msg += " permission for reading {}.".format(filepath)
         raise RuntimeError(msg)
+
+
+def bgen_str_to_str(s):
+    if s.str == ffi.NULL:
+        return ""
+    return ffi.string(s.str, s.len).decode()

@@ -2,7 +2,12 @@ import errno
 import os
 import stat
 import tempfile
+from contextlib import contextmanager
 from os.path import exists
+
+from ._ffi import ffi
+from ._ffi.lib import bgen_close, bgen_open
+from ._misc import make_sure_bytes
 
 
 def _is_group_readable(filepath):
@@ -30,6 +35,17 @@ def permission_write_file(filepath):
     return True
 
 
+@contextmanager
+def bgen_file(filepath):
+    bgen = bgen_open(make_sure_bytes(filepath))
+    if bgen == ffi.NULL:
+        raise RuntimeError(f"Could not open {filepath}.")
+    try:
+        yield bgen
+    finally:
+        bgen_close(bgen)
+
+
 def _get_temp_filepath(folder, filename):
     folder = os.path.abspath(folder)
     folder = os.path.normpath(folder)
@@ -47,5 +63,5 @@ def _touch(fname, mode=0o666, dir_fd=None, **kwargs):
         os.utime(
             f.fileno() if os.utime in os.supports_fd else fname,
             dir_fd=None if os.supports_fd else dir_fd,
-            **kwargs
+            **kwargs,
         )
