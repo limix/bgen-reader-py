@@ -73,35 +73,6 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
     return dict(variants=variants, samples=samples)
 
 
-def _create_variants_dataframe(variants, nvariants):
-    data = dict(id=[], rsid=[], chrom=[], pos=[], nalleles=[], allele_ids=[])
-    for i in range(nvariants):
-        data["id"].append(create_string(variants[i].id))
-        data["rsid"].append(create_string(variants[i].rsid))
-        data["chrom"].append(create_string(variants[i].chrom))
-
-        data["pos"].append(variants[i].position)
-        nalleles = variants[i].nalleles
-        data["nalleles"].append(nalleles)
-        alleles = []
-        for j in range(nalleles):
-            alleles.append(create_string(variants[i].allele_ids[j]))
-        data["allele_ids"].append(",".join(alleles))
-    return data
-
-
-def _map_genotype():
-    pass
-    # genotype[5] = {
-
-
-# "probs": array([]),
-# "phased": 0,
-# "ploidy": array([2, 1, 2]),
-# "missing": array([0, 0, 0]),
-# }
-
-
 _metafile_not_found = """\
 Metafile `{filepath}` does not exist. If you wish to create a metafile in a custom
 location, please use `bgen_reader.create_metafile`.
@@ -115,21 +86,7 @@ This might prevent speeding-up the reading process in future runs.
 
 def _get_valid_metafile_filepath(bgen_filepath, metafile_filepath):
     if metafile_filepath is None:
-        metafile = _infer_metafile_filenames(bgen_filepath)
-        if os.path.exists(metafile["filepath"]):
-            try:
-                assert_file_readable(metafile["filepath"])
-                return metafile["filepath"]
-            except RuntimeError as e:
-                warnings.warn(str(e), UserWarning)
-                return _get_temp_filepath(metafile["dir"], metafile["filename"])
-        else:
-            if permission_write_file(metafile["filepath"]):
-                return metafile["filepath"]
-            else:
-                fp = metafile["filepath"]
-                warnings.warn(_metafile_nowrite_dir.format(filepath=fp), UserWarning)
-                return _get_temp_filepath(metafile["dir"], metafile["filename"])
+        return _infer_metafile_filepath(bgen_filepath)
     else:
         try:
             assert_file_exist(metafile_filepath)
@@ -140,7 +97,25 @@ def _get_valid_metafile_filepath(bgen_filepath, metafile_filepath):
     return metafile_filepath
 
 
-def _infer_metafile_filenames(bgen_filepath):
+def _infer_metafile_filepath(bgen_filepath):
+    metafile = _bgen_to_metafile_filepath(bgen_filepath)
+    if os.path.exists(metafile["filepath"]):
+        try:
+            assert_file_readable(metafile["filepath"])
+            return metafile["filepath"]
+        except RuntimeError as e:
+            warnings.warn(str(e), UserWarning)
+            return _get_temp_filepath(metafile["dir"], metafile["filename"])
+    else:
+        if permission_write_file(metafile["filepath"]):
+            return metafile["filepath"]
+        else:
+            fp = metafile["filepath"]
+            warnings.warn(_metafile_nowrite_dir.format(filepath=fp), UserWarning)
+            return _get_temp_filepath(metafile["dir"], metafile["filename"])
+
+
+def _bgen_to_metafile_filepath(bgen_filepath):
     metafile_filepath = os.path.abspath(bgen_filepath + ".metadata")
     metafile_filename = os.path.basename(metafile_filepath)
     metafile_dir = os.path.dirname(metafile_filepath)

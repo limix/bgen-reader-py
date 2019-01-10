@@ -3,8 +3,8 @@ from dask.delayed import delayed
 from pandas import DataFrame
 
 from ._bgen import bgen_file, bgen_metafile
-from ._string import bgen_str_to_str
 from ._ffi import ffi, lib
+from ._string import bgen_str_to_str
 
 
 def map_metadata(bgen_filepath, metafile_filepath, samples):

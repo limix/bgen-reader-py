@@ -1,3 +1,9 @@
+# "probs": array([]),
+# "phased": 0,
+# "ploidy": array([2, 1, 2]),
+# "missing": array([0, 0, 0]),
+# }
+
 # cache = LRUCache(maxsize=2)
 # lock = RLock()
 

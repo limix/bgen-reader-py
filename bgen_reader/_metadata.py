@@ -1,11 +1,10 @@
 from math import floor, sqrt
 from os.path import exists
 
-from ._ffi import ffi
-from ._ffi import lib
+from ._bgen import bgen_file
+from ._ffi import ffi, lib
 from ._file import assert_file_exist, assert_file_readable
 from ._string import make_sure_bytes
-from ._bgen import bgen_file
 
 
 def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
