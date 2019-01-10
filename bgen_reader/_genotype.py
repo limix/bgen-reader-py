@@ -1,35 +1,29 @@
 from dask.delayed import delayed
-from numpy import full, float64, nan
+from numpy import float64, full, nan
 
 from ._bgen import bgen_file, bgen_metafile
 from ._ffi import ffi, lib
-from ._partition import read_partition
+from ._partition import get_partition_size, read_partition
 
 
 def map_genotype(bgen_filepath, metafile_filepath):
     with bgen_file(bgen_filepath) as bgen:
-        nsamples = lib.bgen_nsamples(bgen)
         nvariants = lib.bgen_nvariants(bgen)
-
-    with bgen_metafile(metafile_filepath) as mf:
-        part_size = nvariants // lib.bgen_metafile_nparts(mf)
-
+    part_size = get_partition_size(bgen_filepath, metafile_filepath)
     genotype = []
     index_base = 0
     for i in range(nvariants):
         # d = delayed(_read_genotype)(bgen_filepath, metafile_filepath, part, i % part, index_base)
-        d = _read_genotype(
-            bgen_filepath, metafile_filepath, nsamples, i, part_size, index_base
-        )
+        d = _read_genotype(bgen_filepath, metafile_filepath, i, part_size, index_base)
         genotype.append(d)
         index_base += part_size
 
     return genotype
 
 
-def _read_genotype(
-    bgen_filepath, metafile_filepath, nsamples, i, part_size, index_base
-):
+def _read_genotype(bgen_filepath, metafile_filepath, i, part_size, index_base):
+    with bgen_file(bgen_filepath) as bgen:
+        nsamples = lib.bgen_nsamples(bgen)
     part = i // part_size
     j = i % part_size
     p = read_partition(bgen_filepath, metafile_filepath, part, index_base)

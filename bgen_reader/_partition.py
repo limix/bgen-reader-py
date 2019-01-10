@@ -14,7 +14,7 @@ def map_metadata(bgen_filepath, metafile_filepath):
         nvariants = lib.bgen_nvariants(bgen)
     dfs = []
     index_base = 0
-    part_size = nvariants // nparts
+    part_size = get_partition_size(bgen_filepath, metafile_filepath)
     divisions = []
     for i in range(nparts):
         divisions.append(index_base)
@@ -64,6 +64,14 @@ def read_partition(bgen_filepath, metafile_filepath, part, index_base):
         variants["vaddr"] = variants["vaddr"].astype(int)
 
     return variants
+
+
+def get_partition_size(bgen_filepath, metafile_filepath):
+    with bgen_file(bgen_filepath) as bgen:
+        nvariants = lib.bgen_nvariants(bgen)
+    with bgen_metafile(metafile_filepath) as mf:
+        nparts = lib.bgen_metafile_nparts(mf)
+    return nvariants // nparts
 
 
 def _read_allele_ids(metadata):
