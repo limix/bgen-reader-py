@@ -136,7 +136,10 @@ def test_bgen_reader_phased_genotype():
         n = samples.shape[0]
         assert_equal(samples.loc[n - 1], "sample_3")
 
-        # a = [1.0, 0.0, 1.0, 0.0]
+        breakpoint()
+        assert_allclose(bgen["genotype"][0]["probs"][0], [1.0, 0.0, 1.0, 0.0])
+
+        # a =
         # assert_allclose(
         #     bgen["variants"]["genotype"].loc[0].compute().item().compute()[0],
         #     a)

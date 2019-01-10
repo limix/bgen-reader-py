@@ -7,6 +7,7 @@ from ._file import (
     assert_file_readable,
     permission_write_file,
 )
+from ._genotype import map_genotype
 from ._metadata import create_metafile
 from ._partition import map_metadata
 from ._samples import get_samples
@@ -68,9 +69,10 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
         create_metafile(filepath, metafile_filepath, verbose)
 
     samples = get_samples(filepath, samples_filepath, verbose)
-    variants = map_metadata(filepath, metafile_filepath, samples)
+    variants = map_metadata(filepath, metafile_filepath)
+    genotype = map_genotype(filepath, metafile_filepath)
 
-    return dict(variants=variants, samples=samples)
+    return dict(variants=variants, samples=samples, genotype=genotype)
 
 
 _metafile_not_found = """\

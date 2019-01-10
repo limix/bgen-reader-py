@@ -7,7 +7,7 @@ from ._ffi import ffi, lib
 from ._string import bgen_str_to_str
 
 
-def map_metadata(bgen_filepath, metafile_filepath, samples):
+def map_metadata(bgen_filepath, metafile_filepath):
     with bgen_metafile(metafile_filepath) as mf:
         nparts = lib.bgen_metafile_nparts(mf)
     with bgen_file(bgen_filepath) as bgen:
@@ -18,7 +18,7 @@ def map_metadata(bgen_filepath, metafile_filepath, samples):
     divisions = []
     for i in range(nparts):
         divisions.append(index_base)
-        d = delayed(_read_partition)(bgen_filepath, metafile_filepath, i, index_base)
+        d = delayed(read_partition)(bgen_filepath, metafile_filepath, i, index_base)
         dfs.append(d)
         index_base += part_size
     divisions.append(nvariants - 1)
@@ -29,12 +29,13 @@ def map_metadata(bgen_filepath, metafile_filepath, samples):
         ("pos", int),
         ("nalleles", int),
         ("allele_ids", str),
+        ("vaddr", int),
     ]
     df = dd.from_delayed(dfs, meta=dd.utils.make_meta(meta), divisions=divisions)
     return df
 
 
-def _read_partition(bgen_filepath, metafile_filepath, part, index_base):
+def read_partition(bgen_filepath, metafile_filepath, part, index_base):
     with bgen_metafile(metafile_filepath) as mf:
 
         nvariants_ptr = ffi.new("int *")
@@ -48,17 +49,19 @@ def _read_partition(bgen_filepath, metafile_filepath, part, index_base):
             pos = metadata[i].position
             nalleles = metadata[i].nalleles
             allele_ids = _read_allele_ids(metadata[i])
-            variants.append([id_, rsid, chrom, pos, nalleles, allele_ids])
+            vaddr = metadata[i].vaddr
+            variants.append([id_, rsid, chrom, pos, nalleles, allele_ids, vaddr])
 
         index = range(index_base, index_base + nvariants)
         variants = DataFrame(
             variants,
             index=index,
-            columns=["id", "rsid", "chrom", "pos", "nalleles", "allele_ids"],
+            columns=["id", "rsid", "chrom", "pos", "nalleles", "allele_ids", "vaddr"],
             dtype=str,
         )
         variants["pos"] = variants["pos"].astype(int)
         variants["nalleles"] = variants["nalleles"].astype(int)
+        variants["vaddr"] = variants["vaddr"].astype(int)
 
     return variants
 

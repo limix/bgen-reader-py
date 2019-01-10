@@ -39,6 +39,9 @@ int bgen_ncombs(const struct bgen_vg *);
 int bgen_phased(const struct bgen_vg *);
 int bgen_missing(const struct bgen_vg *, size_t);
 int bgen_ploidy(const struct bgen_vg *, size_t);
+struct bgen_vg *bgen_open_genotype(struct bgen_file *, long);
+void bgen_close_genotype(struct bgen_vg *vg);
+int bgen_read_genotype(struct bgen_file *, struct bgen_vg *, double *);
 
 /* Deprecated functions. */
 int bgen_create_variants_metadata_file(const char *, const char *, int);
