@@ -20,22 +20,24 @@ from __future__ import absolute_import
 
 from ._dosage import (
     allele_expectation,
-    convert_to_dosage,
-    compute_dosage,
     allele_frequency,
+    compute_dosage,
+    convert_to_dosage,
 )
 from ._example import example_files
 from ._metadata import create_metafile
 from ._reader import read_bgen
 from ._testit import test
 
+_ffi_err = """
+It is likely caused by a broken installation of this package.
+Please, make sure you have a C compiler and try to uninstall
+and reinstall the package again."""
+
 try:
     from ._ffi import ffi as _
 except Exception as e:
-    msg = "\nIt is likely caused by a broken installation of this package."
-    msg += "\nPlease, make sure you have a C compiler and try to uninstall"
-    msg += "\nand reinstall the package again."
-    e.msg = e.msg + msg
+    e.msg = e.msg + _ffi_err
     raise e
 
 __version__ = "3.0.0"

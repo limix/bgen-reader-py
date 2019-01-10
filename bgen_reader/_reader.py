@@ -256,6 +256,14 @@ def _map_metadata(bgen_filepath, metafile_filepath, samples):
     df = dd.from_delayed(dfs, meta=dd.utils.make_meta(meta), divisions=divisions)
     return df
 
+def _map_genotype():
+    pass
+    # genotype[5] = {
+  # "probs": array([]),
+  # "phased": 0,
+  # "ploidy": array([2, 1, 2]),
+  # "missing": array([0, 0, 0]),
+    # }
 
 def _bgen_str_to_str(s):
     if s.str == ffi.NULL:
