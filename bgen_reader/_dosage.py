@@ -1,5 +1,5 @@
 import warnings
-from numpy import asarray, newaxis, full
+from numpy import asarray, newaxis
 
 from ._helper import genotypes_to_allele_counts, get_genotypes
 from ._dask import array_shape_reveal
@@ -82,20 +82,14 @@ def compute_dosage(expec, alt=None):
     >>>
     >>> with example_files("example.32bits.bgen") as filepath:
     ...     bgen = read_bgen(filepath, verbose=False)
-    ...     e = allele_expectation(bgen["genotype"], nalleles=2, ploidy=2)
-    ...     dosage = compute_dosage(e).compute()
+    ...     probs = bgen["genotype"][0]["probs"].compute()
+    ...     e = allele_expectation(probs, nalleles=2, ploidy=2)
+    ...     dosage = compute_dosage(e)
     ...     print(dosage.shape)
-    ...     print(dosage)
-    (199, 500)
-    [[       nan 1.93575854 1.91558579 ... 1.94351192 0.10894776 1.01101689]
-     [1.98779296 1.97802735 0.02111815 ... 1.95492412 1.00897216 1.02255316]
-     [0.01550294 0.99383543 1.97933958 ... 1.98681641 1.99041748 1.99603272]
-     ...
-     [1.99319479 1.980896   1.98767124 ... 1.9943846  1.99716186 1.98712159]
-     [0.01263467 0.09661863 0.00869752 ... 0.00643921 0.00494384 0.01504517]
-     [0.99185182 1.94860838 0.99734497 ... 0.02914425 1.97827146 0.9515991 ]]
+    ...     print(dosage[:5])
+    (500,)
+    [       nan 1.93575854 1.91558579 1.0174256  1.91159064]
     """
-    freq = allele_frequency(expec)
     if alt is None:
         return expec[..., -1]
     try:
