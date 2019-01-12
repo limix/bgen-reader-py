@@ -2,16 +2,16 @@ from __future__ import unicode_literals
 
 import os
 import stat
-import sys
 from contextlib import contextmanager
-from dask.delayed import Delayed
 
+import dask.dataframe as dd
 import pytest
+from dask.delayed import Delayed
 from numpy import isnan
 from numpy.testing import assert_, assert_allclose, assert_equal
 from pandas import Series
 
-from bgen_reader import create_metafile, example_files, read_bgen
+from bgen_reader import example_files, read_bgen
 
 try:
     FileNotFoundError
@@ -109,13 +109,12 @@ def noread_permission(path):
         os.chmod(path, perm)
 
 
-def test_bgen_reader_delayed():
+def test_bgen_reader_lazy_types():
     with example_files("haplotypes.bgen") as filepath:
         bgen = read_bgen(filepath, verbose=False)
-        variants = bgen["variants"]
         samples = bgen["samples"]
-        genotype = bgen["genotype"]
-        assert_(isinstance(genotype[0], Delayed))
+        assert_(isinstance(bgen["genotype"][0], Delayed))
+        assert_(isinstance(bgen["variants"], dd.DataFrame))
 
 
 def test_bgen_reader_phased_genotype():
@@ -337,20 +336,14 @@ def test_bgen_reader_complex():
         g = bgen["genotype"][-1].compute()["probs"][-1]
         assert_allclose(g[:5], [0, 0, 0, 1, 0])
 
+        ploidy = bgen["genotype"][0].compute()["ploidy"]
+        assert_allclose(ploidy, [1, 2, 2, 2])
+        ploidy = bgen["genotype"][-1].compute()["ploidy"]
+        assert_allclose(ploidy, [4, 4, 4, 4])
 
-#         X = bgen["X"]
-
-#         assert_allclose(X[0].compute().sel(data="ploidy"), [1, 2, 2, 2])
-#         assert_allclose(X[-1].compute().sel(data="ploidy"), [4, 4, 4, 4])
-
-#         assert_allclose(
-#             X[:, 0].compute().sel(data="phased"), [0, 1, 1, 0, 1, 1, 1, 1, 0, 0]
-#         )
-
-#         X = X.compute()
-
-#         x = X.sel(sample=0, data="phased")
-#         assert_allclose(x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])
+        nvariants = len(variants)
+        phased = [bgen["genotype"][i].compute()["phased"] for i in range(nvariants)]
+        assert_allclose(phased, [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])
 
 
 def test_bgen_reader_complex_sample_file():
@@ -384,3 +377,12 @@ def test_bgen_reader_complex_sample_file():
 
         assert_equal(samples.loc[0], "sample_0")
         assert_equal(samples.loc[3], "sample_3")
+
+
+        ploidy = bgen["genotype"][2].compute()["ploidy"]
+        missing = bgen["genotype"][2].compute()["missing"]
+        nvariants = len(variants)
+        phased = [bgen["genotype"][i].compute()["phased"] for i in range(nvariants)]
+        assert_allclose(ploidy, [1, 2, 2, 2])
+        assert_allclose(missing, [0, 0, 0, 0])
+        assert_allclose(phased, [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])

@@ -71,8 +71,13 @@ def read_genotype_partition(
             ncombs = lib.bgen_ncombs(vg)
             p = full((nsamples, ncombs), nan, dtype=float64)
             lib.bgen_read_genotype(bgen, vg, ffi.cast("double *", p.ctypes.data))
+            phased = lib.bgen_phased(vg)
+            ploidy = [lib.bgen_ploidy(vg, i) for i in range(nsamples)]
+            missing = [lib.bgen_missing(vg, i) for i in range(nsamples)]
             lib.bgen_close_genotype(vg)
-            genotypes.append({"probs": p, "phased": -1, "ploidy": [], "missing": []})
+            genotypes.append(
+                {"probs": p, "phased": phased, "ploidy": ploidy, "missing": missing}
+            )
     return genotypes
 
 
