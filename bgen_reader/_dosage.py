@@ -141,18 +141,21 @@ def allele_expectation(p, nalleles, ploidy):
     >>>
     >>> with example_files("example.32bits.bgen") as filepath:
     ...     bgen = read_bgen(filepath, verbose=False)
+    ...     variants = bgen["variants"]
+    ...     samples = bgen["samples"]
+    ...     genotype = bgen["genotype"]
     ...
-    ...     locus = bgen["variants"].query("rsid == '{}'".format(rsid)).index
-    ...     sample = bgen["samples"].query("id == '{}'".format(sampleid)).index
+    ...     variant = variants[variants["rsid"] == rsid].compute()
+    ...     variant_idx = variant.index.item()
     ...
-    ...     nalleles = bgen["variants"].loc[locus, "nalleles"].item()
+    ...     sample = samples[samples == sampleid].index.item()
     ...     ploidy = 2
     ...
-    ...     p = bgen["genotype"][locus[0], sample[0]].compute()
+    ...     p = genotype[variant_idx]["probs"][sample].compute()
     ...     # For unphased genotypes only.
-    ...     e = allele_expectation(bgen["genotype"][locus[0], sample[0]], nalleles, ploidy)
+    ...     e = allele_expectation(p, variant["nalleles"].item(), ploidy)
     ...
-    ...     alleles = bgen["variants"].loc[locus, "allele_ids"].item().split(",")
+    ...     alleles = variant["allele_ids"].item().split(",")
     ...
     ...     print(Texttable().add_rows(
     ...         [
@@ -171,10 +174,11 @@ def allele_expectation(p, nalleles, ploidy):
     +----+-------+-------+-------+-------+
     | #G | 0     | 1     | 2     | 0.989 |
     +----+-------+-------+-------+-------+
-    >>> print("variant: {}".format(rsid))
-    variant: RSID_6
-    >>> print("sample : {}".format(sampleid))
-    sample : sample_005
+    >>> print(variant)
+            id    rsid chrom   pos  nalleles allele_ids  vaddr
+    4  SNPID_6  RSID_6    01  6000         2        A,G  19377
+    >>> print(sample)
+    4
 
     Note
     ----
