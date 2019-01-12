@@ -11,7 +11,6 @@ from ._genotype import map_genotype
 from ._metadata import create_metafile
 from ._partition import map_metadata
 from ._samples import get_samples
-from ._string import create_string
 
 
 def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=True):

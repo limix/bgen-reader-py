@@ -4,6 +4,7 @@ import os
 import stat
 import sys
 from contextlib import contextmanager
+from dask.delayed import Delayed
 
 import pytest
 from numpy import isnan
@@ -108,6 +109,15 @@ def noread_permission(path):
         os.chmod(path, perm)
 
 
+def test_bgen_reader_delayed():
+    with example_files("haplotypes.bgen") as filepath:
+        bgen = read_bgen(filepath, verbose=False)
+        variants = bgen["variants"]
+        samples = bgen["samples"]
+        genotype = bgen["genotype"]
+        assert_(isinstance(genotype[0], Delayed))
+
+
 def test_bgen_reader_phased_genotype():
     with example_files("haplotypes.bgen") as filepath:
         bgen = read_bgen(filepath, verbose=False)
@@ -136,10 +146,12 @@ def test_bgen_reader_phased_genotype():
         n = samples.shape[0]
         assert_equal(samples.loc[n - 1], "sample_3")
 
-        assert_allclose(bgen["genotype"][0]["probs"][0], [1.0, 0.0, 1.0, 0.0])
+        g = bgen["genotype"][0].compute()
+        assert_allclose(g["probs"][0], [1.0, 0.0, 1.0, 0.0])
         k = len(variants)
         n = len(samples)
-        assert_allclose(bgen["genotype"][k - 1]["probs"][n - 1], [1.0, 0.0, 0.0, 1.0])
+        g = bgen["genotype"][k - 1].compute()
+        assert_allclose(g["probs"][n - 1], [1.0, 0.0, 0.0, 1.0])
 
 
 def test_bgen_reader_variants_info():
@@ -178,10 +190,10 @@ def test_bgen_reader_variants_info():
         n = samples.shape[0]
         assert_equal(samples.loc[n - 1], "sample_500")
 
-        g = bgen["genotype"][0]["probs"]
+        g = bgen["genotype"][0].compute()["probs"]
         assert_(all(isnan(g[0, :])))
 
-        g = bgen["genotype"][0]["probs"]
+        g = bgen["genotype"][0].compute()["probs"]
         a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
         assert_allclose(g[1, :], a)
 
@@ -190,7 +202,7 @@ def test_bgen_reader_variants_info():
             0.01947019668749305418287,
             0.00082397484239749366197,
         ]
-        g = bgen["genotype"][1]["probs"]
+        g = bgen["genotype"][1].compute()["probs"]
         assert_allclose(g[2, :], b)
 
 
@@ -221,14 +233,14 @@ def _test_bgen_reader_phased_genotype():
         n = samples.shape[0]
         assert_equal(samples.loc[n - 1], "sample_3")
 
-        g = bgen["genotype"][0]["probs"]
+        g = bgen["genotype"][0].compute()["probs"]
         a = [1.0, 0.0, 1.0, 0.0]
         assert_allclose(g[0, :], a)
 
         k = len(variants)
         n = len(samples)
         a = [1.0, 0.0, 0.0, 1.0]
-        g = bgen["genotype"][k - 1]["probs"]
+        g = bgen["genotype"][k - 1].compute()["probs"]
         assert_allclose(g[n - 1, :], a)
 
 
@@ -315,15 +327,16 @@ def test_bgen_reader_complex():
         assert_equal(samples.loc[0], "sample_0")
         assert_equal(samples.loc[3], "sample_3")
 
-        g = bgen["genotype"][0]["probs"][0]
+        g = bgen["genotype"][0].compute()["probs"][0]
         assert_allclose(g[:2], [1, 0])
         assert_(isnan(g[2]))
 
-        g = bgen["genotype"][0]["probs"][1]
+        g = bgen["genotype"][0].compute()["probs"][1]
         assert_allclose(g[:3], [1, 0, 0])
 
-        g = bgen["genotype"][-1]["probs"][-1]
+        g = bgen["genotype"][-1].compute()["probs"][-1]
         assert_allclose(g[:5], [0, 0, 0, 1, 0])
+
 
 #         X = bgen["X"]
 
@@ -339,178 +352,35 @@ def test_bgen_reader_complex():
 #         x = X.sel(sample=0, data="phased")
 #         assert_allclose(x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])
 
-# def test_bgen_reader_complex2():
-#     with example_files("complex.23bits.bgen") as filepath:
-#         bgen = read_bgen(filepath, verbose=False)
-#         variants = bgen["variants"]
-#         samples = bgen["samples"]
 
-#         assert_equal(variants.loc[0, "chrom"].compute().item(), "01")
-#         assert_equal(variants.loc[0, "id"].compute().item(), "")
-#         assert_equal(variants.loc[0, "nalleles"].compute().item(), 2)
-#         assert_equal(variants.loc[0, "allele_ids"].compute().item(), "A,G")
-#         assert_equal(variants.loc[0, "pos"].compute().item(), 1)
-#         assert_equal(variants.loc[0, "rsid"].compute().item(), "V1")
+def test_bgen_reader_complex_sample_file():
+    with example_files(["complex.23bits.bgen", "complex.sample"]) as filepaths:
+        bgen = read_bgen(filepaths[0], samples_filepath=filepaths[1], verbose=False)
+        variants = bgen["variants"].compute()
+        samples = bgen["samples"]
+        assert_("genotype" in bgen)
 
-#         assert_equal(variants.loc[7, "chrom"].compute().item(), "01")
-#         assert_equal(variants.loc[7, "id"].compute().item(), "")
-#         assert_equal(variants.loc[7, "nalleles"].compute().item(), 7)
-#         assert_equal(
-#             variants.loc[7, "allele_ids"].compute().item(),
-#             "A,G,GT,GTT,GTTT,GTTTT,GTTTTT",
-#         )
-#         assert_equal(variants.loc[7, "pos"].compute().item(), 8)
-#         assert_equal(variants.loc[7, "rsid"].compute().item(), "M8")
+        assert_equal(variants.loc[0, "chrom"], "01")
+        assert_equal(variants.loc[0, "id"], "")
+        assert_equal(variants.loc[0, "nalleles"], 2)
+        assert_equal(variants.loc[0, "allele_ids"], "A,G")
+        assert_equal(variants.loc[0, "pos"], 1)
+        assert_equal(variants.loc[0, "rsid"], "V1")
 
-#         n = variants.shape[0].compute()
-#         assert_equal(variants.loc[n - 1, "chrom"].compute().item(), "01")
-#         assert_equal(variants.loc[n - 1, "id"].compute().item(), "")
-#         assert_equal(variants.loc[n - 1, "nalleles"].compute().item(), 2)
-#         assert_equal(variants.loc[n - 1, "allele_ids"].compute().item(), "A,G")
-#         assert_equal(variants.loc[n - 1, "pos"].compute().item(), 10)
-#         assert_equal(variants.loc[n - 1, "rsid"].compute().item(), "M10")
+        assert_equal(variants.loc[7, "chrom"], "01")
+        assert_equal(variants.loc[7, "id"], "")
+        assert_equal(variants.loc[7, "nalleles"], 7)
+        assert_equal(variants.loc[7, "allele_ids"], "A,G,GT,GTT,GTTT,GTTTT,GTTTTT")
+        assert_equal(variants.loc[7, "pos"], 8)
+        assert_equal(variants.loc[7, "rsid"], "M8")
 
-#         assert_equal(samples.loc[0], "sample_0")
-#         assert_equal(samples.loc[3], "sample_3")
+        n = variants.shape[0]
+        assert_equal(variants.loc[n - 1, "chrom"], "01")
+        assert_equal(variants.loc[n - 1, "id"], "")
+        assert_equal(variants.loc[n - 1, "nalleles"], 2)
+        assert_equal(variants.loc[n - 1, "allele_ids"], "A,G")
+        assert_equal(variants.loc[n - 1, "pos"], 10)
+        assert_equal(variants.loc[n - 1, "rsid"], "M10")
 
-#         G = bgen["variants"]["genotype"].loc[0].compute().item().compute()
-#         assert_allclose(G[0, :2], [1, 0])
-#         assert_(isnan(G[0, 2]))
-
-#         G = bgen["variants"]["genotype"].loc[0].compute().item().compute()
-#         assert_allclose(G[2, :3], [1, 0, 0])
-
-#         G = bgen["variants"]["genotype"].compute().values[-1].compute()
-#         assert_allclose(G[-1, :5], [0, 0, 0, 1, 0])
-
-#         assert_allclose(
-#             bgen["variants"]["genotype"].loc[0].compute().item().compute().ploidy,
-#             [1, 2, 2, 2],
-#         )
-#         assert_allclose(
-#             bgen["variants"]["genotype"].compute().values[-1].compute().ploidy,
-#             [4, 4, 4, 4],
-#         )
-
-#         assert_allclose(
-#             [bgen["variants"]["genotype"].loc[i].compute().item().compute().phased for i in range(10)],
-#             [0, 1, 1, 0, 1, 1, 1, 1, 0, 0],
-#         )
-
-#         # TODO: fix it
-#         # x = X.sel(sample=0, data="phased")
-#         # assert_allclose(x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])
-
-# def test_bgen_reader_complex_sample_file():
-#     with example_files(["complex.23bits.bgen", "complex.sample"]) as filepaths:
-#         bgen = read_bgen(filepaths[0], sample_file=filepaths[1], verbose=False)
-#         variants = bgen["variants"]
-#         samples = bgen["samples"]
-#         assert_("genotype" in bgen)
-
-#         assert_equal(variants.loc[0, "chrom"], "01")
-#         assert_equal(variants.loc[0, "id"], "")
-#         assert_equal(variants.loc[0, "nalleles"], 2)
-#         assert_equal(variants.loc[0, "allele_ids"], "A,G")
-#         assert_equal(variants.loc[0, "pos"], 1)
-#         assert_equal(variants.loc[0, "rsid"], "V1")
-
-#         assert_equal(variants.loc[7, "chrom"], "01")
-#         assert_equal(variants.loc[7, "id"], "")
-#         assert_equal(variants.loc[7, "nalleles"], 7)
-#         assert_equal(variants.loc[7, "allele_ids"], "A,G,GT,GTT,GTTT,GTTTT,GTTTTT")
-#         assert_equal(variants.loc[7, "pos"], 8)
-#         assert_equal(variants.loc[7, "rsid"], "M8")
-
-#         n = variants.shape[0]
-#         assert_equal(variants.loc[n - 1, "chrom"], "01")
-#         assert_equal(variants.loc[n - 1, "id"], "")
-#         assert_equal(variants.loc[n - 1, "nalleles"], 2)
-#         assert_equal(variants.loc[n - 1, "allele_ids"], "A,G")
-#         assert_equal(variants.loc[n - 1, "pos"], 10)
-#         assert_equal(variants.loc[n - 1, "rsid"], "M10")
-
-#         assert_equal(samples.loc[0, "id"], "sample_0")
-#         assert_equal(samples.loc[3, "id"], "sample_3")
-
-# def test_bgen_reader_complex_sample_file2():
-#     with example_files(["complex.23bits.bgen", "complex.sample"]) as filepaths:
-#         bgen = read_bgen(filepaths[0], sample_file=filepaths[1], verbose=False)
-#         variants = bgen["variants"]
-#         samples = bgen["samples"]
-
-#         assert_equal(variants.loc[0, "chrom"].compute().item(), "01")
-#         assert_equal(variants.loc[0, "id"].compute().item(), "")
-#         assert_equal(variants.loc[0, "nalleles"].compute().item(), 2)
-#         assert_equal(variants.loc[0, "allele_ids"].compute().item(), "A,G")
-#         assert_equal(variants.loc[0, "pos"].compute().item(), 1)
-#         assert_equal(variants.loc[0, "rsid"].compute().item(), "V1")
-
-#         assert_equal(variants.loc[7, "chrom"].compute().item(), "01")
-#         assert_equal(variants.loc[7, "id"].compute().item(), "")
-#         assert_equal(variants.loc[7, "nalleles"].compute().item(), 7)
-#         assert_equal(variants.loc[7, "allele_ids"].compute().item(), "A,G,GT,GTT,GTTT,GTTTT,GTTTTT")
-#         assert_equal(variants.loc[7, "pos"].compute().item(), 8)
-#         assert_equal(variants.loc[7, "rsid"].compute().item(), "M8")
-
-#         n = variants.shape[0].compute()
-#         assert_equal(variants["chrom"].compute().values[n - 1], "01")
-#         assert_equal(variants["id"].compute().values[n - 1], "")
-#         assert_equal(variants["nalleles"].compute().values[n - 1], 2)
-#         assert_equal(variants["allele_ids"].compute().values[n - 1], "A,G")
-#         assert_equal(variants["pos"].compute().values[n - 1], 10)
-#         assert_equal(variants["rsid"].compute().values[n - 1], "M10")
-
-#         assert_equal(samples.loc[0], "sample_0")
-#         assert_equal(samples.loc[3], "sample_3")
-
-# def test_bgen_reader_too_small_chunk_size():
-#     with example_files("complex.23bits.bgen") as filepath:
-#         read_bgen(filepath, size=1e-10, verbose=False)
-
-# def test_bgen_reader_too_small_chunk_size2():
-#     with example_files("complex.23bits.bgen") as filepath:
-#         read_bgen(filepath, size=1e-10, verbose=False)
-
-# def test_bgen_reader_concat_chunks():
-#     with example_files("complex.23bits.bgen") as filepath:
-#         bgen = read_bgen(filepath, size=0.0001, verbose=False)
-
-#         # G = bgen["genotype"][0, 0, :].compute()
-#         # print(type(G))
-
-#         # G = bgen["genotype"][0, [0, 1]].compute()
-#         # print(type(G))
-
-#         # G = bgen["genotype"][[0, 1]].compute()
-#         # print(type(G))
-
-#         # G = bgen["genotype"][[0]].compute()
-#         # print(type(G))
-
-#         # G = bgen["genotype"].compute()
-#         # print(type(G))
-
-#         # print(bgen["genotype"].chunks)
-#         # assert_allclose(G[:2], [1, 0])
-#         # assert_(isnan(G[2]))
-
-#         # G = bgen["genotype"][0, 1, :].compute()
-#         # assert_allclose(G[:3], [1, 0, 0])
-
-#         # G = bgen["genotype"][-1, -1, :].compute()
-#         # assert_allclose(G[:5], [0, 0, 0, 1, 0])
-
-#         # X = bgen["X"]
-
-#         # assert_allclose(X[0].compute().sel(data="ploidy"), [1, 2, 2, 2])
-#         # assert_allclose(X[-1].compute().sel(data="ploidy"), [4, 4, 4, 4])
-
-#         # assert_allclose(
-#         #     X[:, 0].compute().sel(data="phased"), [0, 1, 1, 0, 1, 1, 1, 1, 0, 0]
-#         # )
-
-#         # X = X.compute()
-
-#         # x = X.sel(sample=0, data="phased")
-#         # assert_allclose(x.where(x == 1, drop=True).variant.values, [1, 2, 4, 5, 6, 7])
+        assert_equal(samples.loc[0], "sample_0")
+        assert_equal(samples.loc[3], "sample_3")

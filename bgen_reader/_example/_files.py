@@ -2,6 +2,7 @@ import shutil
 import tempfile
 import warnings
 from os.path import dirname, join, realpath
+from subprocess import check_call
 
 _filenames = [
     "complex.23bits.bgen",
@@ -14,6 +15,7 @@ _filenames = [
     "haplotypes.bgen.metadata.corrupted",
     "wrong.metadata",
     "complex.23bits.no.samples.bgen",
+    "large.bgen",
 ]
 
 
@@ -41,7 +43,16 @@ class example_files(object):
         filepaths = [join(self._dirpath, fn) for fn in self._filenames]
 
         for fn, fp in zip(self._filenames, filepaths):
-            if __name__ == "__main__":
+            if fn == "large.bgen":
+                cmd = (
+                    f"cp /Users/horta/code/bgen-speed/large.bgen {fp}"
+                )
+                # cmd = (
+                #     "curl http://rest.s3for.me/bgen/large.bgen.bz2.enc -s | "
+                #     f"openssl enc -d -pbkdf2 -aes-256-cbc -kfile /Users/horta/pass | bunzip2 > {fp}"
+                # )
+                check_call(cmd, shell=True)
+            elif __name__ == "__main__":
                 shutil.copy(join(dirname(realpath(__file__)), fn), fp)
             else:
                 resource_path = "_example/{}".format(fn)

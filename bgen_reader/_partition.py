@@ -1,4 +1,7 @@
+from threading import RLock
+
 import dask.dataframe as dd
+from cachetools import LRUCache, cached
 from dask.delayed import delayed
 from pandas import DataFrame
 
@@ -35,6 +38,11 @@ def map_metadata(bgen_filepath, metafile_filepath):
     return df
 
 
+cache = LRUCache(maxsize=3)
+lock = RLock()
+
+
+@cached(cache, lock=lock)
 def read_partition(bgen_filepath, metafile_filepath, part, index_base):
     with bgen_metafile(metafile_filepath) as mf:
 
