@@ -69,7 +69,7 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
 
     samples = get_samples(filepath, samples_filepath, verbose)
     variants = map_metadata(filepath, metafile_filepath)
-    genotype = map_genotype(filepath, metafile_filepath)
+    genotype = map_genotype(filepath, metafile_filepath, verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
 

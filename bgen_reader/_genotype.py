@@ -11,18 +11,17 @@ from ._ffi import ffi, lib
 from ._partition import read_partition
 
 
-def map_genotype(bgen_filepath, metafile_filepath):
+def map_genotype(bgen_filepath, metafile_filepath, verbose):
     with bgen_file(bgen_filepath) as bgen:
         nvariants = lib.bgen_nvariants(bgen)
-
-    # bgen_fp = dask.delayed(bgen_filepath)
-    # metafile_fp = dask.delayed(metafile_filepath)
-    # rg = _get_read_genotype(bgen_fp, metafile_fp)
 
     rg = _get_read_genotype(bgen_filepath, metafile_filepath)
 
     desc = "Mapping variants"
-    return [rg(i, dask_key_name=str(i)) for i in trange(nvariants, desc=desc)]
+    return [
+        rg(i, dask_key_name=str(i))
+        for i in trange(nvariants, desc=desc, disable=not verbose)
+    ]
 
 
 def _get_read_genotype(bgen_filepath, metafile_filepath):

@@ -266,7 +266,8 @@ def test_bgen_reader_with_nonexistent_metadata_file():
         metafile_filepath = os.path.join(folder, "nonexistent.metadata")
 
         with pytest.raises(FileNotFoundError):
-            read_bgen(filepath, verbose=False, metafile_filepath=metafile_filepath)
+            with pytest.warns(UserWarning):
+                read_bgen(filepath, verbose=False, metafile_filepath=metafile_filepath)
 
 
 def test_bgen_reader_file_notfound():
@@ -377,7 +378,6 @@ def test_bgen_reader_complex_sample_file():
 
         assert_equal(samples.loc[0], "sample_0")
         assert_equal(samples.loc[3], "sample_3")
-
 
         ploidy = bgen["genotype"][2].compute()["ploidy"]
         missing = bgen["genotype"][2].compute()["missing"]

@@ -44,13 +44,12 @@ class example_files(object):
 
         for fn, fp in zip(self._filenames, filepaths):
             if fn == "large.bgen":
+                cmd = f"cp /Users/horta/code/bgen-speed/large.bgen {fp}"
                 cmd = (
-                    f"cp /Users/horta/code/bgen-speed/large.bgen {fp}"
+                    "curl http://rest.s3for.me/bgen/large.bgen.bz2.enc -s | "
+                    "openssl enc -d -pbkdf2 -aes-256-cbc -kfile /Users/horta/pass |"
+                    f"bunzip2 > {fp}"
                 )
-                # cmd = (
-                #     "curl http://rest.s3for.me/bgen/large.bgen.bz2.enc -s | "
-                #     f"openssl enc -d -pbkdf2 -aes-256-cbc -kfile /Users/horta/pass | bunzip2 > {fp}"
-                # )
                 check_call(cmd, shell=True)
             elif __name__ == "__main__":
                 shutil.copy(join(dirname(realpath(__file__)), fn), fp)
@@ -72,3 +71,13 @@ class example_files(object):
             shutil.rmtree(self._dirpath)
         except PermissionError as e:
             warnings.warn(str(e) + "\n. I will ignore it and proceed.")
+
+
+def can_run_with(filenames):
+    if not isinstance(filenames, (list, tuple)):
+        filenames = [filenames]
+
+    if "large.bgen" in filenames:
+        return shutil.which("curl") is not None and shutil.which("openssl") is not None
+
+    return True
