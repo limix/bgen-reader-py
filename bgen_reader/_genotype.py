@@ -3,7 +3,7 @@ from threading import RLock
 import dask
 import dask.bag
 from cachetools import LRUCache, cached
-from numpy import float64, full, nan
+from numpy import asarray, float64, full, nan
 from tqdm import trange
 
 from ._bgen import bgen_file, bgen_metafile
@@ -71,8 +71,8 @@ def read_genotype_partition(
             p = full((nsamples, ncombs), nan, dtype=float64)
             lib.bgen_read_genotype(bgen, vg, ffi.cast("double *", p.ctypes.data))
             phased = lib.bgen_phased(vg)
-            ploidy = [lib.bgen_ploidy(vg, i) for i in range(nsamples)]
-            missing = [lib.bgen_missing(vg, i) for i in range(nsamples)]
+            ploidy = asarray([lib.bgen_ploidy(vg, i) for i in range(nsamples)], int)
+            missing = asarray([lib.bgen_missing(vg, i) for i in range(nsamples)], bool)
             lib.bgen_close_genotype(vg)
             genotypes.append(
                 {"probs": p, "phased": phased, "ploidy": ploidy, "missing": missing}

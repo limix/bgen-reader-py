@@ -11,7 +11,7 @@ from numpy import isnan
 from numpy.testing import assert_, assert_allclose, assert_equal
 from pandas import Series
 
-from bgen_reader import example_files, read_bgen
+from bgen_reader import create_metafile, example_files, read_bgen
 
 try:
     FileNotFoundError
@@ -275,24 +275,17 @@ def test_bgen_reader_file_notfound():
         read_bgen("/1/2/3/example.32bits.bgen", verbose=False)
 
 
-# def test_create_metadata_file():
-#     with example_files("example.32bits.bgen") as filepath:
-#         folder = os.path.dirname(filepath)
-#         metafile_filepath = os.path.join(folder, filepath + ".metadata")
+def test_create_metadata_file():
+    with example_files("example.32bits.bgen") as filepath:
+        folder = os.path.dirname(filepath)
+        metafile_filepath = os.path.join(folder, filepath + ".metadata")
 
-#         create_metafile(filepath, metafile_filepath, verbose=False)
-#         assert_(os.path.exists(metafile_filepath))
-#         os.remove(metafile_filepath)
-
-# @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-# def test_create_metadata_file_bytes():
-#     with example_files("example.32bits.bgen") as filepath:
-#         folder = os.path.dirname(filepath)
-#         metafile_filepath = os.path.join(folder, filepath + ".metadata")
-
-#         create_metafile(filepath, metafile_filepath.encode(), verbose=False)
-#         assert_(os.path.exists(metafile_filepath))
-#         os.remove(metafile_filepath)
+        try:
+            create_metafile(filepath, metafile_filepath, verbose=False)
+            assert_(os.path.exists(metafile_filepath))
+        finally:
+            if os.path.exists(metafile_filepath):
+                os.remove(metafile_filepath)
 
 
 def test_bgen_reader_complex():

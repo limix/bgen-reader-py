@@ -1,37 +1,6 @@
-import warnings
-from numpy import asarray, newaxis
+from numpy import asarray
 
 from ._helper import genotypes_to_allele_counts, get_genotypes
-from ._dask import array_shape_reveal
-
-
-def convert_to_dosage(p, nalleles, ploidy):
-    r"""Convert probabilities to dosage.
-
-    Parameters
-    ----------
-    p : array_like
-        Allele probabilities.
-    nalleles : int
-        Number of alleles.
-    ploidy : int
-        Number of complete sets of chromosomes.
-
-    Returns
-    -------
-    :class:`numpy.ndarray`
-        Dosage matrix.
-
-    Deprecated
-    ----------
-    Since version 2.0.5. Please use :func:`compute_dosage` instead.
-    """
-    warnings.warn(
-        "Deprecated in favor of `bgen_reader.compute_dosage.", DeprecationWarning
-    )
-    g = get_genotypes(ploidy, nalleles)
-    c = genotypes_to_allele_counts(g)
-    return (asarray(c, float).T * p).sum(1)
 
 
 def allele_frequency(expec):
@@ -76,14 +45,12 @@ def compute_dosage(expec, alt=None):
     --------
 
     .. doctest::
-
     >>> from bgen_reader import read_bgen, allele_expectation, example_files
     >>> from bgen_reader import compute_dosage
-    >>>
+    ...
     >>> with example_files("example.32bits.bgen") as filepath:
     ...     bgen = read_bgen(filepath, verbose=False)
-    ...     probs = bgen["genotype"][0]["probs"].compute()
-    ...     e = allele_expectation(probs, nalleles=2, ploidy=2)
+    ...     e = allele_expectation(bgen, 0)
     ...     dosage = compute_dosage(e)
     ...     print(dosage.shape)
     ...     print(dosage[:5])
@@ -99,7 +66,7 @@ def compute_dosage(expec, alt=None):
         return asarray(expec, float)[alt, :, alt]
 
 
-def allele_expectation(p, nalleles, ploidy):
+def allele_expectation(bgen, variant_idx):
     r"""Allele expectation.
 
     Compute the expectation of each allele from the given probabilities.
@@ -115,7 +82,7 @@ def allele_expectation(p, nalleles, ploidy):
     nalleles : int
         Number of alleles.
     ploidy : int
-        Number of complete sets of chromosomes.
+        Number of complete sets of chromossomes.
 
     Returns
     -------
@@ -129,10 +96,10 @@ def allele_expectation(p, nalleles, ploidy):
 
     >>> from texttable import Texttable
     >>> from bgen_reader import read_bgen, allele_expectation, example_files
-    >>>
+    ...
     >>> sampleid = "sample_005"
     >>> rsid = "RSID_6"
-    >>>
+    ...
     >>> with example_files("example.32bits.bgen") as filepath:
     ...     bgen = read_bgen(filepath, verbose=False)
     ...     variants = bgen["variants"]
@@ -142,12 +109,11 @@ def allele_expectation(p, nalleles, ploidy):
     ...     variant = variants[variants["rsid"] == rsid].compute()
     ...     variant_idx = variant.index.item()
     ...
-    ...     sample = samples[samples == sampleid].index.item()
-    ...     ploidy = 2
+    ...     sample_idx = samples[samples == sampleid].index.item()
     ...
-    ...     p = genotype[variant_idx]["probs"][sample].compute()
+    ...     p = genotype[variant_idx].compute()["probs"][sample_idx]
     ...     # For unphased genotypes only.
-    ...     e = allele_expectation(p, variant["nalleles"].item(), ploidy)
+    ...     e = allele_expectation(bgen, variant_idx)[sample_idx]
     ...
     ...     alleles = variant["allele_ids"].item().split(",")
     ...
@@ -168,18 +134,22 @@ def allele_expectation(p, nalleles, ploidy):
     +----+-------+-------+-------+-------+
     | #G | 0     | 1     | 2     | 0.989 |
     +----+-------+-------+-------+-------+
+    >>> print(e)
+    [1.01086423 0.98913577]
     >>> print(variant)
             id    rsid chrom   pos  nalleles allele_ids  vaddr
     4  SNPID_6  RSID_6    01  6000         2        A,G  19377
-    >>> print(sample)
-    4
 
     Note
     ----
     This function supports unphased genotypes only.
     """
-    g = get_genotypes(ploidy, nalleles)
-    c = asarray(genotypes_to_allele_counts(g), float)
-    c = c.T.reshape((1,) * (p.ndim - 1) + (c.shape[1], c.shape[0]))
-    p = array_shape_reveal(p)
-    return (c * p[..., newaxis, :]).sum(-1)
+    geno = bgen["genotype"][variant_idx].compute()
+    if geno["phased"]:
+        raise ValueError("Allele expectation is define for unphased genotypes only.")
+
+    nalleles = bgen["variants"].loc[variant_idx, "nalleles"].compute().item()
+    g = get_genotypes(geno["ploidy"], nalleles)
+    c = [asarray(genotypes_to_allele_counts(gi), float) for gi in g]
+    c = asarray(c, float)
+    return (c.T * geno["probs"].T).sum(1).T

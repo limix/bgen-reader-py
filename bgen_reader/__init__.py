@@ -15,15 +15,7 @@ test             Verify this package's integrity.
 
 Documentation can be found at <https://github.com/limix/bgen-reader-py>.
 """
-
-from __future__ import absolute_import
-
-from ._dosage import (
-    allele_expectation,
-    allele_frequency,
-    compute_dosage,
-    convert_to_dosage,
-)
+from ._dosage import allele_expectation, allele_frequency, compute_dosage
 from ._example import example_files
 from ._metadata import create_metafile
 from ._reader import read_bgen
@@ -47,7 +39,6 @@ __all__ = [
     "test",
     "read_bgen",
     "create_metafile",
-    "convert_to_dosage",
     "allele_expectation",
     "example_files",
     "compute_dosage",

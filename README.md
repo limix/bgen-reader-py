@@ -207,7 +207,7 @@ A
 ### Complex file
 
 ```python
->>> from bgen_reader import read_bgen, convert_to_dosage
+>>> from bgen_reader import read_bgen
 >>>
 >>> bgen = read_bgen("complex.bgen", verbose=False)
 >>>
@@ -302,16 +302,6 @@ A
 
 ```bash
 0
-```
-
-```python
->>> # the estimated probabilities imply the dosage
->>> # (or expected number of alleles)
->>> print(convert_to_dosage(p, nalleles, ploidy))
-```
-
-```bash
-[0. 1. 0. 0. 0. 1. 0. 0.]
 ```
 
 ### Dosage
