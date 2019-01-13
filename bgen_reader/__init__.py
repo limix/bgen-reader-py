@@ -28,6 +28,7 @@ and reinstall the package again."""
 
 try:
     from ._ffi import ffi as _
+    assert _ is not None
 except Exception as e:
     e.msg = e.msg + _ffi_err
     raise e

@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-from bgen_reader import read_bgen, allele_expectation, example_files
+from numpy import all, isnan
+from numpy.testing import assert_, assert_allclose, assert_equal
 
-from numpy import isnan, all
-from numpy.testing import assert_, assert_equal, assert_allclose
+from bgen_reader import allele_expectation, example_files, read_bgen
 
 
 def test_dosage_example_32bits():
@@ -18,4 +18,3 @@ def test_dosage_example_32bits():
 
         e = allele_expectation(bgen, 0)
         assert_equal(e.shape, (500, 2))
-

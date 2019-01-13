@@ -1,13 +1,14 @@
 import pytest
-from numpy.testing import assert_equal, assert_allclose
+from numpy.testing import assert_allclose, assert_equal
 
 from bgen_reader import example_files, read_bgen
 from bgen_reader._example._files import can_run_with
 
 
 @pytest.mark.slowtest
-@pytest.mark.skipif(not can_run_with(["large.bgen"]),
-                    reason="cannot run with large.bgen file")
+@pytest.mark.skipif(
+    not can_run_with(["large.bgen"]), reason="cannot run with large.bgen file"
+)
 def test_large_file(capsys):
     with example_files("large.bgen") as filepath:
         data = read_bgen(filepath, verbose=False)
@@ -31,9 +32,7 @@ def test_large_file(capsys):
         g = genotype[df.index[0]].compute()
         assert_equal(g["probs"].shape, (415, 3))
 
-        assert_allclose(
-            g["probs"][4, :], [0.0, 0.4268863965819791, 0.5731136034180209]
-        )
+        assert_allclose(g["probs"][4, :], [0.0, 0.4268863965819791, 0.5731136034180209])
         assert_equal(g["phased"], 0)
         assert_equal(g["missing"][3], 0)
         assert_equal(g["ploidy"][3], 2)

@@ -112,7 +112,6 @@ def noread_permission(path):
 def test_bgen_reader_lazy_types():
     with example_files("haplotypes.bgen") as filepath:
         bgen = read_bgen(filepath, verbose=False)
-        samples = bgen["samples"]
         assert_(isinstance(bgen["genotype"][0], Delayed))
         assert_(isinstance(bgen["variants"], dd.DataFrame))
 
