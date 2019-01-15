@@ -12,7 +12,7 @@ from ._string import bgen_str_to_str
 
 def map_metadata(bgen_filepath, metafile_filepath):
     with bgen_metafile(metafile_filepath) as mf:
-        nparts = lib.bgen_metafile_nparts(mf)
+        nparts = lib.bgen_metafile_npartitions(mf)
     with bgen_file(bgen_filepath) as bgen:
         nvariants = lib.bgen_nvariants(bgen)
     dfs = []
@@ -78,7 +78,7 @@ def get_partition_size(bgen_filepath, metafile_filepath):
     with bgen_file(bgen_filepath) as bgen:
         nvariants = lib.bgen_nvariants(bgen)
     with bgen_metafile(metafile_filepath) as mf:
-        nparts = lib.bgen_metafile_nparts(mf)
+        nparts = lib.bgen_metafile_npartitions(mf)
     return nvariants // nparts
 
 

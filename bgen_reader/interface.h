@@ -30,8 +30,8 @@ void bgen_free_samples(const struct bgen_file *, struct bgen_str *);
 
 struct bgen_mf *bgen_create_metafile(struct bgen_file *, const char *, int, int);
 struct bgen_mf *bgen_open_metafile(const char *);
-int bgen_metafile_nparts(struct bgen_mf *);
-int bgen_metafile_nvars(struct bgen_mf *);
+int bgen_metafile_npartitions(struct bgen_mf *);
+int bgen_metafile_nvariants(struct bgen_mf *);
 struct bgen_vm *bgen_read_partition(struct bgen_mf *, int, int *);
 void bgen_free_partition(struct bgen_vm *, int);
 int bgen_close_metafile(struct bgen_mf *);

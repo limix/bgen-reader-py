@@ -32,7 +32,7 @@ def _get_read_genotype(bgen_filepath, metafile_filepath):
             nsamples = lib.bgen_nsamples(bgen)
             nvariants = lib.bgen_nvariants(bgen)
         with bgen_metafile(metafile_filepath) as mf:
-            nparts = lib.bgen_metafile_nparts(mf)
+            nparts = lib.bgen_metafile_npartitions(mf)
 
         part_size = nvariants // nparts
         part = i // part_size
