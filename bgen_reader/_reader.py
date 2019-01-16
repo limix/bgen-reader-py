@@ -14,7 +14,7 @@ from ._samples import get_samples
 
 
 def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=True):
-    r"""Read a given BGEN file.
+    r""" Read a given BGEN file.
 
     Parameters
     ----------
