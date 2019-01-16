@@ -4,7 +4,13 @@ from dask.delayed import Delayed
 from numpy.testing import assert_, assert_allclose
 from pandas import Series
 
-from bgen_reader import allele_expectation, allele_frequency, example_files, read_bgen
+from bgen_reader import (
+    allele_expectation,
+    allele_frequency,
+    compute_dosage,
+    example_files,
+    read_bgen,
+)
 
 
 def test_read_bgem_interface():
@@ -17,7 +23,7 @@ def test_read_bgem_interface():
         assert_(isinstance(bgen["genotype"][0], Delayed))
 
 
-def test_allele_expectation():
+def test_allele_expectation_interface():
 
     with example_files("haplotypes.bgen") as filepath:
         bgen = read_bgen(filepath, verbose=False)
@@ -32,7 +38,7 @@ def test_allele_expectation():
         )
 
 
-def test_allele_frequency():
+def test_allele_frequency_interface():
 
     with example_files("complex.23bits.bgen") as filepath:
         with pytest.raises(ValueError):
@@ -50,3 +56,12 @@ def test_allele_frequency():
 
     with pytest.raises(ValueError):
         allele_frequency([2, 3, 1])
+
+
+def test_dosage_interface():
+    with example_files("complex.23bits.bgen") as filepath:
+        bgen = read_bgen(filepath, verbose=False)
+        e = allele_expectation(bgen, 3)
+        assert_allclose(compute_dosage(e), [0, 0, 0, 0])
+        assert_allclose(compute_dosage(e, 0), [1., 2., 1., 0.])
+
