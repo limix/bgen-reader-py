@@ -116,10 +116,15 @@ Please, refer to |bgen specification| for a detailed description.
 Complex file
 ============
 
+The bgen file format allows the storage of very heterogenous genetic data.
+In the ``complex.bgen`` file we have variants with different ploidy and number of
+alleles, as well as phased\ *ness*.
+
 .. doctest::
 
    >>> bgen = read_bgen("complex.bgen", verbose=False)
    >>>
+   >>> # Note how the number of alleles very widely across loci.
    >>> print(bgen["variants"].compute())
         id rsid chrom  pos  nalleles                            allele_ids  vaddr
    0         V1    01    1         2                                   A,G     98
@@ -144,7 +149,8 @@ Complex file
    >>> print(geno["probs"][1])
    [1. 0. 0.]
    >>> # The 9th variant for the 4th individual has ploidy
-   >>> ploidy = bgen["genotype"][8].compute()["ploidy"][3]
+   >>> geno = bgen["genotype"][8].compute()
+   >>> ploidy = geno["ploidy"][3]
    >>> print(ploidy)
    2
    >>> # and number of alleles equal to
@@ -152,16 +158,12 @@ Complex file
    >>> print(nalleles)
    8
    >>> # Its probability distribution is given by the array
-   >>> p = bgen["genotype"][8].compute()["probs"][3]
+   >>> p = geno["probs"][3]
    >>> print(p)
    [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0.
     0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
-   >>> # of size
-   >>> print(len(p))
-   36
-   >>> # Since the 9th variant for the 4th individual is
-   >>> # unphased,
-   >>> print(bgen["genotype"][8].compute()["phased"])
+   >>> # Since the 9th variant for the 4th individual is unphased,
+   >>> print(geno["phased"])
    0
    >>> # we can pick an alternative allele and compute the dosage
    >>> # from allele expectation.
@@ -170,6 +172,8 @@ Complex file
    >>> e = allele_expectation(bgen, 8)
    >>> print(compute_dosage(e, 2))
    [0. 0. 0. 1.]
+
+Please, refer to :ref:`Dosage` section for further details.
 
 .. |bgen specification| raw:: html
 

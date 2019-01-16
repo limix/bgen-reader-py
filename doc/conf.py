@@ -30,6 +30,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosummary",
+    "sphinx.ext.autosectionlabel",
 ]
 
 autodoc_default_flags = ["members"]
@@ -37,6 +38,7 @@ autodoc_mock_imports = ["_tkinter"]
 autosummary_generate = True
 napoleon_numpy_docstring = True
 templates_path = ["_templates"]
+autosectionlabel_prefix_document = False
 
 source_suffix = ".rst"
 

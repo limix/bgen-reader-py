@@ -64,7 +64,7 @@ def compute_dosage(expec, alt=None):
     expec : array_like
         Allele expectations encoded as a samples-by-alleles matrix.
     alt : array_like, optional
-        Alternative allele of each locus. If ``None``, the allele having the minor
+        Alternative allele index. If ``None``, the allele having the minor
         allele frequency for the provided ``expec`` is used as the alternative.
         Defaults to ``None``.
 

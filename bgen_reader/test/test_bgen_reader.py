@@ -7,7 +7,7 @@ from contextlib import contextmanager
 import dask.dataframe as dd
 import pytest
 from dask.delayed import Delayed
-from numpy import isnan
+from numpy import array, array_equal, isnan
 from numpy.testing import assert_, assert_allclose, assert_equal
 from pandas import Series
 
@@ -336,7 +336,10 @@ def test_bgen_reader_complex():
 
         nvariants = len(variants)
         phased = [bgen["genotype"][i].compute()["phased"] for i in range(nvariants)]
-        assert_allclose(phased, [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])
+        phased = array(phased)
+        assert_equal(phased.dtype.name, "bool")
+        ideal = array([False, True, True, False, True, True, True, True, False, False])
+        assert_(array_equal(phased, ideal))
 
 
 def test_bgen_reader_complex_sample_file():

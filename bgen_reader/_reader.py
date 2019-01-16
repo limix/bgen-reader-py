@@ -19,23 +19,23 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
     Parameters
     ----------
     filepath : str
-        A BGEN file path.
+        A bgen file path.
     metafile_filepath : str, optional
-        If ``None``, it will try to read the file
-        ``filepath + ".metadata"`` as the metafile. If this is not possible,
-        it will create one. It tries to create one at ``filepath + ".metadata"``. If
-        that is also no possible, it tries to create one at a temporary folder.
+        If ``None``, it will try to read the ``filepath + ".metadata"`` file. If this is
+        not possible, it will create one. It tries to create one at
+        ``filepath + ".metadata"``. If that is also no possible, it tries to create one
+        at a temporary folder.
     samples_filepath : str, optional
-        A sample file in `GEN format <https://goo.gl/bCzo7m>`_.
-        If samples_filepath is provided, sample ids are read from this file. Otherwise,
-        it reads from the BGEN file itself if present. Defaults to ``None``.
+        A sample file in `gen format <https://goo.gl/bCzo7m>`_.
+        If ``samples_filepath`` is provided, sample ids are read from this file.
+        Otherwise, it reads from the bgen file itself if possible. Defaults to ``None``.
     verbose : bool, optional
         ``True`` to show progress; ``False`` otherwise. Defaults to ``True``.
 
     Returns
     -------
     variants : :class:`dask.dataFrame.DataFrame`
-        Variant position, chromosomes, RSIDs, etc.
+        Variant position, chromosomes, rsids, etc.
     samples : :class:`pandas.Series`
         Sample identifications.
     genotype : list
@@ -53,19 +53,12 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
         ...     samples = bgen["samples"]
         ...
         ...     v = variants.loc[0].compute()
-        ...     print(v)
-        ...
-        ...     v = variants.loc[2].compute()
-        ...     print(v)
-        ...
-        ...     print(samples)
-        ...
         ...     g = bgen["genotype"][0].compute()
+        ...     print(v)
+        ...     print(samples)
         ...     print(g["probs"][0])
              id rsid chrom  pos  nalleles allele_ids  vaddr
         0  SNP1  RS1     1    1         2        A,G    102
-             id rsid chrom  pos  nalleles allele_ids  vaddr
-        2  SNP3  RS3     1    3         2        A,G    216
         0    sample_0
         1    sample_1
         2    sample_2
