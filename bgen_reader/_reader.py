@@ -20,44 +20,26 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
     ----------
     filepath : str
         A BGEN file path.
-    size : float, optional
-        Chunk size in megabytes. Defaults to ``50``.
     metafile_filepath : str, optional
-        TODO: fix it
-        If ``True``, it will try to read the variants metadata from the
-        metadata file ``filepath + ".metadata"``. If this is not possible,
-        the variants metadata will be read from the BGEN file itself. If
-        ``filepath + ".metadata"`` does not exist, it will try to create one
-        with the same name to speed up reads. If ``False``, variants metadata
-        will be read only from the BGEN file. If a file path is given instead,
-        it assumes that the specified metadata file is valid and readable and
-        therefore it will read variants metadata from that file only. Defaults
-        to ``True``.
+        If ``None``, it will try to read the file
+        ``filepath + ".metadata"`` as the metafile. If this is not possible,
+        it will create one. It tries to create one at ``filepath + ".metadata"``. If
+        that is also no possible, it tries to create one at a temporary folder.
     samples_filepath : str, optional
         A sample file in `GEN format <https://goo.gl/bCzo7m>`_.
-        If samples_filepath is provided, sample IDs are read from this file. Otherwise,
+        If samples_filepath is provided, sample ids are read from this file. Otherwise,
         it reads from the BGEN file itself if present. Defaults to ``None``.
     verbose : bool, optional
-        ``True`` to show progress; ``False`` otherwise.
+        ``True`` to show progress; ``False`` otherwise. Defaults to ``True``.
 
     Returns
     -------
-    variants : :class:`pandas.DataFrame`
+    variants : :class:`dask.dataFrame.DataFrame`
         Variant position, chromossomes, RSIDs, etc.
-    samples : :class:`pandas.DataFrame`
+    samples : :class:`pandas.Series`
         Sample identifications.
-    genotype : :class:`dask.array.Array`
-        Array of genotype references.
-    X : :class:`dask.array.Array`
-        Allele probabilities.
-
-    Note
-    ----
-    Metadata files can speed up subsequent reads tremendously. But often the user does
-    not have write permission for the default metadata file location
-    ``filepath + ".metadata"``. We thus provide the
-    :function:`bgen_reader.create_metafile` function for creating one at the
-    given path.
+    genotype : list
+        List of genotypes.
     """
 
     assert_file_exist(filepath)

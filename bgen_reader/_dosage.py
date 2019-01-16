@@ -1,4 +1,4 @@
-from numpy import asarray
+from numpy import asarray, stack
 
 from ._helper import genotypes_to_allele_counts, get_genotypes
 
@@ -69,29 +69,22 @@ def compute_dosage(expec, alt=None):
 def allele_expectation(bgen, variant_idx):
     r"""Allele expectation.
 
-    Compute the expectation of each allele from the given probabilities.
-    It accepts three shapes of matrices:
-    - unidimensional array of probabilities;
-    - bidimensional samples-by-alleles probabilities array;
-    - and three dimensional variants-by-samples-by-alleles array.
+    Compute the expectation of each allele from the bgen probabilities.
 
     Parameters
     ----------
-    p : array_like
-        Allele probabilities.
-    nalleles : int
-        Number of alleles.
-    ploidy : int
-        Number of complete sets of chromossomes.
+    bgen : bgen_file
+        Bgen file handler.
+    variant_idx : int
+        Variant index.
 
     Returns
     -------
     :class:`numpy.ndarray`
-        Last dimension will contain the expectation of each allele.
+        Samples by allele matrix of ellele expectation.
 
     Examples
     --------
-
     .. doctest::
 
     >>> from texttable import Texttable
@@ -149,7 +142,11 @@ def allele_expectation(bgen, variant_idx):
         raise ValueError("Allele expectation is define for unphased genotypes only.")
 
     nalleles = bgen["variants"].loc[variant_idx, "nalleles"].compute().item()
-    g = get_genotypes(geno["ploidy"], nalleles)
-    c = [asarray(genotypes_to_allele_counts(gi), float) for gi in g]
-    c = asarray(c, float)
-    return (c.T * geno["probs"].T).sum(1).T
+    genotypes = get_genotypes(geno["ploidy"], nalleles)
+    expec = []
+    for i in range(len(genotypes)):
+        count = asarray(genotypes_to_allele_counts(genotypes[i]), float)
+        n = count.shape[0]
+        expec.append((count.T * geno["probs"][i, :n]).sum(1))
+
+    return stack(expec, axis=0)

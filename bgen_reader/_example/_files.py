@@ -4,22 +4,15 @@ import warnings
 from os.path import dirname, join, realpath
 from subprocess import check_call
 
-_filenames = [
-    "complex.23bits.bgen",
-    "complex.23bits.bgen.metadata",
-    "complex.sample",
-    "example.32bits.bgen",
-    "example.32bits.bgen.metadata",
-    "haplotypes.bgen",
-    "haplotypes.bgen.metadata.valid",
-    "haplotypes.bgen.metadata.corrupted",
-    "wrong.metadata",
-    "complex.23bits.no.samples.bgen",
-    "large.bgen",
-]
-
 
 class example_files(object):
+    """ Create a temporary folder with the given files.
+
+    Attributes
+    ----------
+    filenames : List of available files.
+    """
+
     def __init__(self, filenames):
         self._unlist = False
         if not isinstance(filenames, (tuple, list)):
@@ -27,15 +20,29 @@ class example_files(object):
             self._unlist = True
 
         for fn in filenames:
-            if fn not in _filenames:
+            if fn not in self.filenames:
                 raise ValueError(
                     "Unrecognized file name {}. Choose one of these: {}".format(
-                        fn, _filenames
+                        fn, self.filenames
                     )
                 )
 
         self._dirpath = tempfile.mkdtemp()
         self._filenames = filenames
+
+    filenames = [
+        "complex.23bits.bgen",
+        "complex.23bits.bgen.metadata",
+        "complex.sample",
+        "example.32bits.bgen",
+        "example.32bits.bgen.metadata",
+        "haplotypes.bgen",
+        "haplotypes.bgen.metadata.valid",
+        "haplotypes.bgen.metadata.corrupted",
+        "wrong.metadata",
+        "complex.23bits.no.samples.bgen",
+        "large.bgen",
+    ]
 
     def __enter__(self):
         import pkg_resources

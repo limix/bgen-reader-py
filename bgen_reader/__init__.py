@@ -9,9 +9,13 @@ representation without sacrificing variant access performance.
 
 Functions
 ---------
-create_metafile  Create variants metadata file.
-read_bgen        Read a given BGEN file.
-test             Verify this package's integrity.
+allele_expectation  Compute the expectation of each allele.
+allele_frequency    Compute allele frequency from its expectation.
+compute_dosage      Compute dosage from allele expectation.
+create_metafile     Create variants metadata file.
+example_files       Create a temporary folder with the given files.
+read_bgen           Read a given BGEN file.
+test                Verify this package's integrity.
 
 Documentation can be found at <https://github.com/limix/bgen-reader-py>.
 """
