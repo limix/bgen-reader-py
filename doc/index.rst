@@ -1,6 +1,6 @@
-============================
+###########################
 Bgen-reader's documentation
-============================
+###########################
 
 :Date: |today|
 :Version: |version|
@@ -9,30 +9,16 @@ Bgen-reader's documentation
    :maxdepth: 2
    :caption: Contents:
 
-*******
-Install
-*******
+   install
+   read
+   dosage
+   expectation
+   frequency
+   metafile
 
-It can be installved via `conda`_::
+Comments and bugs
+=================
 
-  conda install -c conda-forge bgen-reader
+You can get the source and open issues `on Github.`_
 
-Alternatively, it can be done using pip::
-
-  pip install bgen-reader
-
-.. _conda: http://conda.pydata.org/docs/index.html
-
-*********
-Functions
-*********
-
-.. automodule:: bgen_reader
-
-  .. autofunction:: allele_expectation
-  .. autofunction:: allele_frequency
-  .. autofunction:: compute_dosage
-  .. autofunction:: create_metafile
-  .. autofunction:: example_files
-  .. autofunction:: read_bgen
-  .. autofunction:: test
+.. _on Github.: https://github.com/limix/bgen-reader-py

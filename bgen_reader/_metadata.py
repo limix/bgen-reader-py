@@ -11,16 +11,33 @@ def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
     r"""Create variants metadata file.
 
     Variants metadata file helps speed up subsequent reads of the associated
-    BGEN file.
+    bgen file.
 
     Parameters
     ----------
     bgen_filepath : str
-        BGEN file path.
+        Bgen file path.
     metadata_file : str
         Metadata file path.
     verbose : bool
         ``True`` to show progress; ``False`` otherwise.
+
+    Examples
+    --------
+    .. doctest::
+
+        >>> import os
+        >>> from bgen_reader import create_metafile
+        >>>
+        >>> with example_files("example.32bits.bgen") as filepath:
+        ...     folder = os.path.dirname(filepath)
+        ...     metafile_filepath = os.path.join(folder, filepath + ".metadata")
+        ...
+        ...     try:
+        ...         create_metafile(filepath, metafile_filepath, verbose=False)
+        ...     finally:
+        ...         if os.path.exists(metafile_filepath):
+        ...             os.remove(metafile_filepath)
     """
     if verbose:
         verbose = 1
