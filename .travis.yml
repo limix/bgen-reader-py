@@ -18,6 +18,7 @@ matrix:
         - brew update
         - brew outdated python || brew upgrade python
         - brew unlink python && brew link python
+        - brew install zlib
         - export PATH="/usr/local/opt/python/libexec/bin:$PATH"
         - hash -r
         - python -m pip install --upgrade pip setuptools wheel
