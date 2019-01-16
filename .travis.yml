@@ -37,6 +37,7 @@ script:
     sudo mkdir -p /usr/local/man
     sudo chown -R "${USER}:admin" /usr/local/man
   fi
+- git clean -xdf
 - bash <(curl -fsSL https://raw.githubusercontent.com/horta/ci/master/travis.sh)
 - python -m pip install cibuildwheel>=0.9.2
 - cibuildwheel --output-dir wheelhouse
