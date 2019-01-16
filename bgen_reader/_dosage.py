@@ -15,6 +15,39 @@ def allele_frequency(expec):
     -------
     :class:`numpy.ndarray`
         Allele frequencies encoded as a variants-by-alleles matrix.
+
+    Examples
+    --------
+    .. doctest::
+
+    >>> from texttable import Texttable
+    >>> from bgen_reader import read_bgen, example_files
+    >>> from bgen_reader import allele_expectation, allele_frequency
+    ...
+    >>> rsid = "RSID_6"
+    ...
+    >>> with example_files("example.32bits.bgen") as filepath:
+    ...     bgen = read_bgen(filepath, verbose=False)
+    ...     variants = bgen["variants"]
+    ...     samples = bgen["samples"]
+    ...     genotype = bgen["genotype"]
+    ...
+    ...     variant = variants[variants["rsid"] == rsid].compute()
+    ...     variant_idx = variant.index.item()
+    ...
+    ...     p = genotype[variant_idx].compute()["probs"]
+    ...     # For unphased genotypes only.
+    ...     e = allele_expectation(bgen, variant_idx)
+    ...     f = allele_frequency(e)
+    ...
+    ...     alleles = variant["allele_ids"].item().split(",")
+    >>> print(alleles[0] + ": {}".format(f[0]))
+    A: 229.23103218810434
+    >>> print(alleles[1] + ": {}".format(f[1]))
+    G: 270.7689678118956
+    >>> print(variant)
+            id    rsid chrom   pos  nalleles allele_ids  vaddr
+    4  SNPID_6  RSID_6    01  6000         2        A,G  19377
     """
     expec = asarray(expec, float)
     if expec.ndim != 2:
@@ -112,7 +145,7 @@ def allele_expectation(bgen, variant_idx):
     ...     print(Texttable().add_rows(
     ...         [
     ...             ["", "AA", "AG", "GG", "E[.]"],
-    ...             ["p"] + list(p) + [1.0],
+    ...             ["p"] + list(p) + ["na"],
     ...             ["#" + alleles[0], 2, 1, 0, e[0]],
     ...             ["#" + alleles[1], 0, 1, 2, e[1]],
     ...         ]
@@ -120,7 +153,7 @@ def allele_expectation(bgen, variant_idx):
     +----+-------+-------+-------+-------+
     |    |  AA   |  AG   |  GG   | E[.]  |
     +====+=======+=======+=======+=======+
-    | p  | 0.012 | 0.987 | 0.001 | 1     |
+    | p  | 0.012 | 0.987 | 0.001 | na    |
     +----+-------+-------+-------+-------+
     | #A | 2     | 1     | 0     | 1.011 |
     +----+-------+-------+-------+-------+
