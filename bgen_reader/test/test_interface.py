@@ -30,3 +30,23 @@ def test_allele_expectation():
         assert_allclose(
             e, [[1.0, 0.0, 0.0], [2.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 2.0, 0.0]]
         )
+
+
+def test_allele_frequency():
+
+    with example_files("complex.23bits.bgen") as filepath:
+        with pytest.raises(ValueError):
+            bgen = read_bgen(filepath, verbose=False)
+            allele_expectation(bgen, 1)
+        bgen = read_bgen(filepath, verbose=False)
+        expec = allele_expectation(bgen, 3)
+        freq = allele_frequency(expec)
+        assert_allclose(freq, [1.33333333333, 1.0, 0.0])
+
+    freq = allele_frequency(
+        [[1.0, 0.0, 0.0], [2.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 2.0, 0.0]]
+    )
+    assert_allclose(freq, [1.33333333333, 1.0, 0.0])
+
+    with pytest.raises(ValueError):
+        allele_frequency([2, 3, 1])

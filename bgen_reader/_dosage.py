@@ -9,19 +9,18 @@ def allele_frequency(expec):
     Parameters
     ----------
     expec : array_like
-        Allele expectations encoded as a variants-by-samples-by-alleles matrix.
+        Allele expectations encoded as a samples-by-alleles matrix.
 
     Returns
     -------
     :class:`numpy.ndarray`
         Allele frequencies encoded as a variants-by-alleles matrix.
     """
+    expec = asarray(expec, float)
+    if expec.ndim != 2:
+        raise ValueError("Expectation matrix must be bi-dimensional.")
     ploidy = expec.shape[-1]
-    if expec.ndim < 3:
-        n = 1
-    else:
-        n = expec.shape[1]
-    return expec.sum(-2) / (ploidy * n)
+    return expec.sum(-2) / ploidy
 
 
 def compute_dosage(expec, alt=None):
