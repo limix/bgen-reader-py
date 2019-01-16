@@ -35,7 +35,7 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
     Returns
     -------
     variants : :class:`dask.dataFrame.DataFrame`
-        Variant position, chromossomes, RSIDs, etc.
+        Variant position, chromosomes, RSIDs, etc.
     samples : :class:`pandas.Series`
         Sample identifications.
     genotype : list

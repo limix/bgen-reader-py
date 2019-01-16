@@ -2,12 +2,14 @@
 Install
 *******
 
-It can be installved via `conda`_::
+It can be installed via |conda|::
 
   conda install -c conda-forge bgen-reader
 
-Alternatively, it can be done using pip::
+Or via pip::
 
   pip install bgen-reader
 
-.. _conda: http://conda.pydata.org/docs/index.html
+.. |conda| raw:: html
+
+   <a href="http://conda.pydata.org/docs/index.html" target="_blank">conda⧉</a>

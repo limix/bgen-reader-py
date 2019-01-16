@@ -7,7 +7,7 @@ Bgen-reader's documentation
 
 |Bgen| is a file format for storing large genetic datasets.
 It supports both unphased genotypes and phased haplotype data with variable
-ploidy and number of alleles. It was designed to provides a compact data
+ploidy and number of alleles. It was designed to provide a compact data
 representation without sacrificing variant access performance.
 
 This python package is a wrapper around the |bgen library|,

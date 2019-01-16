@@ -2,9 +2,7 @@
 Quick-start
 ***********
 
-The following examples assume you have downloaded the ``example.bgen``,
-``haplotypes.bgen``, and ``complex.bgen`` files (found in this repository) to the
-directory you are executing Python.
+We first download the ``example.bgen``, ``haplotypes.bgen``, and ``complex.bgen`` files.
 
 .. doctest::
 
@@ -17,12 +15,17 @@ directory you are executing Python.
 Unphased genotype
 =================
 
+With unphased genotype we don't have the information about which chromosome holds a
+given allele.
+Let's read the ``example.bgen`` file and print out some information.
+
 .. doctest::
 
    >>> from bgen_reader import read_bgen
    >>>
    >>> bgen = read_bgen("example.bgen", verbose=False)
    >>>
+   >>> # Variants metadata.
    >>> print(bgen["variants"].head())
            id    rsid chrom   pos  nalleles allele_ids  vaddr
    0  SNPID_2  RSID_2    01  2000         2        A,G   6069
@@ -30,6 +33,7 @@ Unphased genotype
    2  SNPID_4  RSID_4    01  4000         2        A,G  12956
    3  SNPID_5  RSID_5    01  5000         2        A,G  16034
    4  SNPID_6  RSID_6    01  6000         2        A,G  19377
+   >>> # Samples read from the bgen file.
    >>> print(bgen["samples"].head())
    0    sample_001
    1    sample_002
@@ -37,11 +41,16 @@ Unphased genotype
    3    sample_004
    4    sample_005
    Name: id, dtype: object
+   >>> # There are 199 variants in total.
    >>> print(len(bgen["genotype"]))
    199
+   >>> # This library avoid as much as possible accessing the bgen file for performance
+   >>> # and memory reasons. The `compute` function actually tells the library to
+   >>> # access the file to retrieve some data.
    >>> geno = bgen["genotype"][0].compute()
    >>> print(geno.keys())
    dict_keys(['probs', 'phased', 'ploidy', 'missing'])
+   >>> # Let's have a look at the probabilities regarding the first variant.
    >>> print(geno["probs"])
    [[       nan        nan        nan]
     [0.02780236 0.00863674 0.9635609 ]
@@ -50,8 +59,13 @@ Unphased genotype
     [0.01419069 0.02810669 0.95770262]
     [0.91949463 0.05206298 0.02844239]
     [0.00244141 0.98410029 0.0134583 ]]
+   >>> # The above matrix is of size samples-by-(combination-of-alleles).
    >>> print(geno["probs"].shape)
    (500, 3)
+
+The columns dimension of the probabilities matrix of a given variant depend on the
+number of alleles, the ploidy, and whether the locus is phased or unphased.
+Please, refer to |bgen specification| for a detailed description.
 
 Phased genotype
 ===============
@@ -96,6 +110,8 @@ Phased genotype
    >>> # the first allele
    >>> print(alleles[0])
    A
+
+Please, refer to |bgen specification| for a detailed description.
 
 Complex file
 ============
@@ -154,3 +170,7 @@ Complex file
    >>> e = allele_expectation(bgen, 8)
    >>> print(compute_dosage(e, 2))
    [0. 0. 0. 1.]
+
+.. |bgen specification| raw:: html
+
+   <a href="https://github.com/limix/bgen" target="_blank">bgen specification⧉</a>
