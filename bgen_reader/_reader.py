@@ -40,6 +40,38 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
         Sample identifications.
     genotype : list
         List of genotypes.
+
+    Examples
+    --------
+    .. doctest::
+
+        >>> from bgen_reader import example_files, read_bgen
+        >>>
+        >>> with example_files("haplotypes.bgen") as filepath:
+        ...     bgen = read_bgen(filepath, verbose=False)
+        ...     variants = bgen["variants"]
+        ...     samples = bgen["samples"]
+        ...
+        ...     v = variants.loc[0].compute()
+        ...     print(v)
+        ...
+        ...     v = variants.loc[2].compute()
+        ...     print(v)
+        ...
+        ...     print(samples)
+        ...
+        ...     g = bgen["genotype"][0].compute()
+        ...     print(g["probs"][0])
+             id rsid chrom  pos  nalleles allele_ids  vaddr
+        0  SNP1  RS1     1    1         2        A,G    102
+             id rsid chrom  pos  nalleles allele_ids  vaddr
+        2  SNP3  RS3     1    3         2        A,G    216
+        0    sample_0
+        1    sample_1
+        2    sample_2
+        3    sample_3
+        Name: id, dtype: object
+        [1. 0. 1. 0.]
     """
 
     assert_file_exist(filepath)
