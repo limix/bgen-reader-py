@@ -1,7 +1,7 @@
 import shutil
 import tempfile
 import warnings
-from os.path import dirname, join, realpath
+from os.path import dirname, exists, join, realpath
 from subprocess import check_call
 
 
@@ -85,6 +85,8 @@ def can_run_with(filenames):
         filenames = [filenames]
 
     if "large.bgen" in filenames:
-        return shutil.which("curl") is not None and shutil.which("openssl") is not None
+        ok = shutil.which("curl") is not None and shutil.which("openssl") is not None
+        ok = ok and exists("/Users/horta/pass")
+        return ok
 
     return True
