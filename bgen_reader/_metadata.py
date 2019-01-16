@@ -27,7 +27,7 @@ def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
     .. doctest::
 
         >>> import os
-        >>> from bgen_reader import create_metafile
+        >>> from bgen_reader import create_metafile, example_files
         >>>
         >>> with example_files("example.32bits.bgen") as filepath:
         ...     folder = os.path.dirname(filepath)
