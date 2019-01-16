@@ -21,11 +21,11 @@ test                Verify this package's integrity.
 Documentation can be found at <https://github.com/limix/bgen-reader-py>.
 """
 from ._dosage import allele_expectation, allele_frequency, compute_dosage
+from ._download import download
 from ._example import example_files
 from ._metadata import create_metafile
 from ._reader import read_bgen
 from ._testit import test
-from ._download import download
 
 _ffi_err = """
 It is likely caused by a broken installation of this package.
@@ -34,6 +34,7 @@ and reinstall the package again."""
 
 try:
     from ._ffi import ffi as _
+
     assert _ is not None
 except Exception as e:
     e.msg = e.msg + _ffi_err

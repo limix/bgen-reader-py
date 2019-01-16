@@ -59,14 +59,13 @@ class System(object):
 
 
 class Windows(System):
-
     def get_programfiles(self):
         if bits_arch() == 32:
             return self.get_32bits_programfiles()
         return self.get_64bits_programfiles()
 
     def get_64bits_programfiles(self):
-        n = 'PROGRAMW6432'
+        n = "PROGRAMW6432"
         if n not in os.environ:
             raise RuntimeError("{} variable is not defined.".format(n))
 
@@ -77,7 +76,7 @@ class Windows(System):
         return f
 
     def get_32bits_programfiles(self):
-        n = 'PROGRAMFILES'
+        n = "PROGRAMFILES"
         if n not in os.environ:
             raise RuntimeError("{} variable is not defined.".format(n))
 
@@ -88,21 +87,21 @@ class Windows(System):
         return f
 
     def get_include_dirs(self):
-        dirs = [join(get_config_var('prefix'), 'include')]
+        dirs = [join(get_config_var("prefix"), "include")]
 
-        names = ['INCLUDE', 'LIBRARY_INC']
+        names = ["INCLUDE", "LIBRARY_INC"]
         vals = [os.environ[n] for n in names if n in os.environ]
-        dirs += [d for v in vals for d in v.split(';')]
+        dirs += [d for v in vals for d in v.split(";")]
 
         dirs = [d for d in dirs if len(d) > 0 and exists(d)]
         return self._include_dirs + dirs
 
     def get_library_dirs(self):
-        dirs = [join(get_config_var('prefix'), 'lib')]
+        dirs = [join(get_config_var("prefix"), "lib")]
 
-        names = ['LIBRARY_LIB']
+        names = ["LIBRARY_LIB"]
         vals = [os.environ[n] for n in names if n in os.environ]
-        dirs += [d for v in vals for d in v.split(';')]
+        dirs += [d for v in vals for d in v.split(";")]
 
         dirs = [d for d in dirs if len(d) > 0 and exists(d)]
         return self._library_dirs + dirs
@@ -124,26 +123,23 @@ class Windows(System):
         if bits_arch() == 32:
             msg += "ProgramFiles: {}\n".format(self.get_32bits_programfiles())
         if bits_arch() == 64:
-            msg += "ProgramFiles32: {}\n".format(
-                self.get_32bits_programfiles())
-            msg += "ProgramFiles64: {}\n".format(
-                self.get_64bits_programfiles())
+            msg += "ProgramFiles32: {}\n".format(self.get_32bits_programfiles())
+            msg += "ProgramFiles64: {}\n".format(self.get_64bits_programfiles())
         msg += "Include dirs: {}\n".format(self.get_include_dirs())
         msg += "Library dirs: {}\n".format(self.get_library_dirs())
         return msg
 
 
 class Unix(System):
-
     def get_include_dirs(self):
-        dirs = [join(get_config_var('prefix'), 'include')]
-        dirs += ['/usr/include', '/usr/local/include']
+        dirs = [join(get_config_var("prefix"), "include")]
+        dirs += ["/usr/include", "/usr/local/include"]
         dirs = [d for d in dirs if len(d) > 0 and exists(d)]
         return self._include_dirs + dirs
 
     def get_library_dirs(self):
-        dirs = [join(get_config_var('prefix'), 'lib')]
-        dirs += ['/usr/lib', '/usr/local/lib']
+        dirs = [join(get_config_var("prefix"), "lib")]
+        dirs += ["/usr/lib", "/usr/local/lib"]
         dirs = [d for d in dirs if len(d) > 0 and exists(d)]
         return self._library_dirs + dirs
 
