@@ -71,7 +71,7 @@ def compute_dosage(expec, alt=None):
     Returns
     -------
     :class:`numpy.ndarray`
-        Dosage encoded as a variants-by-samples matrix.
+        Dosage encoded as an array of size equal to the number of samples.
 
     Examples
     --------

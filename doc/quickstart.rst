@@ -58,7 +58,6 @@ Phased genotype
 
 .. doctest::
 
-   >>> from bgen_reader import read_bgen
    >>> bgen = read_bgen("haplotypes.bgen", verbose=False)
    >>>
    >>> print(bgen["variants"].head())
@@ -103,8 +102,6 @@ Complex file
 
 .. doctest::
 
-   >>> from bgen_reader import read_bgen
-   >>>
    >>> bgen = read_bgen("complex.bgen", verbose=False)
    >>>
    >>> print(bgen["variants"].compute())
@@ -150,3 +147,10 @@ Complex file
    >>> # unphased,
    >>> print(bgen["genotype"][8].compute()["phased"])
    0
+   >>> # we can pick an alternative allele and compute the dosage
+   >>> # from allele expectation.
+   >>> # If we select the third allele as being the alternative one, we have
+   >>> from bgen_reader import allele_expectation, compute_dosage
+   >>> e = allele_expectation(bgen, 8)
+   >>> print(compute_dosage(e, 2))
+   [0. 0. 0. 1.]
