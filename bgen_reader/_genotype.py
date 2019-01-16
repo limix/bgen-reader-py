@@ -91,4 +91,3 @@ def _estimate_best_nsub_parts(nsamples, part_size):
     vs = 16
     iv = bs / (vs * nsamples)
     return max(int(part_size / iv), 1)
-

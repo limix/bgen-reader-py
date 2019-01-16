@@ -64,4 +64,3 @@ def test_dosage_interface():
         e = allele_expectation(bgen, 3)
         assert_allclose(compute_dosage(e), [0, 0, 0, 0])
         assert_allclose(compute_dosage(e, 0), [1., 2., 1., 0.])
-
