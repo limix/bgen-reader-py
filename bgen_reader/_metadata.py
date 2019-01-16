@@ -17,8 +17,8 @@ def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
     ----------
     bgen_filepath : str
         Bgen file path.
-    metadata_file : str
-        Metadata file path.
+    metafile_file : str
+        Metafile file path.
     verbose : bool
         ``True`` to show progress; ``False`` otherwise.
 

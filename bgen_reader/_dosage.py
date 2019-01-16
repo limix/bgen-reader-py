@@ -220,7 +220,7 @@ def compute_dosage(expec, alt=None):
 def allele_expectation(bgen, variant_idx):
     r""" Allele expectation.
 
-    Compute the expectation of each allele from the bgen probabilities.
+    Compute the expectation of each allele from the genotype probabilities.
 
     Parameters
     ----------
