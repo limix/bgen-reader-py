@@ -1,3 +1,4 @@
+*.bgen
 *.metadata
 
 .pytest_cache/
