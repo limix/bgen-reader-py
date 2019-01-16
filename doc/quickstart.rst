@@ -6,6 +6,14 @@ The following examples assume you have downloaded the ``example.bgen``,
 ``haplotypes.bgen``, and ``complex.bgen`` files (found in this repository) to the
 directory you are executing Python.
 
+.. doctest::
+
+    >>> from bgen_reader import download
+    >>>
+    >>> download("http://rest.s3for.me/bgen-reader/complex.bgen", verbose=False)
+    >>> download("http://rest.s3for.me/bgen-reader/example.bgen", verbose=False)
+    >>> download("http://rest.s3for.me/bgen-reader/haplotypes.bgen", verbose=False)
+
 Unphased genotype
 =================
 

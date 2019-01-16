@@ -13,6 +13,7 @@ allele_expectation  Compute the expectation of each allele.
 allele_frequency    Compute allele frequency from its expectation.
 compute_dosage      Compute dosage from allele expectation.
 create_metafile     Create variants metadata file.
+download            Download a file from a given url.
 example_files       Create a temporary folder with the given files.
 read_bgen           Read a given BGEN file.
 test                Verify this package's integrity.
@@ -24,6 +25,7 @@ from ._example import example_files
 from ._metadata import create_metafile
 from ._reader import read_bgen
 from ._testit import test
+from ._download import download
 
 _ffi_err = """
 It is likely caused by a broken installation of this package.
@@ -47,5 +49,6 @@ __all__ = [
     "allele_expectation",
     "example_files",
     "compute_dosage",
+    "download",
     "allele_frequency",
 ]
