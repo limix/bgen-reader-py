@@ -63,4 +63,4 @@ def test_dosage_interface():
         bgen = read_bgen(filepath, verbose=False)
         e = allele_expectation(bgen, 3)
         assert_allclose(compute_dosage(e), [0, 0, 0, 0])
-        assert_allclose(compute_dosage(e, 0), [1., 2., 1., 0.])
+        assert_allclose(compute_dosage(e, 0), [1.0, 2.0, 1.0, 0.0])
