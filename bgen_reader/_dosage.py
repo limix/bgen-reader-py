@@ -88,7 +88,7 @@ def compute_dosage(expec, alt=None):
         ...     read_bgen,
         ... )
         ...
-        >>> with example_files("example.32bits.bgen") as filepath:
+        >>> with example_files("example.32bits.bgen") as filepath: # doctest: +NORMALIZE_WHITESPACE +IGNORE_EXCEPTION_DETAIL
         ...     with option_context("display.max_rows", 6):
         ...         bgen = read_bgen(filepath, verbose=False)
         ...         variants = bgen["variants"]
