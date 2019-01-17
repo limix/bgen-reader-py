@@ -1,17 +1,15 @@
 from __future__ import unicode_literals
 
 import os
-import stat
 from contextlib import contextmanager
 
 import dask.dataframe as dd
 import pytest
+from bgen_reader import create_metafile, example_files, read_bgen
 from dask.delayed import Delayed
 from numpy import array, array_equal, isnan
 from numpy.testing import assert_, assert_allclose, assert_equal
 from pandas import Series
-
-from bgen_reader import create_metafile, example_files, read_bgen
 
 try:
     FileNotFoundError
