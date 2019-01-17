@@ -81,6 +81,7 @@ def test_metafile_wrong_filepath():
                 read_bgen(filepath, metafile_filepath=fp, verbose=False)
 
 
+@pytest.mark.xfail
 def test_metafile_not_provided_no_permission_to_create():
     with example_files("haplotypes.bgen") as filepath:
         path = os.path.dirname(filepath)
