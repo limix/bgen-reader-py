@@ -92,7 +92,7 @@ def test_metafile_not_provided_no_permission_to_create():
 @contextmanager
 def nowrite_permission(path):
     perm = os.stat(path).st_mode
-    os.chmod(path, stat.S_IXUSR | stat.S_IXGRP | stat.S_IRUSR | stat.S_IRGRP)
+    os.chmod(path, 0o555)
     try:
         yield
     finally:
@@ -102,7 +102,7 @@ def nowrite_permission(path):
 @contextmanager
 def noread_permission(path):
     perm = os.stat(path).st_mode
-    os.chmod(path, stat.S_IXUSR | stat.S_IXGRP)
+    os.chmod(path, 0o333)
     try:
         yield
     finally:
