@@ -2,6 +2,3 @@ build:
     image: latest
 conda:
     file: doc/environment.yml
-python:
-    version: 3.6
-    pip_install: true
