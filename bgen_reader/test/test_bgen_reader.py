@@ -52,8 +52,8 @@ def test_bgen_samples_outside_bgen_unreadable():
 @pytest.mark.xfail
 def test_bgen_file_not_readable():
     with example_files("haplotypes.bgen") as filepath:
-        with pytest.raises(PermissionError):
-            with noread_permission(filepath):
+        with noread_permission(filepath):
+            with pytest.raises(PermissionError):
                 read_bgen(filepath, verbose=False)
 
 
