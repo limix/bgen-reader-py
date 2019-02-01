@@ -1,15 +1,14 @@
 import os
+
 import pytest
 
 
 def pytest_sessionstart(session):
     import doctest
-    import matplotlib as mpl
 
     _compatibility()
     import pandas as pd
 
-    mpl.use("agg")
     doctest.ELLIPSIS_MARKER = "-ignore-"
 
     pd.set_option("display.width", 88)
