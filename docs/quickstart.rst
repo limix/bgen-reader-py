@@ -74,7 +74,7 @@ Let's read the ``example.bgen`` file and print out some information.
    >>> print(geno["probs"].shape)
    (500, 3)
 
-The columns dimension of the probabilities matrix of a given variant depend on the
+The columns dimension of the probability matrix of a given variant depend on the
 number of alleles, the ploidy, and whether the locus is phased or unphased.
 Please, refer to |bgen specification| for a detailed description.
 

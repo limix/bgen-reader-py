@@ -94,7 +94,7 @@ def compute_dosage(expec, alt=None):
         >>> # Read the example
         >>> bgen = read_bgen(filepath, verbose=False)
         >>>
-        >>> # Extract the allele expectations of fourth variant
+        >>> # Extract the allele expectations of the fourth variant
         >>> variant_idx = 3
         >>> e = allele_expectation(bgen, variant_idx)
         >>>
@@ -115,9 +115,6 @@ def compute_dosage(expec, alt=None):
 
     .. doctest::
 
-        >>> from pandas import DataFrame, option_context
-        >>> from xarray import DataArray
-        ...
         >>> from bgen_reader import (
         ...     allele_expectation,
         ...     allele_frequency,
@@ -125,126 +122,119 @@ def compute_dosage(expec, alt=None):
         ...     example_files,
         ...     read_bgen,
         ... )
-        ...
-        >>> with example_files("example.32bits.bgen") as filepath: # doctest: +NORMALIZE_WHITESPACE +IGNORE_EXCEPTION_DETAIL
-        ...     with option_context("display.max_rows", 6):
-        ...         bgen = read_bgen(filepath, verbose=False)
-        ...         variants = bgen["variants"]
-        ...         genotype = bgen["genotype"]
-        ...         samples = bgen["samples"]
-        ...
-        ...         variant_idx = 3
-        ...         variant = variants.loc[variant_idx].compute()
-        ...         print("---- Variant ----")
-        ...         print(variant)
-        ...         print()
-        ...
-        ...         geno = bgen["genotype"][variant_idx].compute()
-        ...         metageno = DataFrame({k: geno[k] for k in ["ploidy", "missing"]},
-        ...                              index=samples)
-        ...         metageno.index.name = "sample"
-        ...         print(metageno)
-        ...         print()
-        ...
-        ...         p = DataArray(
-        ...             geno["probs"],
-        ...             name="probability",
-        ...             coords={"sample": samples},
-        ...             dims=["sample", "genotype"],
-        ...         )
-        ...         print("---- Probability ----")
-        ...         print(p.to_series().unstack(level=-1))
-        ...         print()
-        ...
-        ...         alleles = variant["allele_ids"].item().split(",")
-        ...         e = DataArray(
-        ...             allele_expectation(bgen, variant_idx),
-        ...             name="expectation",
-        ...             coords={"sample": samples, "allele": alleles},
-        ...             dims=["sample", "allele"],
-        ...         )
-        ...         print("---- Expectation ----")
-        ...         print(e.to_series().unstack(level=-1))
-        ...         print()
-        ...
-        ...         rsid = variant["rsid"].item()
-        ...         chrom = variant["chrom"].item()
-        ...         variant_name = f"{chrom}:{rsid}"
-        ...         f = DataFrame(allele_frequency(e), columns=[variant_name],
-        ...                       index=alleles)
-        ...         f.index.name = "allele"
-        ...         print("---- Frequency ----")
-        ...         print(f)
-        ...         print()
-        ...
-        ...         alt = f.idxmin().item()
-        ...         alt_idx = alleles.index(alt)
-        ...         d = compute_dosage(e, alt=alt_idx).to_series()
-        ...         d = DataFrame(d.values, columns=[f"alt={alt}"], index=d.index)
-        ...         print("---- Dosage ----")
-        ...         print(d)
-        ...         print()
-        ---- Variant ----
+        >>> from pandas import DataFrame
+        >>> from xarray import DataArray
+        >>>
+        >>> # Download an example
+        >>> example = example_files("example.32bits.bgen")
+        >>> filepath = example.filepath
+        >>>
+        >>> # Open the bgen file.
+        >>> bgen = read_bgen(filepath, verbose=False)
+        >>> variants = bgen["variants"]
+        >>> genotype = bgen["genotype"]
+        >>> samples = bgen["samples"]
+        >>>
+        >>> variant_idx = 3
+        >>> variant = variants.loc[variant_idx].compute()
+        >>> # Print the metadata of the fourth variant.
+        >>> print(variant)
                 id    rsid chrom   pos  nalleles allele_ids  vaddr
         3  SNPID_5  RSID_5    01  5000         2        A,G  16034
-        <BLANKLINE>
+
+        >>> geno = bgen["genotype"][variant_idx].compute()
+        >>> metageno = DataFrame({k: geno[k] for k in ["ploidy", "missing"]}, index=samples)
+        >>> metageno.index.name = "sample"
+        >>> print(metageno)
                     ploidy  missing
         sample
         sample_001       2    False
         sample_002       2    False
         sample_003       2    False
+        sample_004       2    False
         ...            ...      ...
+        sample_497       2    False
         sample_498       2    False
         sample_499       2    False
         sample_500       2    False
         <BLANKLINE>
         [500 rows x 2 columns]
-        <BLANKLINE>
-        ---- Probability ----
-        genotype           0         1         2
+        >>> p = DataArray(
+        ...     geno["probs"],
+        ...     name="probability",
+        ...     coords={"sample": samples},
+        ...     dims=["sample", "genotype"],
+        ... )
+        >>> # Print the genotype probabilities.
+        >>> print(p.to_series().unstack(level=-1))
+        genotype          0        1        2
         sample
-        sample_001  0.004883  0.028381  0.966736
-        sample_002  0.990448  0.009277  0.000275
-        sample_003  0.989319  0.003906  0.006775
-        ...              ...       ...       ...
-        sample_498  0.005524  0.994232  0.000244
-        sample_499  0.012665  0.011536  0.975800
-        sample_500  0.000214  0.984314  0.015472
+        sample_001  0.00488  0.02838  0.96674
+        sample_002  0.99045  0.00928  0.00027
+        sample_003  0.98932  0.00391  0.00677
+        sample_004  0.00662  0.98328  0.01010
+        ...             ...      ...      ...
+        sample_497  0.00137  0.01312  0.98550
+        sample_498  0.00552  0.99423  0.00024
+        sample_499  0.01266  0.01154  0.97580
+        sample_500  0.00021  0.98431  0.01547
         <BLANKLINE>
         [500 rows x 3 columns]
-        <BLANKLINE>
-        ---- Expectation ----
-        allele             A         G
+        >>> alleles = variant["allele_ids"].item().split(",")
+        >>> e = DataArray(
+        ...     allele_expectation(bgen, variant_idx),
+        ...     name="expectation",
+        ...     coords={"sample": samples, "allele": alleles},
+        ...     dims=["sample", "allele"],
+        ... )
+        >>> # Print the allele expectations.
+        >>> print(e.to_series().unstack(level=-1))
+        allele            A        G
         sample
-        sample_001  0.038147  1.961853
-        sample_002  1.990173  0.009827
-        sample_003  1.982544  0.017456
-        ...              ...       ...
-        sample_498  1.005280  0.994720
-        sample_499  0.036865  1.963135
-        sample_500  0.984742  1.015258
+        sample_001  0.03815  1.96185
+        sample_002  1.99017  0.00983
+        sample_003  1.98254  0.01746
+        sample_004  0.99652  1.00348
+        ...             ...      ...
+        sample_497  0.01587  1.98413
+        sample_498  1.00528  0.99472
+        sample_499  0.03687  1.96313
+        sample_500  0.98474  1.01526
         <BLANKLINE>
         [500 rows x 2 columns]
-        <BLANKLINE>
-        ---- Frequency ----
-                 01:RSID_5
+        >>> rsid = variant["rsid"].item()
+        >>> chrom = variant["chrom"].item()
+        >>> variant_name = f"{chrom}:{rsid}"
+        >>> f = DataFrame(allele_frequency(e), columns=[variant_name], index=alleles)
+        >>> f.index.name = "allele"
+        >>> # Allele frequencies.
+        >>> print(f)
+                01:RSID_5
         allele
-        A       305.972181
-        G       194.027819
-        <BLANKLINE>
-        ---- Dosage ----
-                       alt=G
+        A       305.97218
+        G       194.02782
+        >>> alt = f.idxmin().item()
+        >>> alt_idx = alleles.index(alt)
+        >>> d = compute_dosage(e, alt=alt_idx).to_series()
+        >>> d = DataFrame(d.values, columns=[f"alt={alt}"], index=d.index)
+        >>> # Dosages when considering G as the alternative allele.
+        >>> print(d)
+                      alt=G
         sample
-        sample_001  1.961853
-        sample_002  0.009827
-        sample_003  0.017456
-        ...              ...
-        sample_498  0.994720
-        sample_499  1.963135
-        sample_500  1.015258
+        sample_001  1.96185
+        sample_002  0.00983
+        sample_003  0.01746
+        sample_004  1.00348
+        ...             ...
+        sample_497  1.98413
+        sample_498  0.99472
+        sample_499  1.96313
+        sample_500  1.01526
         <BLANKLINE>
         [500 rows x 1 columns]
-        <BLANKLINE>
+        >>>
+        >>> # Clean-up the example
+        >>> example.close()
     """
     if alt is None:
         return expec[..., -1]
