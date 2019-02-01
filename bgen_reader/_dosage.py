@@ -87,14 +87,14 @@ def compute_dosage(expec, alt=None):
         >>> from bgen_reader import allele_expectation, compute_dosage
         >>> from bgen_reader import example_files, read_bgen
         >>>
-        >>> # Download an example
+        >>> # Download an example.
         >>> example = example_files("example.32bits.bgen")
         >>> filepath = example.filepath
         >>>
-        >>> # Read the example
+        >>> # Read the example.
         >>> bgen = read_bgen(filepath, verbose=False)
         >>>
-        >>> # Extract the allele expectations of the fourth variant
+        >>> # Extract the allele expectations of the fourth variant.
         >>> variant_idx = 3
         >>> e = allele_expectation(bgen, variant_idx)
         >>>
@@ -110,7 +110,7 @@ def compute_dosage(expec, alt=None):
         >>> # Clean-up the example
         >>> example.close()
 
-    Now a more complete example showing the genotype probabilities, allele expectations
+    Now a more complete example showing genotype probabilities, allele expectations
     and frequencies, and dosage.
 
     .. doctest::
@@ -143,7 +143,8 @@ def compute_dosage(expec, alt=None):
         3  SNPID_5  RSID_5    01  5000         2        A,G  16034
 
         >>> geno = bgen["genotype"][variant_idx].compute()
-        >>> metageno = DataFrame({k: geno[k] for k in ["ploidy", "missing"]}, index=samples)
+        >>> metageno = DataFrame({k: geno[k] for k in ["ploidy", "missing"]},
+        ...                      index=samples)
         >>> metageno.index.name = "sample"
         >>> print(metageno)
                     ploidy  missing
@@ -270,37 +271,61 @@ def allele_expectation(bgen, variant_idx):
     --------
     .. doctest::
 
+        >>> from bgen_reader import allele_expectation, example_files, read_bgen
+        >>>
         >>> from texttable import Texttable
-        >>> from bgen_reader import read_bgen, allele_expectation, example_files
-        ...
-        >>> sampleid = "sample_005"
-        >>> rsid = "RSID_6"
-        ...
-        >>> with example_files("example.32bits.bgen") as filepath:
-        ...     bgen = read_bgen(filepath, verbose=False)
-        ...     variants = bgen["variants"]
-        ...     samples = bgen["samples"]
-        ...     genotype = bgen["genotype"]
-        ...
-        ...     variant = variants[variants["rsid"] == rsid].compute()
-        ...     variant_idx = variant.index.item()
-        ...
-        ...     sample_idx = samples[samples == sampleid].index.item()
-        ...
-        ...     p = genotype[variant_idx].compute()["probs"][sample_idx]
-        ...     # For unphased genotypes only.
-        ...     e = allele_expectation(bgen, variant_idx)[sample_idx]
-        ...
-        ...     alleles = variant["allele_ids"].item().split(",")
-        ...
-        ...     print(Texttable().add_rows(
-        ...         [
-        ...             ["", "AA", "AG", "GG", "E[.]"],
-        ...             ["p"] + list(p) + ["na"],
-        ...             ["#" + alleles[0], 2, 1, 0, e[0]],
-        ...             ["#" + alleles[1], 0, 1, 2, e[1]],
-        ...         ]
-        ...     ).draw())
+        >>>
+        >>> # Download an example.
+        >>> example = example_files("example.32bits.bgen")
+        >>> filepath = example.filepath
+        >>>
+        >>> # Read the example.
+        >>> bgen = read_bgen(filepath, verbose=False)
+        >>>
+        >>> variants = bgen["variants"]
+        >>> samples = bgen["samples"]
+        >>> genotype = bgen["genotype"]
+        >>>
+        >>> genotype = bgen["genotype"]
+        >>> # This `compute` call will return a pandas data frame,
+        >>> variant = variants[variants["rsid"] == "RSID_6"].compute()
+        >>> # from which we retrieve the variant index.
+        >>> variant_idx = variant.index.item()
+        >>> print(variant)
+                id    rsid chrom   pos  nalleles allele_ids  vaddr
+        4  SNPID_6  RSID_6    01  6000         2        A,G  19377
+        >>> genotype = bgen["genotype"]
+        >>> # Samples is a pandas series, and we retrieve the
+        >>> # sample index from the sample name.
+        >>> sample_idx = samples[samples == "sample_005"].index.item()
+        >>>
+        >>> genotype = bgen["genotype"]
+        >>> # This `compute` call will return a dictionary from which
+        >>> # we can get the probability matrix the corresponding
+        >>> # variant.
+        >>> p = genotype[variant_idx].compute()["probs"][sample_idx]
+        >>>
+        >>> genotype = bgen["genotype"]
+        >>> # Allele expectation makes sense for unphased genotypes only,
+        >>> # which is the case here.
+        >>> e = allele_expectation(bgen, variant_idx)[sample_idx]
+        >>>
+        >>> genotype = bgen["genotype"]
+        >>> alleles = variant["allele_ids"].item().split(",")
+        >>>
+        >>> genotype = bgen["genotype"]
+        >>>
+        >>> # Print what we have got in a nice format.
+        >>> table = Texttable()
+        >>> table = table.add_rows(
+        ...     [
+        ...         ["", "AA", "AG", "GG", "E[.]"],
+        ...         ["p"] + list(p) + ["na"],
+        ...         ["#" + alleles[0], 2, 1, 0, e[0]],
+        ...         ["#" + alleles[1], 0, 1, 2, e[1]],
+        ...     ]
+        ... )
+        >>> print(table.draw())
         +----+-------+-------+-------+-------+
         |    |  AA   |  AG   |  GG   | E[.]  |
         +====+=======+=======+=======+=======+
@@ -310,11 +335,9 @@ def allele_expectation(bgen, variant_idx):
         +----+-------+-------+-------+-------+
         | #G | 0     | 1     | 2     | 0.989 |
         +----+-------+-------+-------+-------+
-        >>> print(e)
-        [1.01086423 0.98913577]
-        >>> print(variant)
-                id    rsid chrom   pos  nalleles allele_ids  vaddr
-        4  SNPID_6  RSID_6    01  6000         2        A,G  19377
+        >>>
+        >>> # Clean-up.
+        >>> example.close()
     """
     geno = bgen["genotype"][variant_idx].compute()
     if geno["phased"]:
