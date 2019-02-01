@@ -215,7 +215,7 @@ def compute_dosage(expec, alt=None):
         >>> d = compute_dosage(e, alt=alt_idx).to_series()
         >>> d = DataFrame(d.values, columns=[f"alt={alt}"], index=d.index)
         >>> # Dosages when considering G as the alternative allele.
-        >>> print(d)
+        >>> print(d) # doctest: +IGNORE_EXCEPTION_DETAIL, +NORMALIZE_WHITESPACE
                       alt=G
         sample
         sample_001  1.96185
