@@ -24,4 +24,4 @@ dependencies:
   - xz=5.2.4=h14c3975_4
   - zlib=1.2.11=h7b6447c_3
   - pip:
-    - limix-sphinx-theme>=0.0.2
+    - limix-sphinx-theme>=0.0.3
