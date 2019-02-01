@@ -100,12 +100,12 @@ def compute_dosage(expec, alt=None):
         >>>
         >>> # Compute the dosage when considering the first allele
         >>> # as the reference/alternative one.
-        >>> alt_allele_idx = 0
+        >>> alt_allele_idx = 1
         >>> d = compute_dosage(e, alt=alt_allele_idx)
         >>>
         >>> # Print the dosage of the first five samples only.
         >>> print(d[:5])
-        [0.03814692 1.99017334 1.98254448 0.99652101 0.98846437]
+        [1.96185308 0.00982666 0.01745552 1.00347899 1.01153563]
         >>>
         >>> # Clean-up the example
         >>> example.close()
