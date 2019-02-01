@@ -142,7 +142,7 @@ def compute_dosage(expec, alt=None):
         >>> metageno = DataFrame({k: geno[k] for k in ["ploidy", "missing"]},
         ...                      index=samples)
         >>> metageno.index.name = "sample"
-        >>> print(metageno)
+        >>> print(metageno) # doctest: +IGNORE_EXCEPTION_DETAIL, +NORMALIZE_WHITESPACE
                     ploidy  missing
         sample
         sample_001       2    False
