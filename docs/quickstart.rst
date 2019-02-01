@@ -2,15 +2,26 @@
 Quick-start
 ***********
 
-We first download the ``example.bgen``, ``haplotypes.bgen``, and ``complex.bgen`` files.
+We first download the ``example.bgen``, ``haplotypes.bgen``, and ``complex.bgen`` files:
 
 .. doctest::
 
     >>> from bgen_reader import download
     >>>
-    >>> download("http://rest.s3for.me/bgen-reader/complex.bgen")
     >>> download("http://rest.s3for.me/bgen-reader/example.bgen")
     >>> download("http://rest.s3for.me/bgen-reader/haplotypes.bgen")
+    >>> download("http://rest.s3for.me/bgen-reader/complex.bgen")
+
+The above-mentioned files are read by this software in the same way but they present
+different levels of genotype complexity.
+The variant loci of the genotype stored in ``example.bgen`` have the same ploidy equal
+to two and are all unphased.
+The ``haplotypes.bgen`` file stores a phased, diploid genotype.
+Both genotypes stored in ``example.bgen`` and ``haplotypes.bgen`` have the same number
+of alleles for each loci.
+The ``complex.bgen`` file, on the other hand, have different ploidy levels and number of
+alleles across different variant loci.
+
 
 Unphased genotype
 =================

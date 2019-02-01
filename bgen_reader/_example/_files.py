@@ -44,6 +44,13 @@ class example_files(object):
         "large.bgen",
     ]
 
+    @property
+    def filepath(self):
+        return self.__enter__()
+
+    def close(self):
+        self.__exit__()
+
     def __enter__(self):
         import pkg_resources
 

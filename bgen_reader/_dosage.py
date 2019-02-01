@@ -20,27 +20,28 @@ def allele_frequency(expec):
     --------
     .. doctest::
 
-        >>> from texttable import Texttable
         >>> from bgen_reader import read_bgen, example_files
         >>> from bgen_reader import allele_expectation, allele_frequency
-        ...
-        >>> rsid = "RSID_6"
-        ...
-        >>> with example_files("example.32bits.bgen") as filepath:
-        ...     bgen = read_bgen(filepath, verbose=False)
-        ...     variants = bgen["variants"]
-        ...     samples = bgen["samples"]
-        ...     genotype = bgen["genotype"]
-        ...
-        ...     variant = variants[variants["rsid"] == rsid].compute()
-        ...     variant_idx = variant.index.item()
-        ...
-        ...     p = genotype[variant_idx].compute()["probs"]
-        ...     # For unphased genotypes only.
-        ...     e = allele_expectation(bgen, variant_idx)
-        ...     f = allele_frequency(e)
-        ...
-        ...     alleles = variant["allele_ids"].item().split(",")
+        >>>
+        >>> # Download an example
+        >>> example = example_files("example.32bits.bgen")
+        >>> filepath = example.filepath
+        >>>
+        >>> bgen = read_bgen(filepath, verbose=False)
+        >>>
+        >>> variants = bgen["variants"]
+        >>> samples = bgen["samples"]
+        >>> genotype = bgen["genotype"]
+        >>>
+        >>> variant = variants[variants["rsid"] == "RSID_6"].compute()
+        >>> variant_idx = variant.index.item()
+        >>>
+        >>> p = genotype[variant_idx].compute()["probs"]
+        >>> # For unphased genotypes only.
+        >>> e = allele_expectation(bgen, variant_idx)
+        >>> f = allele_frequency(e)
+        >>>
+        >>> alleles = variant["allele_ids"].item().split(",")
         >>> print(alleles[0] + ": {}".format(f[0]))
         A: 229.23103218810434
         >>> print(alleles[1] + ": {}".format(f[1]))
@@ -48,6 +49,9 @@ def allele_frequency(expec):
         >>> print(variant)
                 id    rsid chrom   pos  nalleles allele_ids  vaddr
         4  SNPID_6  RSID_6    01  6000         2        A,G  19377
+        >>>
+        >>> # Clean-up the example
+        >>> example.close()
     """
     expec = asarray(expec, float)
     if expec.ndim != 2:
@@ -75,6 +79,34 @@ def compute_dosage(expec, alt=None):
 
     Examples
     --------
+    .. doctest::
+
+        >>> from bgen_reader import allele_expectation, compute_dosage
+        >>> from bgen_reader import example_files, read_bgen
+        >>>
+        >>> # Download an example
+        >>> example = example_files("example.32bits.bgen")
+        >>> filepath = example.filepath
+        >>>
+        >>> # Read the example
+        >>> bgen = read_bgen(filepath, verbose=False)
+        >>>
+        >>> # Extract the allele expectations of fourth variant
+        >>> variant_idx = 3
+        >>> e = allele_expectation(bgen, variant_idx)
+        >>>
+        >>> # Compute the dosage when considering the first allele
+        >>> # as the reference/alternative one.
+        >>> alt_allele_idx = 0
+        >>> d = compute_dosage(e, alt=alt_allele_idx)
+        >>>
+        >>> # Print the dosage of the first five samples only.
+        >>> print(d[:5])
+        [0.03814692 1.99017334 1.98254448 0.99652101 0.98846437]
+        >>>
+        >>> # Clean-up the example
+        >>> example.close()
+
     .. doctest::
 
         >>> from pandas import DataFrame, option_context

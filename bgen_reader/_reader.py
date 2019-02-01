@@ -72,10 +72,12 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
 
     metafile_filepath = _get_valid_metafile_filepath(filepath, metafile_filepath)
     if not os.path.exists(metafile_filepath):
-        print(
-            f"We will create the metafile `{metafile_filepath}`. This file will speed\n"
-            "up further reads and only need to be created once. Please, bear with me :)"
-        )
+        if verbose:
+            print(
+                f"We will create the metafile `{metafile_filepath}`. This file will "
+                "speed up further\nreads and only need to be created once. So, please, "
+                "bear with me."
+            )
         create_metafile(filepath, metafile_filepath, verbose)
 
     samples = get_samples(filepath, samples_filepath, verbose)
