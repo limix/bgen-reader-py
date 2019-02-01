@@ -79,6 +79,9 @@ def compute_dosage(expec, alt=None):
 
     Examples
     --------
+
+    First a quick-start example.
+
     .. doctest::
 
         >>> from bgen_reader import allele_expectation, compute_dosage
@@ -106,6 +109,9 @@ def compute_dosage(expec, alt=None):
         >>>
         >>> # Clean-up the example
         >>> example.close()
+
+    Now a more complete example showing the genotype probabilities, allele expectations
+    and frequencies, and dosage.
 
     .. doctest::
 
