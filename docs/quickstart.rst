@@ -4,7 +4,7 @@ Quick-start
 
 We first download the ``example.bgen``, ``haplotypes.bgen``, and ``complex.bgen`` files:
 
-.. doctest::
+.. code-block:: python
 
     >>> from bgen_reader import download
     >>>
@@ -137,17 +137,18 @@ alleles, as well as phased\ *ness*.
    >>>
    >>> # Note how the number of alleles very widely across loci.
    >>> print(bgen["variants"].compute())
-        id rsid chrom  pos  nalleles                            allele_ids  vaddr
-   0         V1    01    1         2                                   A,G     98
-   1  V2.1   V2    01    2         2                                   A,G    175
-   2         V3    01    3         2                                   A,G    232
-   3         M4    01    4         3                                 A,G,T    305
-   4         M5    01    5         2                                   A,G    381
-   5         M6    01    7         4                            A,G,GT,GTT    461
-   6         M7    01    7         6                 A,G,GT,GTT,GTTT,GTTTT    557
-   7         M8    01    8         7          A,G,GT,GTT,GTTT,GTTTT,GTTTTT    663
-   8         M9    01    9         8  A,G,GT,GTT,GTTT,GTTTT,GTTTTT,GTTTTTT    783
-   9        M10    01   10         2                                   A,G    863
+         id rsid chrom  pos  nalleles                            allele_ids  vaddr
+   0          V1    01    1         2                                   A,G     98
+   1   V2.1   V2    01    2         2                                   A,G    175
+   2          V3    01    3         2                                   A,G    232
+   3          M4    01    4         3                                 A,G,T    305
+   ..   ...  ...   ...  ...       ...                                   ...    ...
+   6          M7    01    7         6                 A,G,GT,GTT,GTTT,GTTTT    557
+   7          M8    01    8         7          A,G,GT,GTT,GTTT,GTTTT,GTTTTT    663
+   8          M9    01    9         8  A,G,GT,GTT,GTTT,GTTTT,GTTTTT,GTTTTTT    783
+   9         M10    01   10         2                                   A,G    863
+   <BLANKLINE>
+   [10 rows x 7 columns]
    >>> print(bgen["samples"])
    0    sample_0
    1    sample_1

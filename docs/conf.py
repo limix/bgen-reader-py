@@ -1,7 +1,5 @@
 import time
 
-import sphinx_rtd_theme
-
 
 def _get_version():
     import bgen_reader
@@ -50,9 +48,12 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "conf.py"]
 
 pygments_style = "default"
 
-html_theme = "sphinx_rtd_theme"
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-html_sidebars = {"**": ["relations.html", "searchbox.html"]}
+html_theme = "bootstrap-limix"
+html_theme_options = {
+    "logo_only": False,
+    "display_version": True,
+    "style_external_links": True,
+}
 htmlhelp_basename = "{}doc".format(project)
 
 intersphinx_mapping = {
