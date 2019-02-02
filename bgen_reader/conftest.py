@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import pytest
 
 
-def pytest_sessionstart(*args, **kwargs):
+def pytest_configure(*_):
     import doctest
 
     _compatibility()
