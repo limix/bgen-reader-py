@@ -1,6 +1,6 @@
 # bgen-reader
 
-[![Travis](https://img.shields.io/travis/limix/bgen-reader-py.svg?style=flat-square&label=linux%20%2F%20macos%20build)](https://travis-ci.org/limix/bgen-reader-py) [![AppVeyor](https://img.shields.io/appveyor/ci/Horta/bgen-reader-py.svg?style=flat-square&label=windows%20build)](https://ci.appveyor.com/project/Horta/bgen-reader-py) [![Doc](https://readthedocs.org/projects/bgen-reader/badge/?version=latest&style=flat-square)](https://bgen-reader.readthedocs.io)
+[![Travis](https://img.shields.io/travis/com/limix/bgen-reader-py.svg?style=flat-square&label=linux%20%2F%20macos%20build)](https://travis-ci.com/limix/bgen-reader-py) [![AppVeyor](https://img.shields.io/appveyor/ci/Horta/bgen-reader-py.svg?style=flat-square&label=windows%20build)](https://ci.appveyor.com/project/Horta/bgen-reader-py) [![Doc](https://readthedocs.org/projects/bgen-reader/badge/?version=latest&style=flat-square)](https://bgen-reader.readthedocs.io)
 
 A [bgen file format](http://www.well.ox.ac.uk/~gav/bgen_format/) reader.
 
@@ -16,7 +16,7 @@ as well as their optional compressed formats.
 
 ## Install
 
-It can be installed vi [conda](https://conda.io/docs/)
+It can be installed via [conda](https://conda.io/docs/)
 
 ```bash
 conda install -c conda-forge bgen-reader

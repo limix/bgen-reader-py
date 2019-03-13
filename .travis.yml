@@ -3,7 +3,7 @@ python: 3.6
 env:
   global:
   - PKG_NAME=bgen_reader
-  - CIBW_SKIP="cp27-* cp34-* cp35-* *-manylinux1_i686"
+  - CIBW_SKIP="cp27-* cp34-* cp35-*"
   - CIBW_BEFORE_BUILD_LINUX=ci/before-build-linux
   - CIBW_BEFORE_BUILD_MACOS=ci/before-build-macos
   - CIBW_TEST_COMMAND="python -c \"import $PKG_NAME; import sys; sys.exit($PKG_NAME.test())\""
@@ -15,11 +15,12 @@ matrix:
     - os: osx
       language: generic
       before_install:
-        - brew update
-        - brew outdated python || brew upgrade python
-        - brew unlink python && brew link python
-        - brew install zlib
+        - HOMEBREW_NO_AUTO_UPDATE=1 brew unlink python2
+        - HOMEBREW_NO_AUTO_UPDATE=1 brew install python3 zlib
+        - export PATH=$(brew --prefix)/bin:$(brew --prefix)/sbin:$PATH
         - export PATH="/usr/local/opt/python/libexec/bin:$PATH"
+        - ln -s $(brew --prefix)/bin/python3 $(brew --prefix)/bin/python
+        - ln -s $(brew --prefix)/bin/pip3 $(brew --prefix)/bin/pip
         - hash -r
         - python -m pip install --upgrade pip setuptools wheel
 addons:
@@ -50,7 +51,7 @@ script:
 notifications:
   email:
     recipients:
-    - danilo.horta@gmail.com
+    - danilo.horta@pm.me
     on_success: never
     on_failure: always
 deploy:
