@@ -79,7 +79,11 @@ def get_partition_size(bgen_filepath, metafile_filepath):
         nvariants = lib.bgen_nvariants(bgen)
     with bgen_metafile(metafile_filepath) as mf:
         nparts = lib.bgen_metafile_npartitions(mf)
-    return nvariants // nparts
+    return _ceildiv(nvariants, nparts)
+
+
+def _ceildiv(a, b):
+    return -(-a // b)
 
 
 def _read_allele_ids(metadata):
