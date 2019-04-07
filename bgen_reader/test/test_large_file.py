@@ -33,8 +33,8 @@ def test_large_file(capsys):
         assert_equal(g["probs"].shape, (415, 3))
 
         assert_allclose(
-            g["probs"][410, :], [0.32562752727550165, 0.6743724727244984, 0.0]
+            g["probs"][410, :], [0.0, 0.4268863965819791, 0.5731136034180209]
         )
         assert_equal(g["phased"], False)
-        assert_equal(g["missing"][3], True)
+        assert_equal(g["missing"][3], False)
         assert_equal(g["ploidy"][3], 2)
