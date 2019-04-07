@@ -34,7 +34,7 @@ def _get_read_genotype(bgen_filepath, metafile_filepath):
         with bgen_metafile(metafile_filepath) as mf:
             nparts = lib.bgen_metafile_npartitions(mf)
 
-        part_size = nvariants // nparts
+        part_size = _ceildiv(nvariants, nparts)
         part = i // part_size
         index_base = (i % part_size) * part_size
         j = i % part_size
@@ -91,3 +91,7 @@ def _estimate_best_nsub_parts(nsamples, part_size):
     vs = 16
     iv = bs / (vs * nsamples)
     return max(int(part_size / iv), 1)
+
+
+def _ceildiv(a, b):
+    return -(-a // b)
