@@ -28,11 +28,13 @@ def test_large_file(capsys):
         assert_equal(df.iloc[0]["vaddr"], 73115140)
 
         assert_equal(samples[382], "SAMEA2586986")
-        assert_equal(df.index[0], 283571)
+        assert_equal(df.index[0], 283970)
         g = genotype[df.index[0]].compute()
         assert_equal(g["probs"].shape, (415, 3))
 
-        assert_allclose(g["probs"][4, :], [0.0, 0.4268863965819791, 0.5731136034180209])
-        assert_equal(g["phased"], 0)
-        assert_equal(g["missing"][3], 0)
+        assert_allclose(
+            g["probs"][410, :], [0.32562752727550165, 0.6743724727244984, 0.0]
+        )
+        assert_equal(g["phased"], False)
+        assert_equal(g["missing"][3], True)
         assert_equal(g["ploidy"][3], 2)
