@@ -1,5 +1,5 @@
 import warnings
-from numpy import asarray, newaxis, full
+from numpy import asarray, newaxis
 
 from ._helper import genotypes_to_allele_counts, get_genotypes
 from ._dask import array_shape_reveal
@@ -95,7 +95,6 @@ def compute_dosage(expec, alt=None):
      [0.01263467 0.09661863 0.00869752 ... 0.00643921 0.00494384 0.01504517]
      [0.99185182 1.94860838 0.99734497 ... 0.02914425 1.97827146 0.9515991 ]]
     """
-    freq = allele_frequency(expec)
     if alt is None:
         return expec[..., -1]
     try:

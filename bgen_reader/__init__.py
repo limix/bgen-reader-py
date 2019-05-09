@@ -31,6 +31,8 @@ from ._testit import test
 
 try:
     from ._ffi import ffi as _
+
+    assert _ is not None
 except Exception as e:
     msg = "\nIt is likely caused by a broken installation of this package."
     msg += "\nPlease, make sure you have a C compiler and try to uninstall"
