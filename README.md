@@ -14,6 +14,8 @@ a low-memory footprint reader that efficiently reads bgen files.
 It fully supports the bgen format specifications: 1.2 and 1.3;
 as well as their optional compressed formats.
 
+Questions? Please, visit the [bgen-reader forum](https://forum.limix.io/category/5/bgen-reader-support) 💬.
+
 ## Install
 
 It can be installed via [conda](https://conda.io/docs/)
