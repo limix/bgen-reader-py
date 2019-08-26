@@ -34,14 +34,14 @@ def allele_frequency(expec):
         >>> genotype = bgen["genotype"]
         >>>
         >>> variant = variants[variants["rsid"] == "RSID_6"].compute()
-        >>> variant_idx = variant.index.item()
+        >>> variant_idx = variant.index.values[0]
         >>>
         >>> p = genotype[variant_idx].compute()["probs"]
         >>> # For unphased genotypes only.
         >>> e = allele_expectation(bgen, variant_idx)
         >>> f = allele_frequency(e)
         >>>
-        >>> alleles = variant["allele_ids"].item().split(",")
+        >>> alleles = variant["allele_ids"].values[0].split(",")
         >>> print(alleles[0] + ": {}".format(f[0]))
         A: 229.23103218810434
         >>> print(alleles[1] + ": {}".format(f[1]))
@@ -177,7 +177,7 @@ def compute_dosage(expec, alt=None):
         sample_500  0.00021  0.98431  0.01547
         <BLANKLINE>
         [500 rows x 3 columns]
-        >>> alleles = variant["allele_ids"].item().split(",")
+        >>> alleles = variant["allele_ids"].values[0].split(",")
         >>> e = DataArray(
         ...     allele_expectation(bgen, variant_idx),
         ...     name="expectation",
@@ -199,8 +199,8 @@ def compute_dosage(expec, alt=None):
         sample_500  0.98474  1.01526
         <BLANKLINE>
         [500 rows x 2 columns]
-        >>> rsid = variant["rsid"].item()
-        >>> chrom = variant["chrom"].item()
+        >>> rsid = variant["rsid"].values[0]
+        >>> chrom = variant["chrom"].values[0]
         >>> variant_name = f"{chrom}:{rsid}"
         >>> f = DataFrame(allele_frequency(e), columns=[variant_name], index=alleles)
         >>> f.index.name = "allele"
@@ -210,7 +210,7 @@ def compute_dosage(expec, alt=None):
         allele
         A       305.97218
         G       194.02782
-        >>> alt = f.idxmin().item()
+        >>> alt = f.idxmin().values[0]
         >>> alt_idx = alleles.index(alt)
         >>> d = compute_dosage(e, alt=alt_idx).to_series()
         >>> d = DataFrame(d.values, columns=[f"alt={alt}"], index=d.index)
@@ -286,14 +286,14 @@ def allele_expectation(bgen, variant_idx):
         >>> # This `compute` call will return a pandas data frame,
         >>> variant = variants[variants["rsid"] == "RSID_6"].compute()
         >>> # from which we retrieve the variant index.
-        >>> variant_idx = variant.index.item()
+        >>> variant_idx = variant.index.values[0]
         >>> print(variant)
                 id    rsid chrom   pos  nalleles allele_ids  vaddr
         4  SNPID_6  RSID_6    01  6000         2        A,G  19377
         >>> genotype = bgen["genotype"]
         >>> # Samples is a pandas series, and we retrieve the
         >>> # sample index from the sample name.
-        >>> sample_idx = samples[samples == "sample_005"].index.item()
+        >>> sample_idx = samples[samples == "sample_005"].index.values[0]
         >>>
         >>> genotype = bgen["genotype"]
         >>> # This `compute` call will return a dictionary from which
@@ -307,7 +307,7 @@ def allele_expectation(bgen, variant_idx):
         >>> e = allele_expectation(bgen, variant_idx)[sample_idx]
         >>>
         >>> genotype = bgen["genotype"]
-        >>> alleles = variant["allele_ids"].item().split(",")
+        >>> alleles = variant["allele_ids"].values[0].split(",")
         >>>
         >>> genotype = bgen["genotype"]
         >>>
@@ -339,7 +339,7 @@ def allele_expectation(bgen, variant_idx):
     if geno["phased"]:
         raise ValueError("Allele expectation is define for unphased genotypes only.")
 
-    nalleles = bgen["variants"].loc[variant_idx, "nalleles"].compute().item()
+    nalleles = bgen["variants"].loc[variant_idx, "nalleles"].compute().values[0]
     genotypes = get_genotypes(geno["ploidy"], nalleles)
     expec = []
     for i in range(len(genotypes)):

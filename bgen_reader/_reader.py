@@ -79,6 +79,13 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
                 "bear with me."
             )
         create_metafile(filepath, metafile_filepath, verbose)
+    elif os.path.getmtime(metafile_filepath) < os.path.getmtime(filepath):
+        if verbose:
+            msg = f"File `{filepath}` has been modified after the creation of `{metafile_filepath}`.\n"
+            msg += "We will therefore recreate the metadata file. So, please, bear with me."
+            print(msg)
+        os.unlink(metafile_filepath)
+        create_metafile(filepath, metafile_filepath, verbose)
 
     samples = get_samples(filepath, samples_filepath, verbose)
     variants = map_metadata(filepath, metafile_filepath)

@@ -166,7 +166,7 @@ alleles, as well as phased\ *ness*.
    >>> print(ploidy)
    2
    >>> # and number of alleles equal to
-   >>> nalleles = bgen["variants"].loc[8, "nalleles"].compute().item()
+   >>> nalleles = bgen["variants"].loc[8, "nalleles"].compute().values[0]
    >>> print(nalleles)
    8
    >>> # Its probability distribution is given by the array
