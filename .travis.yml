@@ -14,7 +14,8 @@ matrix:
       services:
         - docker
     - os: osx
-      language: generic
+      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
+      language: shell       # 'language: python' is an error on Travis CI macOS
 addons:
   apt:
     packages:
