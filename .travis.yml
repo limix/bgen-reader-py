@@ -64,3 +64,4 @@ deploy:
     tags: true
     repo: limix/bgen-reader-py
     branch: master
+    skip_existing: true
