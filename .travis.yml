@@ -7,22 +7,21 @@ env:
   - CIBW_BEFORE_BUILD_LINUX=ci/before-build-linux
   - CIBW_BEFORE_BUILD_MACOS=ci/before-build-macos
   - CIBW_TEST_COMMAND="python -c \"import $PKG_NAME; import sys; sys.exit($PKG_NAME.test())\""
+  - URL=https://raw.githubusercontent.com/horta/ci/master
 matrix:
   include:
-    - sudo: required
+    - os: linux
+      sudo: required
       services:
         - docker
     - os: osx
-      language: generic
+      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
+      language: shell       # 'language: python' is an error on Travis CI macOS
       before_install:
-        - HOMEBREW_NO_AUTO_UPDATE=1 brew unlink python2
-        - HOMEBREW_NO_AUTO_UPDATE=1 brew install python3 zlib
-        - export PATH=$(brew --prefix)/bin:$(brew --prefix)/sbin:$PATH
-        - export PATH="/usr/local/opt/python/libexec/bin:$PATH"
-        - ln -s $(brew --prefix)/bin/python3 $(brew --prefix)/bin/python
-        - ln -s $(brew --prefix)/bin/pip3 $(brew --prefix)/bin/pip
-        - hash -r
-        - python -m pip install --upgrade pip setuptools wheel
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade virtualenv
+        - virtualenv $HOME/venv # virtualenv will use Python 3
+        - source $HOME/venv/bin/activate
 addons:
   apt:
     packages:
@@ -33,15 +32,17 @@ install:
 - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
 - bash <(curl -fsSL https://raw.githubusercontent.com/horta/almosthere/master/install)
 - bash <(curl -fsSL https://raw.githubusercontent.com/limix/bgen/master/install)
+- bash <(curl -fsSL $URL/travis-check-readme.sh)
+- bash <(curl -fsSL $URL/travis-py-min-deps.sh)
+- bash <(curl -fsSL $URL/travis-py-check-style.sh)
+- bash <(curl -fsSL $URL/travis-py-check-black.sh)
+- bash <(curl -fsSL $URL/travis-py-dev-test.sh)
+- bash <(curl -fsSL $URL/travis-py-install-test.sh)
+- bash <(curl -fsSL $URL/travis-py-doctest.sh)
 script:
-- |
-  if [ "${TRAVIS_OS_NAME}" == "osx" ]; then
-    sudo mkdir -p /usr/local/man
-    sudo chown -R "${USER}:admin" /usr/local/man
-  fi
+- bash <(curl -fsSL $URL/travis-py-sdist-test.sh)
 - git clean -xdf
-- bash <(curl -fsSL https://raw.githubusercontent.com/horta/ci/master/travis.sh)
-- python -m pip install cibuildwheel>=0.10.0
+- python -m pip install cibuildwheel>=0.12.0
 - cibuildwheel --output-dir wheelhouse
 - |
   if [ "${TRAVIS_TAG:-}" != "" ]; then
@@ -63,4 +64,3 @@ deploy:
     tags: true
     repo: limix/bgen-reader-py
     branch: master
-    python: 3.6
