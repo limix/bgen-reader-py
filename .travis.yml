@@ -17,7 +17,12 @@ matrix:
       osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
       language: shell       # 'language: python' is an error on Travis CI macOS
       before_install:
+        - which python
         - which python3
+        - pip3 install virtualenv -U
+        - virtualenv -p python3 venv
+        - source venv/bin/activate
+        - which python
 addons:
   apt:
     packages:
