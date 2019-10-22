@@ -10,7 +10,8 @@ env:
   - URL=https://raw.githubusercontent.com/horta/ci/master
 matrix:
   include:
-    - sudo: required
+    - os: linux
+      sudo: required
       services:
         - docker
     - os: osx
@@ -18,11 +19,15 @@ matrix:
       language: shell       # 'language: python' is an error on Travis CI macOS
       before_install:
         - which python
+        - python --version
         - which python3
-        - pip3 install virtualenv -U
+        - which pip
+        - pip3 install --upgrade pip
+        - pip3 install --upgrade virtualenv
         - virtualenv -p python3 venv
         - source venv/bin/activate
         - which python
+        - python --version
 addons:
   apt:
     packages:
@@ -65,4 +70,3 @@ deploy:
     tags: true
     repo: limix/bgen-reader-py
     branch: master
-    python: 3.6
