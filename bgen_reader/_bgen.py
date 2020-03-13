@@ -6,21 +6,21 @@ from ._string import make_sure_bytes
 
 @contextmanager
 def bgen_file(filepath):
-    bgen = lib.bgen_open(make_sure_bytes(filepath))
+    bgen = lib.bgen_file_open(make_sure_bytes(filepath))
     if bgen == ffi.NULL:
         raise RuntimeError(f"Could not open {filepath}.")
     try:
         yield bgen
     finally:
-        lib.bgen_close(bgen)
+        lib.bgen_file_close(bgen)
 
 
 @contextmanager
 def bgen_metafile(filepath):
-    mf = lib.bgen_open_metafile(make_sure_bytes(filepath))
-    if mf == ffi.NULL:
+    metafile = lib.bgen_metafile_open(make_sure_bytes(filepath))
+    if metafile == ffi.NULL:
         raise RuntimeError(f"Could not open {filepath}.")
     try:
-        yield mf
+        yield metafile
     finally:
-        lib.bgen_close_metafile(mf)
+        lib.bgen_metafile_close(metafile)

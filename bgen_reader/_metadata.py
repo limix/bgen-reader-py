@@ -54,13 +54,12 @@ def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
         raise ValueError(f"The file {metafile_filepath} already exists.")
 
     with bgen_file(bgen_filepath) as bgen:
-        nparts = _estimate_best_npartitions(lib.bgen_nvariants(bgen))
-        metafile = lib.bgen_create_metafile(bgen, metafile_filepath, nparts, verbose)
+        nparts = _estimate_best_npartitions(lib.bgen_file_nvariants(bgen))
+        metafile = lib.bgen_metafile_create(bgen, metafile_filepath, nparts, verbose)
         if metafile == ffi.NULL:
             raise RuntimeError(f"Error while creating metafile: {metafile_filepath}.")
 
-        if lib.bgen_close_metafile(metafile) != 0:
-            raise RuntimeError(f"Error while closing metafile: {metafile_filepath}.")
+        lib.bgen_metafile_close(metafile)
 
 
 def _estimate_best_npartitions(nvariants):

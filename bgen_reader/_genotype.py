@@ -13,7 +13,7 @@ from ._partition import read_partition
 
 def map_genotype(bgen_filepath, metafile_filepath, verbose):
     with bgen_file(bgen_filepath) as bgen:
-        nvariants = lib.bgen_nvariants(bgen)
+        nvariants = lib.bgen_file_nvariants(bgen)
 
     rg = _get_read_genotype(bgen_filepath, metafile_filepath)
 
@@ -29,8 +29,9 @@ def _get_read_genotype(bgen_filepath, metafile_filepath):
     def _read_genotype(i):
 
         with bgen_file(bgen_filepath) as bgen:
-            nsamples = lib.bgen_nsamples(bgen)
-            nvariants = lib.bgen_nvariants(bgen)
+            nsamples = lib.bgen_file_nsamples(bgen)
+            nvariants = lib.bgen_file_nvariants(bgen)
+
         with bgen_metafile(metafile_filepath) as mf:
             nparts = lib.bgen_metafile_npartitions(mf)
 
@@ -65,15 +66,21 @@ def read_genotype_partition(
     genotypes = []
     for vaddr in vaddrs:
         with bgen_file(bgen_filepath) as bgen:
-            nsamples = lib.bgen_nsamples(bgen)
-            vg = lib.bgen_open_genotype(bgen, vaddr)
-            ncombs = lib.bgen_ncombs(vg)
+            nsamples = lib.bgen_file_nsamples(bgen)
+            vg = lib.bgen_file_open_genotype(bgen, vaddr)
+            if vg == ffi.NULL:
+                raise RuntimeError(f"Could not open genotype (offset {vaddr})")
+            ncombs = lib.bgen_genotype_ncombs(vg)
             p = full((nsamples, ncombs), nan, dtype=float64)
-            lib.bgen_read_genotype(bgen, vg, ffi.cast("double *", p.ctypes.data))
-            phased = bool(lib.bgen_phased(vg))
-            ploidy = asarray([lib.bgen_ploidy(vg, i) for i in range(nsamples)], int)
-            missing = asarray([lib.bgen_missing(vg, i) for i in range(nsamples)], bool)
-            lib.bgen_close_genotype(vg)
+            lib.bgen_genotype_read(vg, ffi.cast("double *", p.ctypes.data))
+            phased = bool(lib.bgen_genotype_phased(vg))
+            ploidy = asarray(
+                [lib.bgen_genotype_ploidy(vg, i) for i in range(nsamples)], int
+            )
+            missing = asarray(
+                [lib.bgen_genotype_missing(vg, i) for i in range(nsamples)], bool
+            )
+            lib.bgen_genotype_close(vg)
             genotypes.append(
                 {"probs": p, "phased": phased, "ploidy": ploidy, "missing": missing}
             )

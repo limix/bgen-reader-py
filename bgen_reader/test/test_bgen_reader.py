@@ -22,7 +22,7 @@ def test_bgen_samples_inside_bgen():
         data = read_bgen(filepath, verbose=False)
         samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
         samples = Series(samples, dtype=str, name="id")
-        assert_(all(data["samples"] == samples))
+        assert all(data["samples"] == samples)
 
 
 def test_bgen_samples_not_present():
@@ -30,7 +30,7 @@ def test_bgen_samples_not_present():
         data = read_bgen(filepath, verbose=False)
         samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
         samples = Series(samples, dtype=str, name="id")
-        assert_(all(data["samples"] == samples))
+        assert all(data["samples"] == samples)
 
 
 def test_bgen_samples_specify_samples_file():
@@ -38,10 +38,9 @@ def test_bgen_samples_specify_samples_file():
         data = read_bgen(filepaths[0], samples_filepath=filepaths[1], verbose=False)
         samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
         samples = Series(samples, dtype=str, name="id")
-        assert_(all(data["samples"] == samples))
+        assert all(data["samples"] == samples)
 
 
-@pytest.mark.xfail
 def test_bgen_samples_outside_bgen_unreadable():
     with example_files(["complex.23bits.bgen", "complex.sample"]) as filepaths:
         with noread_permission(filepaths[1]):
@@ -49,7 +48,6 @@ def test_bgen_samples_outside_bgen_unreadable():
                 read_bgen(filepaths[0], samples_filepath=filepaths[1], verbose=False)
 
 
-@pytest.mark.xfail
 def test_bgen_file_not_readable():
     with example_files("haplotypes.bgen") as filepath:
         with noread_permission(filepath):
@@ -81,7 +79,6 @@ def test_metafile_wrong_filepath():
                 read_bgen(filepath, metafile_filepath=fp, verbose=False)
 
 
-@pytest.mark.xfail
 def test_metafile_not_provided_no_permission_to_create():
     with example_files("haplotypes.bgen") as filepath:
         path = os.path.dirname(filepath)
@@ -113,8 +110,8 @@ def noread_permission(path):
 def test_bgen_reader_lazy_types():
     with example_files("haplotypes.bgen") as filepath:
         bgen = read_bgen(filepath, verbose=False)
-        assert_(isinstance(bgen["genotype"][0], Delayed))
-        assert_(isinstance(bgen["variants"], dd.DataFrame))
+        assert isinstance(bgen["genotype"][0], Delayed)
+        assert isinstance(bgen["variants"], dd.DataFrame)
 
 
 def test_bgen_reader_phased_genotype():
