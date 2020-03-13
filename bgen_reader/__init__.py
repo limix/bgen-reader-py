@@ -27,20 +27,19 @@ from ._metadata import create_metafile
 from ._reader import read_bgen
 from ._testit import test
 
-_ffi_err = """
+try:
+    from ._ffi import ffi
+
+    del ffi
+except Exception as e:
+    _ffi_err = """
 It is likely caused by a broken installation of this package.
 Please, make sure you have a C compiler and try to uninstall
 and reinstall the package again."""
 
-try:
-    from ._ffi import ffi as _
+    raise RuntimeError(str(e) + _ffi_err)
 
-    assert _ is not None
-except Exception as e:
-    e.msg = e.msg + _ffi_err
-    raise e
-
-__version__ = "3.0.7"
+__version__ = "4.0.0"
 
 __all__ = [
     "__version__",
