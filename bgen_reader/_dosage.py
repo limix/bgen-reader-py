@@ -142,7 +142,7 @@ def compute_dosage(expec, alt=None):
         >>> metageno = DataFrame({k: geno[k] for k in ["ploidy", "missing"]},
         ...                      index=samples)
         >>> metageno.index.name = "sample"
-        >>> print(metageno) # doctest: +IGNORE_EXCEPTION_DETAIL, +NORMALIZE_WHITESPACE
+        >>> print(metageno)
                     ploidy  missing
         sample
         sample_001       2    False
@@ -163,7 +163,7 @@ def compute_dosage(expec, alt=None):
         ...     dims=["sample", "genotype"],
         ... )
         >>> # Print the genotype probabilities.
-        >>> print(p.to_series().unstack(level=-1)) # doctest: +IGNORE_EXCEPTION_DETAIL, +NORMALIZE_WHITESPACE
+        >>> print(p.to_series().unstack(level=-1))
         genotype          0        1        2
         sample
         sample_001  0.00488  0.02838  0.96674
@@ -185,7 +185,7 @@ def compute_dosage(expec, alt=None):
         ...     dims=["sample", "allele"],
         ... )
         >>> # Print the allele expectations.
-        >>> print(e.to_series().unstack(level=-1)) # doctest: +IGNORE_EXCEPTION_DETAIL, +NORMALIZE_WHITESPACE
+        >>> print(e.to_series().unstack(level=-1))
         allele            A        G
         sample
         sample_001  0.03815  1.96185

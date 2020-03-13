@@ -38,8 +38,8 @@ int                          bgen_metafile_close(struct bgen_metafile const* met
 
 struct bgen_partition;
 void                       bgen_partition_destroy(struct bgen_partition const* partition);
-struct bgen_variant const* bgen_partition_get(struct bgen_partition const* partition,
-                                              uint32_t                     index);
+struct bgen_variant const* bgen_partition_get_variant(struct bgen_partition const* partition,
+                                                      uint32_t                     index);
 uint32_t                   bgen_partition_nvariants(struct bgen_partition const* partition);
 
 struct bgen_samples;
