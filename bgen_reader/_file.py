@@ -4,6 +4,16 @@ import stat
 import tempfile
 from os.path import exists
 from pathlib import Path
+from xdg import XDG_CACHE_HOME
+
+BGEN_CACHE_HOME = XDG_CACHE_HOME / "bgen"
+
+
+def make_sure_dir_exist(dirpath: Path):
+    dirpath.mkdir(parents=True, exist_ok=True)
+
+
+make_sure_dir_exist(BGEN_CACHE_HOME)
 
 
 def assert_file_exist(filepath):
@@ -21,7 +31,12 @@ def assert_file_readable(filepath):
         f.read(1)
 
 
-def permission_write_file(filepath):
+def assert_file_readable2(filepath: Path):
+    with open(filepath, "rb") as f:
+        f.read(1)
+
+
+def is_file_writable(filepath):
     try:
         _touch(filepath)
     except PermissionError:
@@ -32,22 +47,30 @@ def permission_write_file(filepath):
     return True
 
 
-def _get_temp_filepath(folder, filename):
-    folder = os.path.abspath(folder)
-    folder = os.path.normpath(folder)
-    folder_pathname = "%".join(folder.split(os.sep)) + filename
-    return os.path.join(tempfile.mkdtemp(), folder_pathname)
+def _get_temp_filepath(path: Path):
+    return tempfile.mkdtemp() / Path("%" + "%".join(path.parts))
 
 
-def _touch(fname, mode=0o666, dir_fd=None, **kwargs):
-    """ Touch a file.
+def path_to_filename(path: Path):
+    drive, rest = path.parts[0], path.parts[1:]
+    drive = drive.replace("/", "").replace("\\", "").replace(":", "")
+    if len(drive) == 0:
+        parts = rest
+    else:
+        parts = (drive,) + rest
+    return Path("%".join(parts))
+
+
+def _touch(filepath, mode=0o666, dir_fd=None, **kwargs):
+    """
+    Touch a file.
 
     Credits to <https://stackoverflow.com/a/1160227>.
     """
     flags = os.O_CREAT | os.O_APPEND
-    with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
+    with os.fdopen(os.open(filepath, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
         os.utime(
-            f.fileno() if os.utime in os.supports_fd else fname,
+            f.fileno() if os.utime in os.supports_fd else filepath,
             dir_fd=None if os.supports_fd else dir_fd,
             **kwargs,
         )
@@ -55,3 +78,4 @@ def _touch(fname, mode=0o666, dir_fd=None, **kwargs):
 
 def _is_group_readable(filepath):
     return bool(os.stat(filepath).st_mode & stat.S_IRGRP)
+

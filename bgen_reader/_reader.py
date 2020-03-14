@@ -7,7 +7,11 @@ from ._file import (
     assert_file_exist,
     assert_file_exist2,
     assert_file_readable,
-    permission_write_file,
+    is_file_writable,
+    assert_file_readable2,
+    BGEN_CACHE_HOME,
+    path_to_filename,
+    make_sure_dir_exist,
 )
 from ._genotype import create_genotypes
 from ._metadata import create_metafile
@@ -78,7 +82,7 @@ def read_bgen(
 
     filepath = Path(filepath)
     assert_file_exist2(filepath)
-    assert_file_readable(filepath)
+    assert_file_readable2(filepath)
 
     metafile_filepath = _get_valid_metafile_filepath(filepath, metafile_filepath)
     if not os.path.exists(metafile_filepath):
@@ -113,8 +117,8 @@ location, please use `bgen_reader.create_metafile`.
 """
 
 _metafile_nowrite_dir = """\
-You don't have permission to write to `{filepath}`.
-This might prevent speeding-up the reading process in future runs.
+You don't have permission to write `{filepath}`. This might prevent speeding-up the reading process
+in future runs.
 """
 
 
@@ -132,29 +136,17 @@ def _get_valid_metafile_filepath(bgen_filepath, metafile_filepath):
 
 
 def _infer_metafile_filepath(bgen_filepath):
-    metafile = _bgen_to_metafile_filepath(bgen_filepath)
-    if os.path.exists(metafile["filepath"]):
+    metafile = bgen_filepath.with_suffix(".metadata")
+    if metafile.exists():
         try:
-            assert_file_readable(metafile["filepath"])
-            return metafile["filepath"]
+            assert_file_readable2(metafile)
+            return metafile
         except RuntimeError as e:
             warnings.warn(str(e), UserWarning)
-            return _get_temp_filepath(metafile["dir"], metafile["filename"])
+            return BGEN_CACHE_HOME / path_to_filename(metafile)
     else:
-        if permission_write_file(metafile["filepath"]):
-            return metafile["filepath"]
-        else:
-            fp = metafile["filepath"]
-            warnings.warn(_metafile_nowrite_dir.format(filepath=fp), UserWarning)
-            return _get_temp_filepath(metafile["dir"], metafile["filename"])
+        if is_file_writable(metafile):
+            return metafile
 
-
-def _bgen_to_metafile_filepath(bgen_filepath):
-    metafile_filepath = os.path.abspath(bgen_filepath.with_suffix(".metadata"))
-    metafile_filename = os.path.basename(metafile_filepath)
-    metafile_dir = os.path.dirname(metafile_filepath)
-    return {
-        "filepath": metafile_filepath,
-        "dir": metafile_dir,
-        "filename": metafile_filename,
-    }
+        warnings.warn(_metafile_nowrite_dir.format(filepath=metafile), UserWarning)
+        return BGEN_CACHE_HOME / path_to_filename(metafile)
