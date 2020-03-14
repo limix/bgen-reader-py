@@ -11,7 +11,7 @@ from ._ffi import ffi, lib
 from ._partition import read_partition
 
 
-def map_genotype(bgen_filepath, metafile_filepath, verbose):
+def create_genotypes(bgen_filepath, metafile_filepath, verbose):
     with bgen_file(bgen_filepath) as bgen:
         nvariants = lib.bgen_file_nvariants(bgen)
 
@@ -39,7 +39,7 @@ def _get_read_genotype(bgen_filepath, metafile_filepath):
         part = i // part_size
         index_base = (i % part_size) * part_size
         j = i % part_size
-        p = read_partition(bgen_filepath, metafile_filepath, part, index_base)
+        p = read_partition(metafile_filepath, part, index_base)
         nsub_parts = _estimate_best_nsub_parts(nsamples, part_size)
         spart_size = max(1, part_size // nsub_parts)
         sub_part = j // spart_size

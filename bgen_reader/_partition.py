@@ -7,21 +7,21 @@ from pandas import DataFrame
 
 from ._bgen import bgen_file, bgen_metafile
 from ._ffi import ffi, lib
-from ._string import bgen_str_to_str, create_string
+from ._string import create_string
 
 
-def map_metadata(bgen_filepath, metafile_filepath):
+def create_variants(nvariants: int, metafile_filepath):
+
     with bgen_metafile(metafile_filepath) as mf:
-        nparts = lib.bgen_metafile_npartitions(mf)
-    with bgen_file(bgen_filepath) as bgen:
-        nvariants = lib.bgen_file_nvariants(bgen)
+        npartitions = lib.bgen_metafile_npartitions(mf)
+
     dfs = []
     index_base = 0
-    part_size = get_partition_size(bgen_filepath, metafile_filepath)
+    part_size = _get_partition_size(nvariants, npartitions)
     divisions = []
-    for i in range(nparts):
+    for i in range(npartitions):
         divisions.append(index_base)
-        d = delayed(read_partition)(bgen_filepath, metafile_filepath, i, index_base)
+        d = delayed(read_partition)(metafile_filepath, i, index_base)
         dfs.append(d)
         index_base += part_size
     divisions.append(nvariants - 1)
@@ -43,7 +43,7 @@ lock = RLock()
 
 
 @cached(cache, lock=lock)
-def read_partition(bgen_filepath, metafile_filepath, part, index_base):
+def read_partition(metafile_filepath, part, index_base):
     with bgen_metafile(metafile_filepath) as mf:
 
         metadata = lib.bgen_metafile_read_partition(mf, part)
@@ -53,7 +53,7 @@ def read_partition(bgen_filepath, metafile_filepath, part, index_base):
         nvariants = lib.bgen_metafile_nvariants(mf)
         variants = []
         for i in range(nvariants):
-            variant = lib.bgen_partition_get(metadata, i)
+            variant = lib.bgen_partition_get_variant(metadata, i)
             id_ = create_string(variant[0].id)
             rsid = create_string(variant[0].rsid)
             chrom = create_string(variant[0].chrom)
@@ -77,12 +77,8 @@ def read_partition(bgen_filepath, metafile_filepath, part, index_base):
     return variants
 
 
-def get_partition_size(bgen_filepath, metafile_filepath):
-    with bgen_file(bgen_filepath) as bgen:
-        nvariants = lib.bgen_file_nvariants(bgen)
-    with bgen_metafile(metafile_filepath) as mf:
-        nparts = lib.bgen_metafile_npartitions(mf)
-    return _ceildiv(nvariants, nparts)
+def _get_partition_size(nvariants: int, npartitions: int):
+    return _ceildiv(nvariants, npartitions)
 
 
 def _ceildiv(a, b):

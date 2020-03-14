@@ -1,19 +1,28 @@
 import os
 import warnings
-
+from ._bgen import bgen_file
+from ._ffi import lib
 from ._file import (
     _get_temp_filepath,
     assert_file_exist,
+    assert_file_exist2,
     assert_file_readable,
     permission_write_file,
 )
-from ._genotype import map_genotype
+from ._genotype import create_genotypes
 from ._metadata import create_metafile
-from ._partition import map_metadata
+from ._partition import create_variants
 from ._samples import get_samples
+from typing import Union
+from pathlib import Path
 
 
-def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=True):
+def read_bgen(
+    filepath: Union[str, Path],
+    metafile_filepath=None,
+    samples_filepath=None,
+    verbose=True,
+):
     r""" Read a given BGEN file.
 
     Parameters
@@ -67,7 +76,8 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
         [1. 0. 1. 0.]
     """
 
-    assert_file_exist(filepath)
+    filepath = Path(filepath)
+    assert_file_exist2(filepath)
     assert_file_readable(filepath)
 
     metafile_filepath = _get_valid_metafile_filepath(filepath, metafile_filepath)
@@ -87,9 +97,12 @@ def read_bgen(filepath, metafile_filepath=None, samples_filepath=None, verbose=T
         os.unlink(metafile_filepath)
         create_metafile(filepath, metafile_filepath, verbose)
 
+    with bgen_file(filepath) as bgen:
+        nvariants = lib.bgen_file_nvariants(bgen)
+
     samples = get_samples(filepath, samples_filepath, verbose)
-    variants = map_metadata(filepath, metafile_filepath)
-    genotype = map_genotype(filepath, metafile_filepath, verbose)
+    variants = create_variants(nvariants, metafile_filepath)
+    genotype = create_genotypes(filepath, metafile_filepath, verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
 
@@ -137,7 +150,7 @@ def _infer_metafile_filepath(bgen_filepath):
 
 
 def _bgen_to_metafile_filepath(bgen_filepath):
-    metafile_filepath = os.path.abspath(bgen_filepath + ".metadata")
+    metafile_filepath = os.path.abspath(bgen_filepath.with_suffix(".metadata"))
     metafile_filename = os.path.basename(metafile_filepath)
     metafile_dir = os.path.dirname(metafile_filepath)
     return {

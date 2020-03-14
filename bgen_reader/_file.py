@@ -3,9 +3,15 @@ import os
 import stat
 import tempfile
 from os.path import exists
+from pathlib import Path
 
 
 def assert_file_exist(filepath):
+    if not exists(filepath):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
+
+
+def assert_file_exist2(filepath: Path):
     if not exists(filepath):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
 

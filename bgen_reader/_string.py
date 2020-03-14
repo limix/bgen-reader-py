@@ -1,7 +1,10 @@
 from ._ffi import ffi, lib
+from pathlib import Path
 
 
 def make_sure_bytes(p):
+    if isinstance(p, Path):
+        return bytes(p)
     try:
         p = p.encode()
     except AttributeError:
