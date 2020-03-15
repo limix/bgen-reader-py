@@ -9,17 +9,6 @@ from ._string import create_string, make_sure_bytes
 
 
 @contextmanager
-def bgen_file(filepath):
-    bgen = lib.bgen_file_open(make_sure_bytes(filepath))
-    if bgen == ffi.NULL:
-        raise RuntimeError(f"Could not open {filepath}.")
-    try:
-        yield bgen
-    finally:
-        lib.bgen_file_close(bgen)
-
-
-@contextmanager
 def bgen_metafile(filepath):
     metafile = lib.bgen_metafile_open(make_sure_bytes(filepath))
     if metafile == ffi.NULL:
@@ -30,7 +19,7 @@ def bgen_metafile(filepath):
         lib.bgen_metafile_close(metafile)
 
 
-class bgen_file2:
+class bgen_file:
     def __init__(self, filepath: Path):
         self._filepath = filepath
         self._bgen_file = None

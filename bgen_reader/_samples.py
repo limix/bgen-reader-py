@@ -1,13 +1,11 @@
 from pandas import Series, read_csv
 
-from ._ffi import lib, ffi
+from ._bgen_file import bgen_file
 from ._file import assert_file_exist, assert_file_readable
-from ._bgen_file import bgen_file2
-from ._string import create_string
 
 
 def get_samples(bgen_filepath, samples_filepath, verbose: bool) -> Series:
-    with bgen_file2(bgen_filepath) as bgen:
+    with bgen_file(bgen_filepath) as bgen:
 
         if samples_filepath is not None:
             assert_file_exist(samples_filepath)

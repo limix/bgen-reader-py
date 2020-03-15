@@ -6,14 +6,14 @@ from cachetools import LRUCache, cached
 from numpy import asarray, float64, full, nan
 from tqdm import trange
 
+from ._bgen_file import bgen_file
 from ._bgen_metafile import bgen_metafile2
-from ._bgen_file import bgen_file2
 from ._ffi import ffi, lib
 from ._variant import read_partition
 
 
 def create_genotypes(bgen_filepath, metafile_filepath, verbose):
-    with bgen_file2(bgen_filepath) as bgen:
+    with bgen_file(bgen_filepath) as bgen:
         nvariants = bgen.nvariants
 
     rg = _get_read_genotype(bgen_filepath, metafile_filepath)
@@ -29,7 +29,7 @@ def _get_read_genotype(bgen_filepath, metafile_filepath):
     @dask.delayed(nout=0, traverse=False, name="_read_genotype")
     def _read_genotype(i):
 
-        with bgen_file2(bgen_filepath) as bgen:
+        with bgen_file(bgen_filepath) as bgen:
             nsamples = bgen.nsamples
             nvariants = bgen.nvariants
 
@@ -66,7 +66,7 @@ def read_genotype_partition(
 ):
     genotypes = []
     for vaddr in vaddrs:
-        with bgen_file2(bgen_filepath) as bgen:
+        with bgen_file(bgen_filepath) as bgen:
             nsamples = bgen.nsamples
             vg = lib.bgen_file_open_genotype(bgen._bgen_file, vaddr)
             if vg == ffi.NULL:

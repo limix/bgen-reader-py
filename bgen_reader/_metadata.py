@@ -1,9 +1,7 @@
-from math import floor, sqrt
 from os.path import exists
-
 from pathlib import Path
-from ._bgen_file import bgen_file2
-from ._ffi import ffi, lib
+
+from ._bgen_file import bgen_file
 from ._file import assert_file_exist, assert_file_readable
 from ._string import make_sure_bytes
 
@@ -54,5 +52,5 @@ def create_metafile(bgen_filepath: Path, metafile_filepath: Path, verbose=True):
     if exists(metafile_filepath):
         raise ValueError(f"The file {metafile_filepath} already exists.")
 
-    with bgen_file2(bgen_filepath) as bgen:
+    with bgen_file(bgen_filepath) as bgen:
         bgen.create_metafile(metafile_filepath, verbose)
