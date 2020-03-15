@@ -22,7 +22,7 @@ def assert_file_exist(filepath):
 
 
 def assert_file_exist2(filepath: Path):
-    if not exists(filepath):
+    if not filepath.exists():
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
 
 
@@ -36,19 +36,15 @@ def assert_file_readable2(filepath: Path):
         f.read(1)
 
 
-def is_file_writable(filepath):
+def is_file_writable(filepath: Path):
     try:
         _touch(filepath)
     except PermissionError:
         return False
     finally:
-        if os.path.exists(filepath):
+        if filepath.exists():
             os.remove(filepath)
     return True
-
-
-def _get_temp_filepath(path: Path):
-    return tempfile.mkdtemp() / Path("%" + "%".join(path.parts))
 
 
 def path_to_filename(path: Path):
@@ -61,7 +57,7 @@ def path_to_filename(path: Path):
     return Path("%".join(parts))
 
 
-def _touch(filepath, mode=0o666, dir_fd=None, **kwargs):
+def _touch(filepath: Path, mode=0o666, dir_fd=None, **kwargs):
     """
     Touch a file.
 

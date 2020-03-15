@@ -1,39 +1,37 @@
 import os
 import warnings
+from pathlib import Path
+from typing import Union, Optional
+
 from ._bgen import bgen_file
 from ._ffi import lib
 from ._file import (
-    _get_temp_filepath,
-    assert_file_exist,
-    assert_file_exist2,
-    assert_file_readable,
-    is_file_writable,
-    assert_file_readable2,
     BGEN_CACHE_HOME,
+    assert_file_exist2,
+    assert_file_readable2,
+    is_file_writable,
     path_to_filename,
-    make_sure_dir_exist,
 )
 from ._genotype import create_genotypes
 from ._metadata import create_metafile
 from ._partition import create_variants
 from ._samples import get_samples
-from typing import Union
-from pathlib import Path
 
 
 def read_bgen(
     filepath: Union[str, Path],
-    metafile_filepath=None,
+    metafile_filepath: Optional[Union[str, Path]] = None,
     samples_filepath=None,
     verbose=True,
 ):
-    r""" Read a given BGEN file.
+    """
+    Read a given BGEN file.
 
     Parameters
     ----------
-    filepath : str
+    filepath
         A bgen file path.
-    metafile_filepath : str, optional
+    metafile_filepath
         If ``None``, it will try to read the ``filepath + ".metadata"`` file. If this is
         not possible, it will create one. It tries to create one at
         ``filepath + ".metadata"``. If that is also no possible, it tries to create one
@@ -84,8 +82,13 @@ def read_bgen(
     assert_file_exist2(filepath)
     assert_file_readable2(filepath)
 
-    metafile_filepath = _get_valid_metafile_filepath(filepath, metafile_filepath)
-    if not os.path.exists(metafile_filepath):
+    if metafile_filepath is None:
+        metafile_filepath = _infer_metafile_filepath(filepath)
+    else:
+        metafile_filepath = Path(metafile_filepath)
+        assert_file_exist2(metafile_filepath)
+
+    if not metafile_filepath.exists():
         if verbose:
             print(
                 f"We will create the metafile `{metafile_filepath}`. This file will "
@@ -95,9 +98,10 @@ def read_bgen(
         create_metafile(filepath, metafile_filepath, verbose)
     elif os.path.getmtime(metafile_filepath) < os.path.getmtime(filepath):
         if verbose:
-            msg = f"File `{filepath}` has been modified after the creation of `{metafile_filepath}`.\n"
-            msg += "We will therefore recreate the metadata file. So, please, bear with me."
-            print(msg)
+            print(
+                f"File `{filepath}` has been modified after the creation of `{metafile_filepath}`."
+                "\nWe will therefore recreate the metadata file. So, please, bear with me."
+            )
         os.unlink(metafile_filepath)
         create_metafile(filepath, metafile_filepath, verbose)
 
@@ -111,31 +115,13 @@ def read_bgen(
     return dict(variants=variants, samples=samples, genotype=genotype)
 
 
-_metafile_not_found = """\
-Metafile `{filepath}` does not exist. If you wish to create a metafile in a custom
-location, please use `bgen_reader.create_metafile`.
-"""
-
 _metafile_nowrite_dir = """\
 You don't have permission to write `{filepath}`. This might prevent speeding-up the reading process
 in future runs.
 """
 
 
-def _get_valid_metafile_filepath(bgen_filepath, metafile_filepath):
-    if metafile_filepath is None:
-        return _infer_metafile_filepath(bgen_filepath)
-    else:
-        try:
-            assert_file_exist(metafile_filepath)
-        except FileNotFoundError as e:
-            fp = metafile_filepath
-            warnings.warn(_metafile_not_found.format(filepath=fp), UserWarning)
-            raise e
-    return metafile_filepath
-
-
-def _infer_metafile_filepath(bgen_filepath):
+def _infer_metafile_filepath(bgen_filepath: Path) -> Path:
     metafile = bgen_filepath.with_suffix(".metadata")
     if metafile.exists():
         try:

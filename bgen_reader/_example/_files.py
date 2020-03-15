@@ -5,7 +5,7 @@ from os.path import dirname, exists, join, realpath
 from subprocess import check_call
 
 
-class example_files(object):
+class example_files:
     """ Create a temporary folder with the given files.
 
     Attributes
