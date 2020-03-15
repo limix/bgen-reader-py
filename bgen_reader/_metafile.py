@@ -19,7 +19,7 @@ class bgen_metafile2:
     def nvariants(self) -> int:
         return lib.bgen_metafile_nvariants(self._bgen_metafile)
 
-    def read_partition(self, partition: int, index_base: int):
+    def read_partition(self, partition: int):
         partition = lib.bgen_metafile_read_partition(self._bgen_metafile, partition)
         if partition == ffi.NULL:
             raise RuntimeError(f"Could not read partition {partition}.")
@@ -37,10 +37,8 @@ class bgen_metafile2:
             offset = variant[0].genotype_offset
             variants.append([id_, rsid, chrom, pos, nalleles, allele_ids, offset])
 
-        index = range(index_base, index_base + nvariants)
         df = DataFrame(
             variants,
-            index=index,
             columns=["id", "rsid", "chrom", "pos", "nalleles", "allele_ids", "vaddr"],
             dtype=str,
         )

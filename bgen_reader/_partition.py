@@ -47,36 +47,11 @@ lock = RLock()
 def read_partition(metafile_filepath, part, index_base):
     with bgen_metafile2(metafile_filepath) as mf:
 
-        return mf.read_partition(part, index_base)
-        # metadata = lib.bgen_metafile_read_partition(mf, part)
-        # if metadata == ffi.NULL:
-        #     raise RuntimeError(f"Could not read partition {part}.")
+        nvariants = mf.nvariants
 
-        # nvariants = lib.bgen_metafile_nvariants(mf)
-        # variants = []
-        # for i in range(nvariants):
-        #     variant = lib.bgen_partition_get_variant(metadata, i)
-        #     id_ = create_string(variant[0].id)
-        #     rsid = create_string(variant[0].rsid)
-        #     chrom = create_string(variant[0].chrom)
-        #     pos = variant[0].position
-        #     nalleles = variant[0].nalleles
-        #     allele_ids = _read_allele_ids(variant[0].allele_ids, variant[0].nalleles)
-        #     vaddr = variant[0].genotype_offset
-        #     variants.append([id_, rsid, chrom, pos, nalleles, allele_ids, vaddr])
-
-        # index = range(index_base, index_base + nvariants)
-        # variants = DataFrame(
-        #     variants,
-        #     index=index,
-        #     columns=["id", "rsid", "chrom", "pos", "nalleles", "allele_ids", "vaddr"],
-        #     dtype=str,
-        # )
-        # variants["pos"] = variants["pos"].astype("uint32")
-        # variants["nalleles"] = variants["nalleles"].astype("uint16")
-        # variants["vaddr"] = variants["vaddr"].astype("uint64")
-
-    # return variants
+        df = mf.read_partition(part)
+        df.index = range(index_base, index_base + nvariants)
+        return df
 
 
 def _get_partition_size(nvariants: int, npartitions: int):
@@ -85,8 +60,3 @@ def _get_partition_size(nvariants: int, npartitions: int):
 
 def _ceildiv(a, b):
     return -(-a // b)
-
-
-def _read_allele_ids(allele_ids, nalleles):
-    alleles = [create_string(allele_ids[i]) for i in range(nalleles)]
-    return ",".join(alleles)
