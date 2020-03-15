@@ -2,11 +2,16 @@ from os.path import exists
 from pathlib import Path
 
 from ._bgen_file import bgen_file
-from ._file import assert_file_exist, assert_file_readable
+from ._file import assert_file_exist2, assert_file_readable2
 from ._string import make_sure_bytes
+from typing import Union
 
 
-def create_metafile(bgen_filepath: Path, metafile_filepath: Path, verbose=True):
+def create_metafile(
+    bgen_filepath: Union[str, Path],
+    metafile_filepath: Union[str, Path],
+    verbose: bool = True,
+):
     r"""Create variants metadata file.
 
     Variants metadata file helps speed up subsequent reads of the associated
@@ -38,19 +43,14 @@ def create_metafile(bgen_filepath: Path, metafile_filepath: Path, verbose=True):
         ...         if os.path.exists(metafile_filepath):
         ...             os.remove(metafile_filepath)
     """
-    if verbose:
-        verbose = 1
-    else:
-        verbose = 0
+    bgen_filepath = Path(bgen_filepath)
+    metafile_filepath = Path(metafile_filepath)
 
-    bgen_filepath = make_sure_bytes(bgen_filepath)
-    metafile_filepath = make_sure_bytes(metafile_filepath)
+    assert_file_exist2(bgen_filepath)
+    assert_file_readable2(bgen_filepath)
 
-    assert_file_exist(bgen_filepath)
-    assert_file_readable(bgen_filepath)
-
-    if exists(metafile_filepath):
-        raise ValueError(f"The file {metafile_filepath} already exists.")
+    if metafile_filepath.exists():
+        raise ValueError(f"File {metafile_filepath} already exists.")
 
     with bgen_file(bgen_filepath) as bgen:
         bgen.create_metafile(metafile_filepath, verbose)

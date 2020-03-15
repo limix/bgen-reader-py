@@ -16,19 +16,9 @@ def make_sure_dir_exist(dirpath: Path):
 make_sure_dir_exist(BGEN_CACHE_HOME)
 
 
-def assert_file_exist(filepath):
-    if not exists(filepath):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
-
-
 def assert_file_exist2(filepath: Path):
     if not filepath.exists():
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
-
-
-def assert_file_readable(filepath):
-    with open(filepath, "rb") as f:
-        f.read(1)
 
 
 def assert_file_readable2(filepath: Path):

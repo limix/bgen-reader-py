@@ -55,7 +55,9 @@ class bgen_file:
     def create_metafile(self, filepath: Path, verbose: bool):
         n = _estimate_best_npartitions(self.nvariants)
 
-        metafile = lib.bgen_metafile_create(self._bgen_file, filepath, n, verbose)
+        metafile = lib.bgen_metafile_create(
+            self._bgen_file, bytes(filepath), n, verbose
+        )
         if metafile == ffi.NULL:
             raise RuntimeError(f"Error while creating metafile: {filepath}.")
 

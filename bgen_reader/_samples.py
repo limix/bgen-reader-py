@@ -1,15 +1,15 @@
 from pandas import Series, read_csv
 
 from ._bgen_file import bgen_file
-from ._file import assert_file_exist, assert_file_readable
+from ._file import assert_file_exist2, assert_file_readable2
 
 
 def get_samples(bgen_filepath, samples_filepath, verbose: bool) -> Series:
     with bgen_file(bgen_filepath) as bgen:
 
         if samples_filepath is not None:
-            assert_file_exist(samples_filepath)
-            assert_file_readable(samples_filepath)
+            assert_file_exist2(samples_filepath)
+            assert_file_readable2(samples_filepath)
             samples = _read_samples_from_file(samples_filepath, verbose)
 
         elif bgen.contain_samples:

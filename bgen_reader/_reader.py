@@ -107,7 +107,11 @@ def read_bgen(
     with bgen_file(filepath) as bgen:
         nvariants = bgen.nvariants
 
-    samples = get_samples(filepath, samples_filepath, verbose)
+    if samples_filepath is None:
+        samples = get_samples(filepath, None, verbose)
+    else:
+        samples_filepath = Path(samples_filepath)
+        samples = get_samples(filepath, samples_filepath, verbose)
     variants = create_variants(nvariants, metafile_filepath)
     genotype = create_genotypes(filepath, metafile_filepath, verbose)
 
