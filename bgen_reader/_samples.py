@@ -1,18 +1,14 @@
+from pathlib import Path
+
 from pandas import Series, read_csv
 
 from ._bgen_file import bgen_file
-from ._file import assert_file_exist2, assert_file_readable2
 
 
-def get_samples(bgen_filepath, samples_filepath, verbose: bool) -> Series:
+def get_samples(bgen_filepath, verbose: bool) -> Series:
     with bgen_file(bgen_filepath) as bgen:
 
-        if samples_filepath is not None:
-            assert_file_exist2(samples_filepath)
-            assert_file_readable2(samples_filepath)
-            samples = _read_samples_from_file(samples_filepath, verbose)
-
-        elif bgen.contain_samples:
+        if bgen.contain_samples:
             samples = bgen.read_samples(verbose)
 
         else:
@@ -27,11 +23,11 @@ def get_samples(bgen_filepath, samples_filepath, verbose: bool) -> Series:
     return samples
 
 
-def _read_samples_from_file(sample_file, verbose: bool):
+def read_samples_file(sample_filepath: Path, verbose: bool):
     if verbose:
-        print(f"Sample IDs are read from {sample_file}.")
+        print(f"Sample IDs are read from {sample_filepath}.")
 
-    samples = read_csv(sample_file, sep=" ", skiprows=[1]).iloc[:, 0].astype("str")
+    samples = read_csv(sample_filepath, sep=" ", skiprows=[1]).iloc[:, 0].astype("str")
     return Series(samples, dtype=str, name="id")
 
 
