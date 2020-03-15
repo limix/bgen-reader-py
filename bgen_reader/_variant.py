@@ -19,7 +19,7 @@ def create_variants(nvariants: int, metafile_filepath: Path):
     divisions = []
     for i in range(npartitions):
         divisions.append(index_base)
-        d = delayed(read_partition)(metafile_filepath, i, index_base)
+        d = delayed(read_partition)(metafile_filepath, i)
         dfs.append(d)
         index_base += part_size
     divisions.append(nvariants - 1)
@@ -41,9 +41,9 @@ lock = RLock()
 
 
 @cached(cache, lock=lock)
-def read_partition(metafile_filepath, part, index_base):
-    with bgen_metafile(metafile_filepath) as mf:
-        return mf.read_partition(part, index_base)
+def read_partition(metafile_filepath, part):
+    with bgen_metafile(metafile_filepath) as metafile:
+        return metafile.read_partition(part)
 
 
 def _get_partition_size(nvariants: int, npartitions: int):

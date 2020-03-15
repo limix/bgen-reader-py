@@ -13,8 +13,8 @@ from ._file import (
 )
 from ._genotype import create_genotypes
 from ._metadata import create_metafile
+from ._samples import generate_samples, read_samples_file
 from ._variant import create_variants
-from ._samples import get_samples, read_samples_file, generate_samples
 
 
 def read_bgen(

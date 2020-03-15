@@ -38,9 +38,8 @@ def _get_read_genotype(bgen_filepath, metafile_filepath):
 
         part_size = _ceildiv(nvariants, nparts)
         part = i // part_size
-        index_base = (i % part_size) * part_size
         j = i % part_size
-        p = read_partition(metafile_filepath, part, index_base)
+        p = read_partition(metafile_filepath, part)
         nsub_parts = _estimate_best_nsub_parts(nsamples, part_size)
         spart_size = max(1, part_size // nsub_parts)
         sub_part = j // spart_size
