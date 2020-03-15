@@ -4,6 +4,8 @@ from pandas import DataFrame
 
 from ._ffi import ffi, lib
 from ._string import create_string
+from dask.delayed import delayed
+import dask.dataframe as dd
 
 
 class bgen_metafile:
@@ -54,6 +56,33 @@ class bgen_metafile:
         index_offset = part_size * index
         df.index = range(index_offset, index_offset + nvariants)
 
+        return df
+
+    def create_variants(self):
+        from ._variant import read_partition
+
+        nvariants = self.nvariants
+        npartitions = self.npartitions
+        dfs = []
+        index_base = 0
+        part_size = _get_partition_size(nvariants, npartitions)
+        divisions = []
+        for i in range(npartitions):
+            divisions.append(index_base)
+            d = delayed(read_partition)(self._filepath, i)
+            dfs.append(d)
+            index_base += part_size
+        divisions.append(nvariants - 1)
+        meta = [
+            ("id", str),
+            ("rsid", str),
+            ("chrom", str),
+            ("pos", int),
+            ("nalleles", int),
+            ("allele_ids", str),
+            ("vaddr", int),
+        ]
+        df = dd.from_delayed(dfs, meta=dd.utils.make_meta(meta), divisions=divisions)
         return df
 
     def close(self):
