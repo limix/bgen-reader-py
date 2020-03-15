@@ -9,7 +9,7 @@ from tqdm import trange
 from ._bgen_file import bgen_file
 from ._bgen_metafile import bgen_metafile
 from ._ffi import ffi, lib
-from ._variant import read_partition
+from ._bgen_metafile import read_partition
 
 
 def create_genotypes(bgen_filepath, metafile_filepath, verbose):

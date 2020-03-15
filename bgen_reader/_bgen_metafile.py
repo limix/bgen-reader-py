@@ -3,9 +3,11 @@ from pathlib import Path
 from pandas import DataFrame
 
 from ._ffi import ffi, lib
+from threading import RLock
 from ._string import create_string
 from dask.delayed import delayed
 import dask.dataframe as dd
+from cachetools import LRUCache, cached
 
 
 class bgen_metafile:
@@ -59,8 +61,6 @@ class bgen_metafile:
         return df
 
     def create_variants(self):
-        from ._variant import read_partition
-
         nvariants = self.nvariants
         npartitions = self.npartitions
         dfs = []
@@ -97,6 +97,16 @@ class bgen_metafile:
     def __exit__(self, *_):
         if self._bgen_metafile is not None:
             lib.bgen_metafile_close(self._bgen_metafile)
+
+
+cache = LRUCache(maxsize=3)
+lock = RLock()
+
+
+@cached(cache, lock=lock)
+def read_partition(metafile_filepath: Path, partition: int):
+    with bgen_metafile(metafile_filepath) as metafile:
+        return metafile.read_partition(partition)
 
 
 def _read_allele_ids(allele_ids, nalleles):
