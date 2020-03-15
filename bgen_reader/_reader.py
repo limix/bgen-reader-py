@@ -14,7 +14,6 @@ from ._file import (
 from ._genotype import create_genotypes
 from ._metadata import create_metafile
 from ._samples import generate_samples, read_samples_file
-from ._variant import create_variants
 from ._bgen_metafile import bgen_metafile
 
 
@@ -106,8 +105,6 @@ def read_bgen(
         create_metafile(filepath, metafile_filepath, verbose)
 
     with bgen_file(filepath) as bgen:
-        nvariants = bgen.nvariants
-
         if samples_filepath is None:
             if bgen.contain_samples:
                 samples = bgen.read_samples(verbose)
@@ -120,7 +117,7 @@ def read_bgen(
             samples = read_samples_file(samples_filepath, verbose)
 
     with bgen_metafile(metafile_filepath) as metafile:
-        variants = create_variants(nvariants, metafile)
+        variants = metafile.create_variants()
     genotype = create_genotypes(filepath, metafile_filepath, verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
