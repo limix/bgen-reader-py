@@ -18,7 +18,7 @@ def get_samples(bgen_filepath, verbose: bool) -> Series:
                     "I will generate them on my own:"
                     " sample_1, sample_2, and so on."
                 )
-            samples = _generate_sample_ids(bgen.nsamples)
+            samples = generate_samples(bgen.nsamples)
 
     return samples
 
@@ -31,5 +31,5 @@ def read_samples_file(sample_filepath: Path, verbose: bool):
     return Series(samples, dtype=str, name="id")
 
 
-def _generate_sample_ids(nsamples: int):
+def generate_samples(nsamples: int):
     return Series([f"sample_{i}" for i in range(nsamples)], dtype=str, name="id")

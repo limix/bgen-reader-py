@@ -14,7 +14,7 @@ from ._file import (
 from ._genotype import create_genotypes
 from ._metadata import create_metafile
 from ._variant import create_variants
-from ._samples import get_samples, read_samples_file
+from ._samples import get_samples, read_samples_file, generate_samples
 
 
 def read_bgen(
@@ -107,13 +107,16 @@ def read_bgen(
     with bgen_file(filepath) as bgen:
         nvariants = bgen.nvariants
 
-    if samples_filepath is None:
-        samples = get_samples(filepath, verbose)
-    else:
-        samples_filepath = Path(samples_filepath)
-        assert_file_exist2(samples_filepath)
-        assert_file_readable2(samples_filepath)
-        samples = read_samples_file(samples_filepath, verbose)
+        if samples_filepath is None:
+            if bgen.contain_samples:
+                samples = bgen.read_samples(verbose)
+            else:
+                samples = generate_samples(bgen.nsamples)
+        else:
+            samples_filepath = Path(samples_filepath)
+            assert_file_exist2(samples_filepath)
+            assert_file_readable2(samples_filepath)
+            samples = read_samples_file(samples_filepath, verbose)
 
     variants = create_variants(nvariants, metafile_filepath)
     genotype = create_genotypes(filepath, metafile_filepath, verbose)
