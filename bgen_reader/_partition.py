@@ -5,15 +5,16 @@ from cachetools import LRUCache, cached
 from dask.delayed import delayed
 from pandas import DataFrame
 
-from ._bgen import bgen_file, bgen_metafile
+from ._bgen import bgen_file
+from ._metafile import bgen_metafile2
 from ._ffi import ffi, lib
 from ._string import create_string
 
 
 def create_variants(nvariants: int, metafile_filepath):
 
-    with bgen_metafile(metafile_filepath) as mf:
-        npartitions = lib.bgen_metafile_npartitions(mf)
+    with bgen_metafile2(metafile_filepath) as mf:
+        npartitions = mf.npartitions
 
     dfs = []
     index_base = 0
@@ -44,37 +45,38 @@ lock = RLock()
 
 @cached(cache, lock=lock)
 def read_partition(metafile_filepath, part, index_base):
-    with bgen_metafile(metafile_filepath) as mf:
+    with bgen_metafile2(metafile_filepath) as mf:
 
-        metadata = lib.bgen_metafile_read_partition(mf, part)
-        if metadata == ffi.NULL:
-            raise RuntimeError(f"Could not read partition {part}.")
+        return mf.read_partition(part, index_base)
+        # metadata = lib.bgen_metafile_read_partition(mf, part)
+        # if metadata == ffi.NULL:
+        #     raise RuntimeError(f"Could not read partition {part}.")
 
-        nvariants = lib.bgen_metafile_nvariants(mf)
-        variants = []
-        for i in range(nvariants):
-            variant = lib.bgen_partition_get_variant(metadata, i)
-            id_ = create_string(variant[0].id)
-            rsid = create_string(variant[0].rsid)
-            chrom = create_string(variant[0].chrom)
-            pos = variant[0].position
-            nalleles = variant[0].nalleles
-            allele_ids = _read_allele_ids(variant[0].allele_ids, variant[0].nalleles)
-            vaddr = variant[0].genotype_offset
-            variants.append([id_, rsid, chrom, pos, nalleles, allele_ids, vaddr])
+        # nvariants = lib.bgen_metafile_nvariants(mf)
+        # variants = []
+        # for i in range(nvariants):
+        #     variant = lib.bgen_partition_get_variant(metadata, i)
+        #     id_ = create_string(variant[0].id)
+        #     rsid = create_string(variant[0].rsid)
+        #     chrom = create_string(variant[0].chrom)
+        #     pos = variant[0].position
+        #     nalleles = variant[0].nalleles
+        #     allele_ids = _read_allele_ids(variant[0].allele_ids, variant[0].nalleles)
+        #     vaddr = variant[0].genotype_offset
+        #     variants.append([id_, rsid, chrom, pos, nalleles, allele_ids, vaddr])
 
-        index = range(index_base, index_base + nvariants)
-        variants = DataFrame(
-            variants,
-            index=index,
-            columns=["id", "rsid", "chrom", "pos", "nalleles", "allele_ids", "vaddr"],
-            dtype=str,
-        )
-        variants["pos"] = variants["pos"].astype("uint32")
-        variants["nalleles"] = variants["nalleles"].astype("uint16")
-        variants["vaddr"] = variants["vaddr"].astype("uint64")
+        # index = range(index_base, index_base + nvariants)
+        # variants = DataFrame(
+        #     variants,
+        #     index=index,
+        #     columns=["id", "rsid", "chrom", "pos", "nalleles", "allele_ids", "vaddr"],
+        #     dtype=str,
+        # )
+        # variants["pos"] = variants["pos"].astype("uint32")
+        # variants["nalleles"] = variants["nalleles"].astype("uint16")
+        # variants["vaddr"] = variants["vaddr"].astype("uint64")
 
-    return variants
+    # return variants
 
 
 def _get_partition_size(nvariants: int, npartitions: int):
