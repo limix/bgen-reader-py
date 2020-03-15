@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from math import floor, sqrt
 from pathlib import Path
 
 from pandas import Series
@@ -62,6 +63,15 @@ class bgen_file2:
 
         return Series(ids, dtype=str, name="id")
 
+    def create_metafile(self, filepath: Path, verbose: bool):
+        n = _estimate_best_npartitions(self.nvariants)
+
+        metafile = lib.bgen_metafile_create(self._bgen_file, filepath, n, verbose)
+        if metafile == ffi.NULL:
+            raise RuntimeError(f"Error while creating metafile: {filepath}.")
+
+        lib.bgen_metafile_close(metafile)
+
     def close(self):
         self.__exit__()
 
@@ -74,3 +84,9 @@ class bgen_file2:
     def __exit__(self, *_):
         if self._bgen_file is not None:
             lib.bgen_file_close(self._bgen_file)
+
+
+def _estimate_best_npartitions(nvariants: int):
+    min_variants = 128
+    m = max(min(min_variants, nvariants), floor(sqrt(nvariants)))
+    return nvariants // m

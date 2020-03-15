@@ -1,13 +1,14 @@
 from math import floor, sqrt
 from os.path import exists
 
-from ._bgen import bgen_file
+from pathlib import Path
+from ._bgen_file import bgen_file2
 from ._ffi import ffi, lib
 from ._file import assert_file_exist, assert_file_readable
 from ._string import make_sure_bytes
 
 
-def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
+def create_metafile(bgen_filepath: Path, metafile_filepath: Path, verbose=True):
     r"""Create variants metadata file.
 
     Variants metadata file helps speed up subsequent reads of the associated
@@ -53,16 +54,5 @@ def create_metafile(bgen_filepath, metafile_filepath, verbose=True):
     if exists(metafile_filepath):
         raise ValueError(f"The file {metafile_filepath} already exists.")
 
-    with bgen_file(bgen_filepath) as bgen:
-        nparts = _estimate_best_npartitions(lib.bgen_file_nvariants(bgen))
-        metafile = lib.bgen_metafile_create(bgen, metafile_filepath, nparts, verbose)
-        if metafile == ffi.NULL:
-            raise RuntimeError(f"Error while creating metafile: {metafile_filepath}.")
-
-        lib.bgen_metafile_close(metafile)
-
-
-def _estimate_best_npartitions(nvariants):
-    min_variants = 128
-    m = max(min(min_variants, nvariants), floor(sqrt(nvariants)))
-    return nvariants // m
+    with bgen_file2(bgen_filepath) as bgen:
+        bgen.create_metafile(metafile_filepath, verbose)

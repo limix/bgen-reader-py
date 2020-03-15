@@ -19,7 +19,7 @@ class bgen_metafile2:
     def nvariants(self) -> int:
         return lib.bgen_metafile_nvariants(self._bgen_metafile)
 
-    def read_partition(self, partition: int):
+    def read_partition(self, partition: int, index_base: int):
         partition = lib.bgen_metafile_read_partition(self._bgen_metafile, partition)
         if partition == ffi.NULL:
             raise RuntimeError(f"Could not read partition {partition}.")
@@ -45,6 +45,7 @@ class bgen_metafile2:
         df["pos"] = df["pos"].astype("uint32")
         df["nalleles"] = df["nalleles"].astype("uint16")
         df["vaddr"] = df["vaddr"].astype("uint64")
+        df.index = range(index_base, index_base + nvariants)
 
         return df
 

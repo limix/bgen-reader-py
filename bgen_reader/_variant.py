@@ -1,17 +1,14 @@
+from pathlib import Path
 from threading import RLock
 
 import dask.dataframe as dd
 from cachetools import LRUCache, cached
 from dask.delayed import delayed
-from pandas import DataFrame
 
-from ._bgen import bgen_file
-from ._metafile import bgen_metafile2
-from ._ffi import ffi, lib
-from ._string import create_string
+from ._bgen_metafile import bgen_metafile2
 
 
-def create_variants(nvariants: int, metafile_filepath):
+def create_variants(nvariants: int, metafile_filepath: Path):
 
     with bgen_metafile2(metafile_filepath) as mf:
         npartitions = mf.npartitions
@@ -46,12 +43,7 @@ lock = RLock()
 @cached(cache, lock=lock)
 def read_partition(metafile_filepath, part, index_base):
     with bgen_metafile2(metafile_filepath) as mf:
-
-        nvariants = mf.nvariants
-
-        df = mf.read_partition(part)
-        df.index = range(index_base, index_base + nvariants)
-        return df
+        return mf.read_partition(part, index_base)
 
 
 def _get_partition_size(nvariants: int, npartitions: int):

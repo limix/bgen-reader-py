@@ -6,14 +6,15 @@ from cachetools import LRUCache, cached
 from numpy import asarray, float64, full, nan
 from tqdm import trange
 
-from ._bgen import bgen_file, bgen_metafile
+from ._bgen_metafile import bgen_metafile2
+from ._bgen_file import bgen_file2
 from ._ffi import ffi, lib
-from ._partition import read_partition
+from ._variant import read_partition
 
 
 def create_genotypes(bgen_filepath, metafile_filepath, verbose):
-    with bgen_file(bgen_filepath) as bgen:
-        nvariants = lib.bgen_file_nvariants(bgen)
+    with bgen_file2(bgen_filepath) as bgen:
+        nvariants = bgen.nvariants
 
     rg = _get_read_genotype(bgen_filepath, metafile_filepath)
 
@@ -28,12 +29,12 @@ def _get_read_genotype(bgen_filepath, metafile_filepath):
     @dask.delayed(nout=0, traverse=False, name="_read_genotype")
     def _read_genotype(i):
 
-        with bgen_file(bgen_filepath) as bgen:
-            nsamples = lib.bgen_file_nsamples(bgen)
-            nvariants = lib.bgen_file_nvariants(bgen)
+        with bgen_file2(bgen_filepath) as bgen:
+            nsamples = bgen.nsamples
+            nvariants = bgen.nvariants
 
-        with bgen_metafile(metafile_filepath) as mf:
-            nparts = lib.bgen_metafile_npartitions(mf)
+        with bgen_metafile2(metafile_filepath) as mf:
+            nparts = mf.npartitions
 
         part_size = _ceildiv(nvariants, nparts)
         part = i // part_size
@@ -65,9 +66,9 @@ def read_genotype_partition(
 ):
     genotypes = []
     for vaddr in vaddrs:
-        with bgen_file(bgen_filepath) as bgen:
-            nsamples = lib.bgen_file_nsamples(bgen)
-            vg = lib.bgen_file_open_genotype(bgen, vaddr)
+        with bgen_file2(bgen_filepath) as bgen:
+            nsamples = bgen.nsamples
+            vg = lib.bgen_file_open_genotype(bgen._bgen_file, vaddr)
             if vg == ffi.NULL:
                 raise RuntimeError(f"Could not open genotype (offset {vaddr})")
             ncombs = lib.bgen_genotype_ncombs(vg)

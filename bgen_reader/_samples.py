@@ -2,7 +2,7 @@ from pandas import Series, read_csv
 
 from ._ffi import lib, ffi
 from ._file import assert_file_exist, assert_file_readable
-from ._bgen import bgen_file2
+from ._bgen_file import bgen_file2
 from ._string import create_string
 
 

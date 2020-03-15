@@ -3,7 +3,7 @@ import warnings
 from pathlib import Path
 from typing import Union, Optional
 
-from ._bgen import bgen_file
+from ._bgen_file import bgen_file2
 from ._ffi import lib
 from ._file import (
     BGEN_CACHE_HOME,
@@ -14,7 +14,7 @@ from ._file import (
 )
 from ._genotype import create_genotypes
 from ._metadata import create_metafile
-from ._partition import create_variants
+from ._variant import create_variants
 from ._samples import get_samples
 
 
@@ -105,8 +105,8 @@ def read_bgen(
         os.unlink(metafile_filepath)
         create_metafile(filepath, metafile_filepath, verbose)
 
-    with bgen_file(filepath) as bgen:
-        nvariants = lib.bgen_file_nvariants(bgen)
+    with bgen_file2(filepath) as bgen:
+        nvariants = bgen.nvariants
 
     samples = get_samples(filepath, samples_filepath, verbose)
     variants = create_variants(nvariants, metafile_filepath)
