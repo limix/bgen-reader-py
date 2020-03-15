@@ -1,10 +1,10 @@
 from contextlib import contextmanager
+from pathlib import Path
+
 from pandas import Series
 
-from pathlib import Path
 from ._ffi import ffi, lib
-from ._string import make_sure_bytes
-from ._string import create_string
+from ._string import create_string, make_sure_bytes
 
 
 @contextmanager

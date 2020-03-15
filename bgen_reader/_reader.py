@@ -21,8 +21,8 @@ from ._samples import get_samples
 def read_bgen(
     filepath: Union[str, Path],
     metafile_filepath: Optional[Union[str, Path]] = None,
-    samples_filepath=None,
-    verbose=True,
+    samples_filepath: Optional[Union[str, Path]] = None,
+    verbose: bool = True,
 ):
     """
     Read a given BGEN file.
@@ -36,11 +36,11 @@ def read_bgen(
         not possible, it will create one. It tries to create one at
         ``filepath + ".metadata"``. If that is also no possible, it tries to create one
         at a temporary folder.
-    samples_filepath : str, optional
+    samples_filepath
         A sample file in `gen format <https://goo.gl/bCzo7m>`_.
         If ``samples_filepath`` is provided, sample ids are read from this file.
         Otherwise, it reads from the bgen file itself if possible. Defaults to ``None``.
-    verbose : bool, optional
+    verbose
         ``True`` to show progress; ``False`` otherwise. Defaults to ``True``.
 
     Returns
