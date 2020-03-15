@@ -5,12 +5,12 @@ import dask.dataframe as dd
 from cachetools import LRUCache, cached
 from dask.delayed import delayed
 
-from ._bgen_metafile import bgen_metafile2
+from ._bgen_metafile import bgen_metafile
 
 
 def create_variants(nvariants: int, metafile_filepath: Path):
 
-    with bgen_metafile2(metafile_filepath) as mf:
+    with bgen_metafile(metafile_filepath) as mf:
         npartitions = mf.npartitions
 
     dfs = []
@@ -42,7 +42,7 @@ lock = RLock()
 
 @cached(cache, lock=lock)
 def read_partition(metafile_filepath, part, index_base):
-    with bgen_metafile2(metafile_filepath) as mf:
+    with bgen_metafile(metafile_filepath) as mf:
         return mf.read_partition(part, index_base)
 
 

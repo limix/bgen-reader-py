@@ -1,12 +1,12 @@
-from contextlib import contextmanager
 from pathlib import Path
+
 from pandas import DataFrame
 
 from ._ffi import ffi, lib
 from ._string import create_string
 
 
-class bgen_metafile2:
+class bgen_metafile:
     def __init__(self, filepath: Path):
         self._filepath = filepath
         self._bgen_metafile = None

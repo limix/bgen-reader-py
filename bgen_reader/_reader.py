@@ -1,10 +1,9 @@
 import os
 import warnings
 from pathlib import Path
-from typing import Union, Optional
+from typing import Optional, Union
 
 from ._bgen_file import bgen_file
-from ._ffi import lib
 from ._file import (
     BGEN_CACHE_HOME,
     assert_file_exist2,

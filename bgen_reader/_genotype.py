@@ -7,7 +7,7 @@ from numpy import asarray, float64, full, nan
 from tqdm import trange
 
 from ._bgen_file import bgen_file
-from ._bgen_metafile import bgen_metafile2
+from ._bgen_metafile import bgen_metafile
 from ._ffi import ffi, lib
 from ._variant import read_partition
 
@@ -33,7 +33,7 @@ def _get_read_genotype(bgen_filepath, metafile_filepath):
             nsamples = bgen.nsamples
             nvariants = bgen.nvariants
 
-        with bgen_metafile2(metafile_filepath) as mf:
+        with bgen_metafile(metafile_filepath) as mf:
             nparts = mf.npartitions
 
         part_size = _ceildiv(nvariants, nparts)
