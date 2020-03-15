@@ -12,6 +12,10 @@ class bgen_metafile:
         self._bgen_metafile = None
 
     @property
+    def filepath(self) -> Path:
+        return self._filepath
+
+    @property
     def npartitions(self) -> int:
         return lib.bgen_metafile_npartitions(self._bgen_metafile)
 
