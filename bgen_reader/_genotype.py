@@ -1,22 +1,19 @@
 from threading import RLock
 
 from cachetools import LRUCache, cached
-from numpy import asarray, float64, full, nan
 from tqdm import trange
+from pathlib import Path
 
 from ._bgen_file import bgen_file
-from ._bgen_metafile import bgen_metafile, read_partition
-from ._ffi import ffi, lib
+from ._bgen_metafile import bgen_metafile
 
 
 def create_genotypes(bgen: bgen_file, metafile_filepath, verbose):
     nvariants = bgen.nvariants
 
-    rg = _get_read_genotype(bgen, metafile_filepath)
-
     desc = "Mapping genotypes"
     return [
-        rg(i, dask_key_name=str(i))
+        _get_read_genotype(bgen, metafile_filepath)(i, dask_key_name=str(i))
         for i in trange(nvariants, desc=desc, disable=not verbose)
     ]
 
@@ -54,13 +51,9 @@ lock = RLock()
 
 
 @cached(cache, lock=lock)
-def read_genotype_partition(bgen_filepath, vaddrs):
-    genotypes = []
-    for vaddr in vaddrs:
-        with bgen_file(bgen_filepath) as bgen:
-            genotype = bgen.read_genotype(vaddr)
-            genotypes.append(genotype)
-    return genotypes
+def read_genotype_partition(bgen_filepath: Path, offsets):
+    with bgen_file(bgen_filepath) as bgen:
+        return [bgen.read_genotype(offset) for offset in offsets]
 
 
 def _estimate_best_nsub_parts(nsamples, part_size):
