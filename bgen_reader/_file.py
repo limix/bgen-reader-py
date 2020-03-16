@@ -1,27 +1,25 @@
 import errno
 import os
-import stat
-import tempfile
-from os.path import exists
 from pathlib import Path
+
 from xdg import XDG_CACHE_HOME
 
 BGEN_CACHE_HOME = XDG_CACHE_HOME / "bgen"
 
 
-def make_sure_dir_exist(dirpath: Path):
+def _make_sure_dir_exist(dirpath: Path):
     dirpath.mkdir(parents=True, exist_ok=True)
 
 
-make_sure_dir_exist(BGEN_CACHE_HOME)
+_make_sure_dir_exist(BGEN_CACHE_HOME)
 
 
-def assert_file_exist2(filepath: Path):
+def assert_file_exist(filepath: Path):
     if not filepath.exists():
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
 
 
-def assert_file_readable2(filepath: Path):
+def assert_file_readable(filepath: Path):
     with open(filepath, "rb") as f:
         f.read(1)
 
@@ -60,8 +58,3 @@ def _touch(filepath: Path, mode=0o666, dir_fd=None, **kwargs):
             dir_fd=None if os.supports_fd else dir_fd,
             **kwargs,
         )
-
-
-def _is_group_readable(filepath):
-    return bool(os.stat(filepath).st_mode & stat.S_IRGRP)
-

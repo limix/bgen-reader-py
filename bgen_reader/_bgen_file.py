@@ -25,6 +25,10 @@ class bgen_file:
         self._bgen_file = None
 
     @property
+    def filepath(self) -> Path:
+        return self._filepath
+
+    @property
     def nvariants(self) -> int:
         return lib.bgen_file_nvariants(self._bgen_file)
 

@@ -12,11 +12,10 @@ from ._ffi import ffi, lib
 from ._bgen_metafile import read_partition
 
 
-def create_genotypes(bgen_filepath, metafile_filepath, verbose):
-    with bgen_file(bgen_filepath) as bgen:
-        nvariants = bgen.nvariants
+def create_genotypes(bgen: bgen_file, metafile_filepath, verbose):
+    nvariants = bgen.nvariants
 
-    rg = _get_read_genotype(bgen_filepath, metafile_filepath)
+    rg = _get_read_genotype(bgen, metafile_filepath)
 
     desc = "Mapping variants"
     return [
@@ -25,18 +24,20 @@ def create_genotypes(bgen_filepath, metafile_filepath, verbose):
     ]
 
 
-def _get_read_genotype(bgen_filepath, metafile_filepath):
-    @dask.delayed(nout=0, traverse=False, name="_read_genotype")
-    def _read_genotype(i):
+def _get_read_genotype(bgen: bgen_file, metafile_filepath):
+    from dask import delayed
+    from dask.base import tokenize
 
-        with bgen_file(bgen_filepath) as bgen:
-            nsamples = bgen.nsamples
-            nvariants = bgen.nvariants
+    nsamples = bgen.nsamples
+    nvariants = bgen.nvariants
+    bgen_filepath = bgen.filepath
 
-        with bgen_metafile(metafile_filepath) as mf:
-            nparts = mf.npartitions
+    with bgen_metafile(metafile_filepath) as mf:
+        npartitions = mf.npartitions
 
-        part_size = _ceildiv(nvariants, nparts)
+    def read_genotype(i: int):
+
+        part_size = _ceildiv(nvariants, npartitions)
         part = i // part_size
         j = i % part_size
         p = read_partition(metafile_filepath, part)
@@ -52,7 +53,8 @@ def _get_read_genotype(bgen_filepath, metafile_filepath):
         )
         return g[m]
 
-    return _read_genotype
+    name = "read_genotype-" + tokenize(bytes(metafile_filepath))
+    return delayed(read_genotype, name, True, None, False)
 
 
 cache = LRUCache(maxsize=3)

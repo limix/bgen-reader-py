@@ -1,8 +1,8 @@
 from pathlib import Path
+from typing import Union
 
 from ._bgen_file import bgen_file
-from ._file import assert_file_exist2, assert_file_readable2
-from typing import Union
+from ._file import assert_file_exist, assert_file_readable
 
 
 def create_metafile(
@@ -44,8 +44,8 @@ def create_metafile(
     bgen_filepath = Path(bgen_filepath)
     metafile_filepath = Path(metafile_filepath)
 
-    assert_file_exist2(bgen_filepath)
-    assert_file_readable2(bgen_filepath)
+    assert_file_exist(bgen_filepath)
+    assert_file_readable(bgen_filepath)
 
     if metafile_filepath.exists():
         raise ValueError(f"File {metafile_filepath} already exists.")

@@ -6,8 +6,8 @@ from typing import Optional, Union
 from ._bgen_file import bgen_file
 from ._file import (
     BGEN_CACHE_HOME,
-    assert_file_exist2,
-    assert_file_readable2,
+    assert_file_exist,
+    assert_file_readable,
     is_file_writable,
     path_to_filename,
 )
@@ -35,7 +35,7 @@ def read_bgen(
         :func:`bgen_reader.create_metafile`. If ``None``, a metafile will be automatically created.
         Defaults to ``None``.
     samples_filepath
-        Path to a `sample gen format`_ file or ``None`` to read samples from the bgen file itself.
+        Path to a `sample format`_ file or ``None`` to read samples from the bgen file itself.
         Defaults to ``None``.
     verbose
         ``True`` to show progress; ``False`` otherwise. Defaults to ``True``.
@@ -75,18 +75,19 @@ def read_bgen(
         [1. 0. 1. 0.]
 
 
-    .. _sample gen format: https://www.well.ox.ac.uk/~gav/qctool/documentation/sample_file_formats.html
+    .. _sample format: https://www.well.ox.ac.uk/~gav/qctool/documentation/sample_file_formats.html
     """
 
     filepath = Path(filepath)
-    assert_file_exist2(filepath)
-    assert_file_readable2(filepath)
+    assert_file_exist(filepath)
+    assert_file_readable(filepath)
 
     if metafile_filepath is None:
         metafile_filepath = _infer_metafile_filepath(filepath)
     else:
         metafile_filepath = Path(metafile_filepath)
-        assert_file_exist2(metafile_filepath)
+        assert_file_exist(metafile_filepath)
+        assert_file_readable(filepath)
 
     if not metafile_filepath.exists():
         if verbose:
@@ -106,6 +107,7 @@ def read_bgen(
         create_metafile(filepath, metafile_filepath, verbose)
 
     with bgen_file(filepath) as bgen:
+
         if samples_filepath is None:
             if bgen.contain_samples:
                 samples = bgen.read_samples(verbose)
@@ -113,13 +115,14 @@ def read_bgen(
                 samples = generate_samples(bgen.nsamples)
         else:
             samples_filepath = Path(samples_filepath)
-            assert_file_exist2(samples_filepath)
-            assert_file_readable2(samples_filepath)
+            assert_file_exist(samples_filepath)
+            assert_file_readable(samples_filepath)
             samples = read_samples_file(samples_filepath, verbose)
 
-    with bgen_metafile(metafile_filepath) as metafile:
-        variants = metafile.create_variants()
-    genotype = create_genotypes(filepath, metafile_filepath, verbose)
+        with bgen_metafile(metafile_filepath) as metafile:
+            variants = metafile.create_variants()
+
+        genotype = create_genotypes(bgen, metafile_filepath, verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
 
@@ -134,7 +137,7 @@ def _infer_metafile_filepath(bgen_filepath: Path) -> Path:
     metafile = bgen_filepath.with_suffix(".metadata")
     if metafile.exists():
         try:
-            assert_file_readable2(metafile)
+            assert_file_readable(metafile)
             return metafile
         except RuntimeError as e:
             warnings.warn(str(e), UserWarning)

@@ -27,6 +27,10 @@ class bgen_metafile:
     def nvariants(self) -> int:
         return lib.bgen_metafile_nvariants(self._bgen_metafile)
 
+    @property
+    def partition_size(self) -> int:
+        return _ceildiv(self.nvariants, self.npartitions)
+
     def read_partition(self, index: int):
         partition = lib.bgen_metafile_read_partition(self._bgen_metafile, index)
         if partition == ffi.NULL:
@@ -54,8 +58,7 @@ class bgen_metafile:
         df["nalleles"] = df["nalleles"].astype("uint16")
         df["vaddr"] = df["vaddr"].astype("uint64")
 
-        part_size = _get_partition_size(nvariants, self.npartitions)
-        index_offset = part_size * index
+        index_offset = self.partition_size * index
         df.index = range(index_offset, index_offset + nvariants)
 
         return df
@@ -65,7 +68,7 @@ class bgen_metafile:
         npartitions = self.npartitions
         dfs = []
         index_base = 0
-        part_size = _get_partition_size(nvariants, npartitions)
+        part_size = self.partition_size
         divisions = []
         for i in range(npartitions):
             divisions.append(index_base)
@@ -112,10 +115,6 @@ def read_partition(metafile_filepath: Path, partition: int):
 def _read_allele_ids(allele_ids, nalleles):
     alleles = [create_string(allele_ids[i]) for i in range(nalleles)]
     return ",".join(alleles)
-
-
-def _get_partition_size(nvariants: int, npartitions: int):
-    return _ceildiv(nvariants, npartitions)
 
 
 def _ceildiv(a, b):
