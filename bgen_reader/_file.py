@@ -11,7 +11,8 @@ def _make_sure_dir_exist(dirpath: Path):
     dirpath.mkdir(parents=True, exist_ok=True)
 
 
-_make_sure_dir_exist(BGEN_CACHE_HOME)
+_make_sure_dir_exist(BGEN_CACHE_HOME / "metafile")
+_make_sure_dir_exist(BGEN_CACHE_HOME / "test")
 
 
 def assert_file_exist(filepath: Path):
@@ -43,6 +44,21 @@ def path_to_filename(path: Path):
     else:
         parts = (drive,) + rest
     return Path("%".join(parts))
+
+
+def file_hash(filepath: Path) -> str:
+    import hashlib
+
+    BLOCK_SIZE = 65536
+
+    sha256 = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        fb = f.read(BLOCK_SIZE)
+        while len(fb) > 0:
+            sha256.update(fb)
+            fb = f.read(BLOCK_SIZE)
+
+    return sha256.hexdigest()
 
 
 def _touch(filepath: Path, mode=0o666, dir_fd=None, **kwargs):

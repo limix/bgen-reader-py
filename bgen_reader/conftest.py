@@ -56,3 +56,30 @@ def _compatibility():
 
     warnings.filterwarnings("ignore", message="numpy.dtype size changed")
     warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
+
+
+@pytest.fixture
+def large_bgen_filepath():
+    from pathlib import Path
+    from subprocess import check_call
+    from bgen_reader import BGEN_CACHE_HOME
+    from bgen_reader._file import file_hash
+
+    filepath = BGEN_CACHE_HOME / "test" / "large.bgen"
+
+    expected = "b9e75b6c5c5e8c5e1ebd1b2f54a731aef99cfee628895d5008c019716b5909dc"
+    if filepath.exists() and file_hash(filepath) == expected:
+        return filepath
+
+    pass_filepath = Path("/Users/horta/pass")
+    if not pass_filepath.exists():
+        raise RuntimeError(f"Could not find {pass_filepath} file.")
+
+    cmd = (
+        "curl http://rest.s3for.me/bgen/large.bgen.bz2.enc -s | "
+        "openssl enc -d -pbkdf2 -aes-256-cbc -kfile /Users/horta/pass |"
+        f"bunzip2 > {filepath}"
+    )
+    check_call(cmd, shell=True)
+
+    return filepath

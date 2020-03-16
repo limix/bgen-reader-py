@@ -36,7 +36,7 @@ class bgen_metafile:
         if partition == ffi.NULL:
             raise RuntimeError(f"Could not read partition {partition}.")
 
-        nvariants = self.nvariants
+        nvariants = lib.bgen_partition_nvariants(partition)
         variants = []
         for i in range(nvariants):
             variant = lib.bgen_partition_get_variant(partition, i)
@@ -102,11 +102,12 @@ class bgen_metafile:
             lib.bgen_metafile_close(self._bgen_metafile)
 
 
-cache = LRUCache(maxsize=3)
-lock = RLock()
+# cache = LRUCache(maxsize=3)
+# lock = RLock()
 
 
-@cached(cache, lock=lock)
+# TODO: uncomment cache
+# @cached(cache, lock=lock)
 def read_partition(metafile_filepath: Path, partition: int):
     with bgen_metafile(metafile_filepath) as metafile:
         return metafile.read_partition(partition)

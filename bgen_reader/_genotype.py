@@ -1,8 +1,8 @@
+from pathlib import Path
 from threading import RLock
 
 from cachetools import LRUCache, cached
 from tqdm import trange
-from pathlib import Path
 
 from ._bgen_file import bgen_file
 from ._bgen_metafile import bgen_metafile

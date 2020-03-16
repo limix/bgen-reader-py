@@ -23,6 +23,7 @@ Documentation can be found at <https://github.com/limix/bgen-reader-py>.
 from ._dosage import allele_expectation, allele_frequency, compute_dosage
 from ._download import download
 from ._example import example_files
+from ._file import BGEN_CACHE_HOME
 from ._metadata import create_metafile
 from ._reader import read_bgen
 from ._testit import test
@@ -51,4 +52,5 @@ __all__ = [
     "compute_dosage",
     "download",
     "allele_frequency",
+    "BGEN_CACHE_HOME",
 ]

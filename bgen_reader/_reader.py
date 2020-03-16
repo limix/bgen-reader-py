@@ -141,10 +141,10 @@ def _infer_metafile_filepath(bgen_filepath: Path) -> Path:
             return metafile
         except RuntimeError as e:
             warnings.warn(str(e), UserWarning)
-            return BGEN_CACHE_HOME / path_to_filename(metafile)
+            return BGEN_CACHE_HOME / "metafile" / path_to_filename(metafile)
     else:
         if is_file_writable(metafile):
             return metafile
 
         warnings.warn(_metafile_nowrite_dir.format(filepath=metafile), UserWarning)
-        return BGEN_CACHE_HOME / path_to_filename(metafile)
+        return BGEN_CACHE_HOME / "metafile" / path_to_filename(metafile)
