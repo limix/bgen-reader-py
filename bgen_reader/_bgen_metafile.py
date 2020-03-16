@@ -1,13 +1,13 @@
 from pathlib import Path
+from threading import RLock
 
+import dask.dataframe as dd
+from cachetools import LRUCache, cached
+from dask.delayed import delayed
 from pandas import DataFrame
 
 from ._ffi import ffi, lib
-from threading import RLock
 from ._string import create_string
-from dask.delayed import delayed
-import dask.dataframe as dd
-from cachetools import LRUCache, cached
 
 
 class bgen_metafile:

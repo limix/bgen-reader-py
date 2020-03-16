@@ -1,9 +1,7 @@
-from os.path import exists
 from pathlib import Path
 
 from ._bgen_file import bgen_file
 from ._file import assert_file_exist2, assert_file_readable2
-from ._string import make_sure_bytes
 from typing import Union
 
 

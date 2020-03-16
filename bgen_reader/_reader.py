@@ -29,16 +29,14 @@ def read_bgen(
     Parameters
     ----------
     filepath
-        A bgen file path.
+        Bgen file path.
     metafile_filepath
-        If ``None``, it will try to read the ``filepath + ".metadata"`` file. If this is
-        not possible, it will create one. It tries to create one at
-        ``filepath + ".metadata"``. If that is also no possible, it tries to create one
-        at a temporary folder.
+        File path to the corresponding metafile. A metafile can be created by calling
+        :func:`bgen_reader.create_metafile`. If ``None``, a metafile will be automatically created.
+        Defaults to ``None``.
     samples_filepath
-        A sample file in `gen format <https://goo.gl/bCzo7m>`_.
-        If ``samples_filepath`` is provided, sample ids are read from this file.
-        Otherwise, it reads from the bgen file itself if possible. Defaults to ``None``.
+        Path to a `sample gen format`_ file or ``None`` to read samples from the bgen file itself.
+        Defaults to ``None``.
     verbose
         ``True`` to show progress; ``False`` otherwise. Defaults to ``True``.
 
@@ -75,6 +73,9 @@ def read_bgen(
         3    sample_3
         Name: id, dtype: object
         [1. 0. 1. 0.]
+
+
+    .. _sample gen format: https://www.well.ox.ac.uk/~gav/qctool/documentation/sample_file_formats.html
     """
 
     filepath = Path(filepath)
