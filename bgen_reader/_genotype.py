@@ -35,7 +35,6 @@ def _get_read_genotype(bgen: bgen_file, metafile_filepath):
             part = i // part_size
             j = i % part_size
             p = mf.read_partition(part)
-            # p = read_partition(metafile_filepath, part)
             nsub_parts = _estimate_best_nsub_parts(nsamples, part_size)
             spart_size = max(1, part_size // nsub_parts)
             sub_part = j // spart_size
@@ -43,7 +42,7 @@ def _get_read_genotype(bgen: bgen_file, metafile_filepath):
             start = sub_part * spart_size
             end = min(len(p), (sub_part + 1) * spart_size)
             vaddrs = tuple(p.iloc[start:end]["vaddr"].tolist())
-            g = read_genotype_partition(bgen_filepath, metafile_filepath, vaddrs)
+            g = read_genotype_partition(bgen_filepath, vaddrs)
             return g[m]
 
     name = "read_genotype-" + tokenize(bytes(metafile_filepath))
@@ -55,7 +54,7 @@ lock = RLock()
 
 
 @cached(cache, lock=lock)
-def read_genotype_partition(bgen_filepath, metafile_filepath, vaddrs):
+def read_genotype_partition(bgen_filepath, vaddrs):
     genotypes = []
     for vaddr in vaddrs:
         with bgen_file(bgen_filepath) as bgen:

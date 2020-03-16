@@ -3,20 +3,10 @@ from math import floor, sqrt
 from pathlib import Path
 
 from pandas import Series
+from numpy import asarray, full, nan, float64
 
 from ._ffi import ffi, lib
 from ._string import create_string, make_sure_bytes
-
-
-@contextmanager
-def bgen_metafile(filepath):
-    metafile = lib.bgen_metafile_open(make_sure_bytes(filepath))
-    if metafile == ffi.NULL:
-        raise RuntimeError(f"Could not open {filepath}.")
-    try:
-        yield metafile
-    finally:
-        lib.bgen_metafile_close(metafile)
 
 
 class bgen_file:
@@ -66,6 +56,26 @@ class bgen_file:
             raise RuntimeError(f"Error while creating metafile: {filepath}.")
 
         lib.bgen_metafile_close(metafile)
+
+    def read_genotype(self, offset: int):
+        genotype = lib.bgen_file_open_genotype(self._bgen_file, offset)
+        if genotype == ffi.NULL:
+            raise RuntimeError(f"Could not open genotype (offset {offset})")
+
+        nsamples = self.nsamples
+        ncombs = lib.bgen_genotype_ncombs(genotype)
+        probs = full((nsamples, ncombs), nan, dtype=float64)
+        lib.bgen_genotype_read(genotype, ffi.cast("double *", probs.ctypes.data))
+
+        phased = lib.bgen_genotype_phased(genotype)
+        ploidy = asarray(
+            [lib.bgen_genotype_ploidy(genotype, i) for i in range(nsamples)], int
+        )
+        missing = asarray(
+            [lib.bgen_genotype_missing(genotype, i) for i in range(nsamples)], bool
+        )
+        lib.bgen_genotype_close(genotype)
+        return {"probs": probs, "phased": phased, "ploidy": ploidy, "missing": missing}
 
     def close(self):
         self.__exit__()
