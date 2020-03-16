@@ -58,24 +58,8 @@ def read_genotype_partition(bgen_filepath, vaddrs):
     genotypes = []
     for vaddr in vaddrs:
         with bgen_file(bgen_filepath) as bgen:
-            nsamples = bgen.nsamples
-            vg = lib.bgen_file_open_genotype(bgen._bgen_file, vaddr)
-            if vg == ffi.NULL:
-                raise RuntimeError(f"Could not open genotype (offset {vaddr})")
-            ncombs = lib.bgen_genotype_ncombs(vg)
-            p = full((nsamples, ncombs), nan, dtype=float64)
-            lib.bgen_genotype_read(vg, ffi.cast("double *", p.ctypes.data))
-            phased = bool(lib.bgen_genotype_phased(vg))
-            ploidy = asarray(
-                [lib.bgen_genotype_ploidy(vg, i) for i in range(nsamples)], int
-            )
-            missing = asarray(
-                [lib.bgen_genotype_missing(vg, i) for i in range(nsamples)], bool
-            )
-            lib.bgen_genotype_close(vg)
-            genotypes.append(
-                {"probs": p, "phased": phased, "ploidy": ploidy, "missing": missing}
-            )
+            genotype = bgen.read_genotype(vaddr)
+            genotypes.append(genotype)
     return genotypes
 
 
