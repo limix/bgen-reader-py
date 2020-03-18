@@ -110,7 +110,7 @@ def read_bgen(
 
         if samples_filepath is None:
             if bgen.contain_samples:
-                samples = bgen.read_samples(verbose)
+                samples = bgen.read_samples()
             else:
                 samples = generate_samples(bgen.nsamples)
         else:

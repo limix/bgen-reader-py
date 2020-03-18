@@ -65,10 +65,11 @@ def test_metafile_not_provided():
         read_bgen(filepath, verbose=False)
 
 
-def test_metafile_provided():
+def test_metafile_provided_not_supported_anymore():
     filenames = ["haplotypes.bgen", "haplotypes.bgen.metadata.valid"]
     with example_files(filenames) as filepaths:
-        read_bgen(filepaths[0], metafile_filepath=filepaths[1], verbose=False)
+        with pytest.raises(RuntimeError):
+            read_bgen(filepaths[0], metafile_filepath=filepaths[1], verbose=False)
 
 
 def test_metafile_wrong_filepath():

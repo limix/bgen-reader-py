@@ -11,7 +11,7 @@ void                  bgen_file_close(struct bgen_file const* bgen_file);
 int32_t               bgen_file_nsamples(struct bgen_file const* bgen_file);
 int32_t               bgen_file_nvariants(struct bgen_file const* bgen_file);
 bool                  bgen_file_contain_samples(struct bgen_file const* bgen_file);
-struct bgen_samples*  bgen_file_read_samples(struct bgen_file* bgen_file, int verbose);
+struct bgen_samples*  bgen_file_read_samples(struct bgen_file* bgen_file);
 struct bgen_genotype* bgen_file_open_genotype(struct bgen_file* bgen_file,
                                               uint64_t          genotype_offset);
 
@@ -48,11 +48,11 @@ struct bgen_string const* bgen_samples_get(struct bgen_samples const* samples, u
 
 struct bgen_variant
 {
+    uint64_t                   genotype_offset;
     struct bgen_string const*  id;
     struct bgen_string const*  rsid;
     struct bgen_string const*  chrom;
     uint32_t                   position;
     uint16_t                   nalleles;
     struct bgen_string const** allele_ids;
-    uint64_t                   genotype_offset;
 };

@@ -9,7 +9,7 @@ def get_samples(bgen_filepath, verbose: bool) -> Series:
     with bgen_file(bgen_filepath) as bgen:
 
         if bgen.contain_samples:
-            samples = bgen.read_samples(verbose)
+            samples = bgen.read_samples()
 
         else:
             if verbose:

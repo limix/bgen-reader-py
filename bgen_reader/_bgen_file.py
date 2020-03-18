@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 from math import floor, sqrt
 from pathlib import Path
 
@@ -6,7 +5,7 @@ from pandas import Series
 from numpy import asarray, full, nan, float64
 
 from ._ffi import ffi, lib
-from ._string import create_string, make_sure_bytes
+from ._string import create_string
 
 
 class bgen_file:
@@ -30,9 +29,9 @@ class bgen_file:
     def contain_samples(self) -> bool:
         return lib.bgen_file_contain_samples(self._bgen_file)
 
-    def read_samples(self, verbose: bool) -> Series:
+    def read_samples(self) -> Series:
         nsamples = self.nsamples
-        bgen_samples = lib.bgen_file_read_samples(self._bgen_file, verbose)
+        bgen_samples = lib.bgen_file_read_samples(self._bgen_file)
         if bgen_samples == ffi.NULL:
             raise RuntimeError(f"Could not fetch samples from the bgen file.")
 
