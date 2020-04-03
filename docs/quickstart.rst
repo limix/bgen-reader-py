@@ -85,7 +85,7 @@ Phased genotype
 
    >>> bgen = read_bgen("haplotypes.bgen", verbose=False)
    >>>
-   >>> print(bgen["variants"].head())
+   >>> print(bgen["variants"].head(4))
         id rsid chrom  pos  nalleles allele_ids  vaddr
    0  SNP1  RS1     1    1         2        A,G    102
    1  SNP2  RS2     1    2         2        A,G    159

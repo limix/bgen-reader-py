@@ -5,5 +5,5 @@ void read_partition_part1(struct bgen_partition const* partition, uint32_t* posi
 
 void read_partition_part2(struct bgen_partition const* partition, wchar_t* const id,
                           uint32_t id_stride, wchar_t* const rsid, uint32_t rsid_stride,
-                          wchar_t* const chrom, uint32_t chrom_stride, char* const allele_ids,
-                          uint32_t allele_ids_stride);
+                          wchar_t* const chrom, uint32_t chrom_stride,
+                          wchar_t* const allele_ids, uint32_t allele_ids_stride);

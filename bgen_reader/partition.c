@@ -41,7 +41,7 @@ static void read_partition_part1(struct bgen_partition const* partition, uint32_
 static void read_partition_part2(struct bgen_partition const* partition, wchar_t* const id,
                                  uint32_t id_stride, wchar_t* const rsid, uint32_t rsid_stride,
                                  wchar_t* const chrom, uint32_t chrom_stride,
-                                 char* const allele_ids, uint32_t allele_ids_stride)
+                                 wchar_t* const allele_ids, uint32_t allele_ids_stride)
 {
     uint32_t nvariants = bgen_partition_nvariants(partition);
     for (uint32_t i = 0; i < nvariants; ++i) {
@@ -52,23 +52,32 @@ static void read_partition_part2(struct bgen_partition const* partition, wchar_t
         /* for (j = 0; j < bgen_string_length(v->id); ++j) */
         /*     id[i * id_stride + j] = bgen_string_data(v->id)[j]; */
 
-        mbstowcs(rsid + i * rsid_stride, bgen_string_data(v->rsid), bgen_string_length(v->rsid));
+        mbstowcs(rsid + i * rsid_stride, bgen_string_data(v->rsid),
+                 bgen_string_length(v->rsid));
         /* for (j = 0; j < bgen_string_length(v->rsid); ++j) */
         /*     rsid[i * rsid_stride + j] = bgen_string_data(v->rsid)[j]; */
 
-        mbstowcs(chrom + i * chrom_stride, bgen_string_data(v->chrom), bgen_string_length(v->chrom));
+        mbstowcs(chrom + i * chrom_stride, bgen_string_data(v->chrom),
+                 bgen_string_length(v->chrom));
         /* for (j = 0; j < bgen_string_length(v->chrom); ++j) */
         /*     chrom[i * chrom_stride + j] = bgen_string_data(v->chrom)[j]; */
 
         size_t j = 0;
         for (uint16_t r = 0; r < v->nalleles; ++r) {
-            for (unsigned k = 0; k < bgen_string_length(v->allele_ids[r]); ++k) {
-                allele_ids[i * allele_ids_stride + j] = bgen_string_data(v->allele_ids[r])[k];
-                ++j;
-            }
+
+            j += mbstowcs(allele_ids + i * allele_ids_stride + j,
+                          bgen_string_data(v->allele_ids[r]),
+                          bgen_string_length(v->allele_ids[r]));
+
+            /* for (unsigned k = 0; k < bgen_string_length(v->allele_ids[r]); ++k) { */
+            /*     allele_ids[i * allele_ids_stride + j] =
+             * bgen_string_data(v->allele_ids[r])[k]; */
+            /*     ++j; */
+            /* } */
             if (r + 1 < v->nalleles) {
-                allele_ids[i * allele_ids_stride + j] = ',';
-                ++j;
+                j += mbstowcs(allele_ids + i * allele_ids_stride + j, ",", 1);
+                /* allele_ids[i * allele_ids_stride + j] = ','; */
+                /* ++j; */
             }
         }
     }
