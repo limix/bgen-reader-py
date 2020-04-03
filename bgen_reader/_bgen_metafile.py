@@ -1,5 +1,9 @@
+from numpy import empty, uint32, uint16, uint64, zeros, asarray
+from collections import OrderedDict
 from pathlib import Path
+from time import time
 from threading import RLock
+from ctypes import create_string_buffer, c_char_p, c_uint32, byref
 
 import dask.dataframe as dd
 from cachetools import LRUCache, cached
@@ -32,34 +36,85 @@ class bgen_metafile:
         return _ceildiv(self.nvariants, self.npartitions)
 
     def read_partition(self, index: int):
+        # start = time()
         partition = lib.bgen_metafile_read_partition(self._bgen_metafile, index)
+        # print(f"Elapsed: {time() - start} for bgen_metafile_read_partition")
         if partition == ffi.NULL:
             raise RuntimeError(f"Could not read partition {partition}.")
 
         nvariants = lib.bgen_partition_nvariants(partition)
-        variants = []
-        for i in range(nvariants):
-            variant = lib.bgen_partition_get_variant(partition, i)
-            id_ = create_string(variant[0].id)
-            rsid = create_string(variant[0].rsid)
-            chrom = create_string(variant[0].chrom)
-            pos = variant[0].position
-            nalleles = variant[0].nalleles
-            allele_ids = _read_allele_ids(variant[0].allele_ids, variant[0].nalleles)
-            offset = variant[0].genotype_offset
-            variants.append([id_, rsid, chrom, pos, nalleles, allele_ids, offset])
 
-        df = DataFrame(
-            variants,
-            columns=["id", "rsid", "chrom", "pos", "nalleles", "allele_ids", "vaddr"],
-            dtype=str,
+        # start = time()
+        position = empty(nvariants, dtype=uint32)
+        nalleles = empty(nvariants, dtype=uint16)
+        offset = empty(nvariants, dtype=uint64)
+        vid_max_len = ffi.new("uint32_t[]", 1)
+        rsid_max_len = ffi.new("uint32_t[]", 1)
+        chrom_max_len = ffi.new("uint32_t[]", 1)
+        allele_ids_max_len = ffi.new("uint32_t[]", 1)
+        # print(f"Elapsed: {time() - start} empty")
+
+        # start = time()
+        position_ptr = ffi.cast("uint32_t *", ffi.from_buffer(position))
+        nalleles_ptr = ffi.cast("uint16_t *", ffi.from_buffer(nalleles))
+        offset_ptr = ffi.cast("uint64_t *", ffi.from_buffer(offset))
+        lib.read_partition_part1(
+            partition,
+            position_ptr,
+            nalleles_ptr,
+            offset_ptr,
+            vid_max_len,
+            rsid_max_len,
+            chrom_max_len,
+            allele_ids_max_len,
         )
-        df["pos"] = df["pos"].astype("uint32")
-        df["nalleles"] = df["nalleles"].astype("uint16")
-        df["vaddr"] = df["vaddr"].astype("uint64")
+        # print(f"Elapsed: {time() - start} read_partition")
 
+        # start = time()
+        vid = zeros(nvariants, dtype=f"S{vid_max_len[0]}")
+        rsid = zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
+        chrom = zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
+        allele_ids = zeros(nvariants, dtype=f"S{allele_ids_max_len[0]}")
+        # print(f"Elapsed: {time() - start} create_strings")
+
+        # start = time()
+        lib.read_partition_part2(
+            partition,
+            ffi.from_buffer(vid),
+            vid_max_len[0],
+            ffi.from_buffer(rsid),
+            rsid_max_len[0],
+            ffi.from_buffer(chrom),
+            chrom_max_len[0],
+            ffi.from_buffer(allele_ids),
+            allele_ids_max_len[0],
+        )
+        # print(f"Elapsed: {time() - start} read_partition2")
+
+        # start = time()
+        data = OrderedDict(
+            [
+                ("id", vid.astype(str)),
+                ("rsid", rsid.astype(str)),
+                ("chrom", chrom.astype(str)),
+                ("pos", position),
+                ("nalleles", nalleles),
+                ("allele_ids", allele_ids.astype(str)),
+                ("vaddr", offset),
+            ]
+        )
+        # print(f"Elapsed: {time() - start} for building OrderedDict")
+
+        # start = time()
+        df = DataFrame(data)
+        # print(f"Elapsed: {time() - start} for building dataframe")
+
+        # start = time()
         index_offset = self.partition_size * index
         df.index = range(index_offset, index_offset + nvariants)
+        # print(f"Elapsed: {time() - start} for final arrangements")
+
+        lib.bgen_partition_destroy(partition)
 
         return df
 
@@ -102,12 +157,11 @@ class bgen_metafile:
             lib.bgen_metafile_close(self._bgen_metafile)
 
 
-# cache = LRUCache(maxsize=3)
-# lock = RLock()
+cache = LRUCache(maxsize=3)
+lock = RLock()
 
 
-# TODO: uncomment cache
-# @cached(cache, lock=lock)
+@cached(cache, lock=lock)
 def read_partition(metafile_filepath: Path, partition: int):
     with bgen_metafile(metafile_filepath) as metafile:
         return metafile.read_partition(partition)
