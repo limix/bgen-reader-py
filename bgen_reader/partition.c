@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifndef MAX
 #define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
@@ -37,26 +38,29 @@ static void read_partition_part1(struct bgen_partition const* partition, uint32_
     }
 }
 
-static void read_partition_part2(struct bgen_partition const* partition, char* const id,
-                                 uint32_t id_stride, char* const rsid, uint32_t rsid_stride,
-                                 char* const chrom, uint32_t chrom_stride,
+static void read_partition_part2(struct bgen_partition const* partition, wchar_t* const id,
+                                 uint32_t id_stride, wchar_t* const rsid, uint32_t rsid_stride,
+                                 wchar_t* const chrom, uint32_t chrom_stride,
                                  char* const allele_ids, uint32_t allele_ids_stride)
 {
     uint32_t nvariants = bgen_partition_nvariants(partition);
     for (uint32_t i = 0; i < nvariants; ++i) {
         struct bgen_variant const* v = bgen_partition_get_variant(partition, i);
 
-        unsigned j = 0;
-        for (j = 0; j < bgen_string_length(v->id); ++j)
-            id[i * id_stride + j] = bgen_string_data(v->id)[j];
+        /* size_t j = 0; */
+        mbstowcs(id + i * id_stride, bgen_string_data(v->id), bgen_string_length(v->id));
+        /* for (j = 0; j < bgen_string_length(v->id); ++j) */
+        /*     id[i * id_stride + j] = bgen_string_data(v->id)[j]; */
 
-        for (j = 0; j < bgen_string_length(v->rsid); ++j)
-            rsid[i * rsid_stride + j] = bgen_string_data(v->rsid)[j];
+        mbstowcs(rsid + i * rsid_stride, bgen_string_data(v->rsid), bgen_string_length(v->rsid));
+        /* for (j = 0; j < bgen_string_length(v->rsid); ++j) */
+        /*     rsid[i * rsid_stride + j] = bgen_string_data(v->rsid)[j]; */
 
-        for (j = 0; j < bgen_string_length(v->chrom); ++j)
-            chrom[i * chrom_stride + j] = bgen_string_data(v->chrom)[j];
+        mbstowcs(chrom + i * chrom_stride, bgen_string_data(v->chrom), bgen_string_length(v->chrom));
+        /* for (j = 0; j < bgen_string_length(v->chrom); ++j) */
+        /*     chrom[i * chrom_stride + j] = bgen_string_data(v->chrom)[j]; */
 
-        j = 0;
+        size_t j = 0;
         for (uint16_t r = 0; r < v->nalleles; ++r) {
             for (unsigned k = 0; k < bgen_string_length(v->allele_ids[r]); ++k) {
                 allele_ids[i * allele_ids_stride + j] = bgen_string_data(v->allele_ids[r])[k];
