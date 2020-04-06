@@ -6,12 +6,13 @@ from shutil import copyfile
 
 import dask.dataframe as dd
 import pytest
-from bgen_reader._test_files import get_filepath
-from bgen_reader import create_metafile, example_files, read_bgen
 from dask.delayed import Delayed
 from numpy import array, array_equal, isnan
-from numpy.testing import assert_, assert_allclose, assert_equal
+from numpy.testing import assert_allclose, assert_equal
 from pandas import Series
+
+from bgen_reader import create_metafile, read_bgen
+from bgen_reader._test_files import get_filepath
 
 try:
     FileNotFoundError
@@ -44,16 +45,18 @@ def test_bgen_samples_specify_samples_file():
     assert all(data["samples"] == samples)
 
 
-def test_bgen_samples_outside_bgen_unreadable():
+def test_bgen_samples_outside_bgen_unreadable(tmp_path):
     bgen_filepath = get_filepath("complex.23bits.bgen")
-    samples_filepath = get_filepath("complex.sample")
+    samples_filepath = tmp_path / "complex.sample"
+    copyfile(get_filepath("complex.sample"), samples_filepath)
     with noread_permission(samples_filepath):
         with pytest.raises(PermissionError):
             read_bgen(bgen_filepath, samples_filepath=samples_filepath, verbose=False)
 
 
-def test_bgen_file_not_readable():
-    filepath = get_filepath("haplotypes.bgen")
+def test_bgen_file_not_readable(tmp_path):
+    filepath = tmp_path / "haplotypes.bgen"
+    copyfile(get_filepath("haplotypes.bgen"), filepath)
     with noread_permission(filepath):
         with pytest.raises(PermissionError):
             read_bgen(filepath, verbose=False)
@@ -162,7 +165,7 @@ def test_bgen_reader_variants_info():
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"]
     samples = bgen["samples"]
-    assert_("genotype" in bgen)
+    assert "genotype" in bgen
 
     variants = variants.compute()
     assert_equal(variants.loc[0, "chrom"], "01")
@@ -194,7 +197,7 @@ def test_bgen_reader_variants_info():
     assert_equal(samples.loc[n - 1], "sample_500")
 
     g = bgen["genotype"][0].compute()["probs"]
-    assert_(all(isnan(g[0, :])))
+    assert all(isnan(g[0, :]))
 
     g = bgen["genotype"][0].compute()["probs"]
     a = [0.027802362811705648, 0.00863673794284387, 0.9635608992454505]
@@ -214,7 +217,7 @@ def _test_bgen_reader_phased_genotype():
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"].compute()
     samples = bgen["samples"]
-    assert_("genotype" in bgen)
+    assert "genotype" in bgen
 
     assert_equal(variants.loc[0, "chrom"], "1")
     assert_equal(variants.loc[0, "id"], "SNP1")
@@ -252,7 +255,7 @@ def test_bgen_reader_without_metadata():
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"].compute()
     samples = bgen["samples"]
-    assert_("genotype" in bgen)
+    assert "genotype" in bgen
     assert_equal(variants.loc[7, "allele_ids"], "A,G")
     n = samples.shape[0]
     assert_equal(samples.loc[n - 1], "sample_500")
@@ -284,12 +287,11 @@ def test_bgen_reader_file_notfound():
 
 def test_create_metadata_file(tmp_path):
     filepath = get_filepath("example.32bits.bgen")
-    folder = filepath.parent
     metafile_filepath = tmp_path / (filepath.name + ".metadata")
 
     try:
         create_metafile(filepath, metafile_filepath, verbose=False)
-        assert_(os.path.exists(metafile_filepath))
+        assert os.path.exists(metafile_filepath)
     finally:
         if os.path.exists(metafile_filepath):
             os.remove(metafile_filepath)
@@ -300,7 +302,7 @@ def test_bgen_reader_complex():
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"].compute()
     samples = bgen["samples"]
-    assert_("genotype" in bgen)
+    assert "genotype" in bgen
 
     assert_equal(variants.loc[0, "chrom"], "01")
     assert_equal(variants.loc[0, "id"], "")
@@ -329,7 +331,7 @@ def test_bgen_reader_complex():
 
     g = bgen["genotype"][0].compute()["probs"][0]
     assert_allclose(g[:2], [1, 0])
-    assert_(isnan(g[2]))
+    assert isnan(g[2])
 
     g = bgen["genotype"][0].compute()["probs"][1]
     assert_allclose(g[:3], [1, 0, 0])
@@ -347,7 +349,7 @@ def test_bgen_reader_complex():
     phased = array(phased)
     assert_equal(phased.dtype.name, "bool")
     ideal = array([False, True, True, False, True, True, True, True, False, False])
-    assert_(array_equal(phased, ideal))
+    assert array_equal(phased, ideal)
 
 
 def test_bgen_reader_complex_sample_file():
@@ -358,7 +360,7 @@ def test_bgen_reader_complex_sample_file():
     )
     variants = bgen["variants"].compute()
     samples = bgen["samples"]
-    assert_("genotype" in bgen)
+    assert "genotype" in bgen
 
     assert_equal(variants.loc[0, "chrom"], "01")
     assert_equal(variants.loc[0, "id"], "")
