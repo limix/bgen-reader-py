@@ -18,7 +18,11 @@ _filenames = {
 
 
 def get_filepath(filename: str):
-    s3 = boto3.client("s3")
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id="AKIATTDGVX24Z3IGAWFM",
+        aws_secret_access_key="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",
+    )
 
     if filename not in _filenames:
         raise ValueError(f"Unknown filename {filename}.")
@@ -30,8 +34,7 @@ def get_filepath(filename: str):
         filepath.unlink()
 
     if not filepath.exists():
-        with tmp_cwd():
-            s3.download_file("bgen-examples", filename, filename)
+        s3.download_file("bgen-examples", filename, str(filepath))
 
     if file_hash(filepath) != _filenames[filename]:
         msg = (
