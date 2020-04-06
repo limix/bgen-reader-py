@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from numpy.testing import assert_allclose, assert_equal
 
@@ -5,6 +7,7 @@ from bgen_reader import read_bgen
 
 
 @pytest.mark.slow
+@pytest.mark.skipif(not Path("/Users/horta/pass").exists(), reason="missing credential")
 def test_large_file(large_bgen_filepath):
     data = read_bgen(large_bgen_filepath, verbose=True)
     variants = data["variants"]
