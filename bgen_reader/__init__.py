@@ -13,16 +13,14 @@ allele_expectation  Compute the expectation of each allele.
 allele_frequency    Compute allele frequency from its expectation.
 compute_dosage      Compute dosage from allele expectation.
 create_metafile     Create metafile.
-download            Download a file from a given url.
-example_files       Create a temporary folder with the given files.
+example_filepath    Get file path to a file example.
 read_bgen           Read a given BGEN file.
 test                Verify this package's integrity.
 
 Documentation can be found at <https://github.com/limix/bgen-reader-py>.
 """
 from ._dosage import allele_expectation, allele_frequency, compute_dosage
-from ._download import download
-from ._example import example_files
+from ._example import example_filepath
 from ._metafile import create_metafile
 from ._reader import read_bgen
 from ._testit import test
@@ -47,8 +45,7 @@ __all__ = [
     "allele_frequency",
     "compute_dosage",
     "create_metafile",
-    "download",
-    "example_files",
+    "example_filepath",
     "read_bgen",
     "test",
 ]

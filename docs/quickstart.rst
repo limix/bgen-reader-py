@@ -6,11 +6,12 @@ We first download the ``example.bgen``, ``haplotypes.bgen``, and ``complex.bgen`
 
 .. code-block:: python
 
-    >>> from bgen_reader import download
+    >>> from bgen_reader import example_filepath
     >>>
-    >>> download("http://rest.s3for.me/bgen-reader/example.bgen")
-    >>> download("http://rest.s3for.me/bgen-reader/haplotypes.bgen")
-    >>> download("http://rest.s3for.me/bgen-reader/complex.bgen")
+    >>> filepath = {}
+    >>> filepath["example.bgen"] = example_filepath("example.bgen")
+    >>> filepath["haplotypes.bgen"] = example_filepath("haplotypes.bgen")
+    >>> filepath["complex.bgen"] = example_filepath("complex.bgen")
 
 The above-mentioned files are read by this software in the same way but they present
 different levels of genotype complexity.
@@ -34,7 +35,7 @@ Let's read the ``example.bgen`` file and print out some information.
 
    >>> from bgen_reader import read_bgen
    >>>
-   >>> bgen = read_bgen("example.bgen", verbose=False)
+   >>> bgen = read_bgen(filepath["example.bgen"], verbose=False)
    >>>
    >>> # Variants metadata.
    >>> print(bgen["variants"].head())
@@ -83,7 +84,7 @@ Phased genotype
 
 .. doctest::
 
-   >>> bgen = read_bgen("haplotypes.bgen", verbose=False)
+   >>> bgen = read_bgen(filepath["haplotypes.bgen"], verbose=False)
    >>>
    >>> print(bgen["variants"].head(4))
         id rsid chrom  pos  nalleles allele_ids  vaddr
@@ -133,7 +134,7 @@ alleles, as well as phased\ *ness*.
 
 .. doctest::
 
-   >>> bgen = read_bgen("complex.bgen", verbose=False)
+   >>> bgen = read_bgen(filepath["complex.bgen"], verbose=False)
    >>>
    >>> # Note how the number of alleles very widely across loci.
    >>> print(bgen["variants"].compute())

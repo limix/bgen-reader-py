@@ -4,12 +4,17 @@ from dask.delayed import Delayed
 from numpy.testing import assert_allclose
 from pandas import Series
 
-from bgen_reader import allele_expectation, allele_frequency, compute_dosage, read_bgen
-from bgen_reader._test_files import get_filepath
+from bgen_reader import (
+    allele_expectation,
+    allele_frequency,
+    compute_dosage,
+    example_filepath,
+    read_bgen,
+)
 
 
 def test_read_bgem_interface():
-    filepath = get_filepath("haplotypes.bgen")
+    filepath = example_filepath("haplotypes.bgen")
     bgen = read_bgen(filepath, verbose=False)
     assert isinstance(bgen, dict)
     assert isinstance(bgen["variants"], dd.DataFrame)
@@ -19,11 +24,11 @@ def test_read_bgem_interface():
 
 
 def test_allele_expectation_interface():
-    bgen = read_bgen(get_filepath("haplotypes.bgen"), verbose=False)
+    bgen = read_bgen(example_filepath("haplotypes.bgen"), verbose=False)
     with pytest.raises(ValueError):
         allele_expectation(bgen, 1)
 
-    bgen = read_bgen(get_filepath("complex.23bits.bgen"), verbose=False)
+    bgen = read_bgen(example_filepath("complex.23bits.bgen"), verbose=False)
     e = allele_expectation(bgen, 3)
     assert_allclose(
         e, [[1.0, 0.0, 0.0], [2.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 2.0, 0.0]]
@@ -31,7 +36,7 @@ def test_allele_expectation_interface():
 
 
 def test_allele_frequency_interface():
-    filepath = get_filepath("complex.23bits.bgen")
+    filepath = example_filepath("complex.23bits.bgen")
     with pytest.raises(ValueError):
         bgen = read_bgen(filepath, verbose=False)
         allele_expectation(bgen, 1)
@@ -51,7 +56,7 @@ def test_allele_frequency_interface():
 
 
 def test_dosage_interface():
-    bgen = read_bgen(get_filepath("complex.23bits.bgen"), verbose=False)
+    bgen = read_bgen(example_filepath("complex.23bits.bgen"), verbose=False)
     e = allele_expectation(bgen, 3)
     assert_allclose(compute_dosage(e), [0, 0, 0, 0])
     assert_allclose(compute_dosage(e, 0), [1.0, 2.0, 1.0, 0.0])

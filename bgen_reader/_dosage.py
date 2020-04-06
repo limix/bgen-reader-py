@@ -20,12 +20,10 @@ def allele_frequency(expec):
     --------
     .. doctest::
 
-        >>> from bgen_reader import read_bgen, example_files
+        >>> from bgen_reader import read_bgen, example_filepath
         >>> from bgen_reader import allele_expectation, allele_frequency
         >>>
-        >>> # Download an example
-        >>> example = example_files("example.32bits.bgen")
-        >>> filepath = example.filepath
+        >>> filepath = example_filepath("example.32bits.bgen")
         >>>
         >>> bgen = read_bgen(filepath, verbose=False)
         >>>
@@ -49,9 +47,6 @@ def allele_frequency(expec):
         >>> print(variant)
                 id    rsid chrom   pos  nalleles allele_ids  vaddr
         4  SNPID_6  RSID_6    01  6000         2        A,G  19377
-        >>>
-        >>> # Clean-up the example
-        >>> example.close()
     """
     expec = asarray(expec, float)
     if expec.ndim != 2:
@@ -83,11 +78,9 @@ def compute_dosage(expec, alt=None):
         :caption: First a quick-start example.
 
         >>> from bgen_reader import allele_expectation, compute_dosage
-        >>> from bgen_reader import example_files, read_bgen
+        >>> from bgen_reader import example_filepath, read_bgen
         >>>
-        >>> # Download an example.
-        >>> example = example_files("example.32bits.bgen")
-        >>> filepath = example.filepath
+        >>> filepath = example_filepath("example.32bits.bgen")
         >>>
         >>> # Read the example.
         >>> bgen = read_bgen(filepath, verbose=False)
@@ -104,9 +97,6 @@ def compute_dosage(expec, alt=None):
         >>> # Print the dosage of the first five samples only.
         >>> print(d[:5])
         [1.96185308 0.00982666 0.01745552 1.00347899 1.01153563]
-        >>>
-        >>> # Clean-up the example
-        >>> example.close()
 
     .. code-block:: python
         :caption: Genotype probabilities, allele expectations and frequencies.
@@ -115,15 +105,14 @@ def compute_dosage(expec, alt=None):
         ...     allele_expectation,
         ...     allele_frequency,
         ...     compute_dosage,
-        ...     example_files,
+        ...     example_filepath,
         ...     read_bgen,
         ... )
         >>> from pandas import DataFrame
         >>> from xarray import DataArray
         >>>
         >>> # Download an example
-        >>> example = example_files("example.32bits.bgen")
-        >>> filepath = example.filepath
+        >>> filepath = example_filepath("example.32bits.bgen")
         >>>
         >>> # Open the bgen file.
         >>> bgen = read_bgen(filepath, verbose=False)
@@ -229,9 +218,6 @@ def compute_dosage(expec, alt=None):
         sample_500  1.01526
         <BLANKLINE>
         [500 rows x 1 columns]
-        >>>
-        >>> # Clean-up the example
-        >>> example.close()
     """
     if alt is None:
         return expec[..., -1]
@@ -267,13 +253,11 @@ def allele_expectation(bgen, variant_idx):
     --------
     .. doctest::
 
-        >>> from bgen_reader import allele_expectation, example_files, read_bgen
+        >>> from bgen_reader import allele_expectation, example_filepath, read_bgen
         >>>
         >>> from texttable import Texttable
         >>>
-        >>> # Download an example.
-        >>> example = example_files("example.32bits.bgen")
-        >>> filepath = example.filepath
+        >>> filepath = example_filepath("example.32bits.bgen")
         >>>
         >>> # Read the example.
         >>> bgen = read_bgen(filepath, verbose=False)
@@ -331,9 +315,6 @@ def allele_expectation(bgen, variant_idx):
         +----+-------+-------+-------+-------+
         | #G | 0     | 1     | 2     | 0.989 |
         +----+-------+-------+-------+-------+
-        >>>
-        >>> # Clean-up.
-        >>> example.close()
     """
     geno = bgen["genotype"][variant_idx].compute()
     if geno["phased"]:
@@ -342,8 +323,8 @@ def allele_expectation(bgen, variant_idx):
     nalleles = bgen["variants"].loc[variant_idx, "nalleles"].compute().values[0]
     genotypes = get_genotypes(geno["ploidy"], nalleles)
     expec = []
-    for i in range(len(genotypes)):
-        count = asarray(genotypes_to_allele_counts(genotypes[i]), float)
+    for i, genotype in enumerate(genotypes):
+        count = asarray(genotypes_to_allele_counts(genotype), float)
         n = count.shape[0]
         expec.append((count.T * geno["probs"][i, :n]).sum(1))
 

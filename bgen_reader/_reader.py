@@ -53,27 +53,25 @@ def read_bgen(
     --------
     .. doctest::
 
-        >>> from bgen_reader import example_files, read_bgen
+        >>> from bgen_reader import example_filepath, read_bgen
         >>>
-        >>> with example_files("haplotypes.bgen") as filepath:
-        ...     bgen = read_bgen(filepath, verbose=False)
-        ...     variants = bgen["variants"]
-        ...     samples = bgen["samples"]
-        ...
-        ...     v = variants.loc[0].compute()
-        ...     g = bgen["genotype"][0].compute()
-        ...     print(v)
-        ...     print(samples)
-        ...     print(g["probs"][0])
+        >>> bgen = read_bgen(example_filepath("haplotypes.bgen"), verbose=False)
+        >>> variants = bgen["variants"]
+        >>> samples = bgen["samples"]
+        >>>
+        >>> v = variants.loc[0].compute()
+        >>> g = bgen["genotype"][0].compute()
+        >>> print(v)
              id rsid chrom  pos  nalleles allele_ids  vaddr
         0  SNP1  RS1     1    1         2        A,G    102
+        >>> print(samples)
         0    sample_0
         1    sample_1
         2    sample_2
         3    sample_3
         Name: id, dtype: object
+        >>> print(g["probs"][0])
         [1. 0. 1. 0.]
-
 
     .. _sample format: https://www.well.ox.ac.uk/~gav/qctool/documentation/sample_file_formats.html
     """

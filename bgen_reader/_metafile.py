@@ -29,17 +29,16 @@ def create_metafile(
     .. doctest::
 
         >>> import os
-        >>> from bgen_reader import create_metafile, example_files
+        >>> from bgen_reader import create_metafile, example_filepath
         >>>
-        >>> with example_files("example.32bits.bgen") as filepath:
-        ...     folder = os.path.dirname(filepath)
-        ...     metafile_filepath = os.path.join(folder, filepath + ".metadata")
-        ...
-        ...     try:
-        ...         create_metafile(filepath, metafile_filepath, verbose=False)
-        ...     finally:
-        ...         if os.path.exists(metafile_filepath):
-        ...             os.remove(metafile_filepath)
+        >>> filepath = example_filepath("example.32bits.bgen")
+        >>> metafile_filepath = filepath.with_suffix(".metafile")
+        >>>
+        >>> try:
+        ...     create_metafile(filepath, metafile_filepath, verbose=False)
+        ... finally:
+        ...     if metafile_filepath.exists():
+        ...         os.remove(metafile_filepath)
     """
     bgen_filepath = Path(bgen_filepath)
     metafile_filepath = Path(metafile_filepath)

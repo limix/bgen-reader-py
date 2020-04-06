@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import os
 from contextlib import contextmanager
 from shutil import copyfile
@@ -11,24 +9,18 @@ from numpy import array, array_equal, isnan
 from numpy.testing import assert_allclose, assert_equal
 from pandas import Series
 
-from bgen_reader import create_metafile, read_bgen
-from bgen_reader._test_files import get_filepath
-
-try:
-    FileNotFoundError
-except NameError:
-    FileNotFoundError = IOError
+from bgen_reader import create_metafile, example_filepath, read_bgen
 
 
 def test_bgen_samples_inside_bgen():
-    data = read_bgen(get_filepath("haplotypes.bgen"), verbose=False)
+    data = read_bgen(example_filepath("haplotypes.bgen"), verbose=False)
     samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
     samples = Series(samples, dtype=str, name="id")
     assert all(data["samples"] == samples)
 
 
 def test_bgen_samples_not_present():
-    data = read_bgen(get_filepath("complex.23bits.no.samples.bgen"), verbose=False)
+    data = read_bgen(example_filepath("complex.23bits.no.samples.bgen"), verbose=False)
     samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
     samples = Series(samples, dtype=str, name="id")
     assert all(data["samples"] == samples)
@@ -36,8 +28,8 @@ def test_bgen_samples_not_present():
 
 def test_bgen_samples_specify_samples_file():
     data = read_bgen(
-        get_filepath("complex.23bits.bgen"),
-        samples_filepath=get_filepath("complex.sample"),
+        example_filepath("complex.23bits.bgen"),
+        samples_filepath=example_filepath("complex.sample"),
         verbose=False,
     )
     samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
@@ -46,9 +38,9 @@ def test_bgen_samples_specify_samples_file():
 
 
 def test_bgen_samples_outside_bgen_unreadable(tmp_path):
-    bgen_filepath = get_filepath("complex.23bits.bgen")
+    bgen_filepath = example_filepath("complex.23bits.bgen")
     samples_filepath = tmp_path / "complex.sample"
-    copyfile(get_filepath("complex.sample"), samples_filepath)
+    copyfile(example_filepath("complex.sample"), samples_filepath)
     with noread_permission(samples_filepath):
         with pytest.raises(PermissionError):
             read_bgen(bgen_filepath, samples_filepath=samples_filepath, verbose=False)
@@ -56,7 +48,7 @@ def test_bgen_samples_outside_bgen_unreadable(tmp_path):
 
 def test_bgen_file_not_readable(tmp_path):
     filepath = tmp_path / "haplotypes.bgen"
-    copyfile(get_filepath("haplotypes.bgen"), filepath)
+    copyfile(example_filepath("haplotypes.bgen"), filepath)
     with noread_permission(filepath):
         with pytest.raises(PermissionError):
             read_bgen(filepath, verbose=False)
@@ -68,20 +60,20 @@ def test_bgen_file_dont_exist():
 
 
 def test_metafile_not_provided():
-    read_bgen(get_filepath("haplotypes.bgen"), verbose=False)
+    read_bgen(example_filepath("haplotypes.bgen"), verbose=False)
 
 
 def test_metafile_provided_not_supported_anymore():
     with pytest.raises(RuntimeError):
         read_bgen(
-            get_filepath("haplotypes.bgen"),
-            metafile_filepath=get_filepath("haplotypes.bgen.metadata.valid"),
+            example_filepath("haplotypes.bgen"),
+            metafile_filepath=example_filepath("haplotypes.bgen.metadata.valid"),
             verbose=False,
         )
 
 
 def test_metafile_wrong_filepath():
-    filepath = get_filepath("haplotypes.bgen")
+    filepath = example_filepath("haplotypes.bgen")
     fp = "/omg/invalid/haplotypes.bgen.metafile_path"
     with pytest.raises(FileNotFoundError):
         with pytest.warns(UserWarning):
@@ -89,7 +81,7 @@ def test_metafile_wrong_filepath():
 
 
 def test_metafile_not_provided_no_permission_to_create(tmp_path):
-    src = get_filepath("haplotypes.bgen")
+    src = example_filepath("haplotypes.bgen")
     dst = tmp_path / "haplotypes.bgen"
     copyfile(src, dst)
     path = os.path.dirname(dst)
@@ -119,13 +111,13 @@ def noread_permission(path):
 
 
 def test_bgen_reader_lazy_types():
-    bgen = read_bgen(get_filepath("haplotypes.bgen"), verbose=False)
+    bgen = read_bgen(example_filepath("haplotypes.bgen"), verbose=False)
     assert isinstance(bgen["genotype"][0], Delayed)
     assert isinstance(bgen["variants"], dd.DataFrame)
 
 
 def test_bgen_reader_phased_genotype():
-    filepath = get_filepath("haplotypes.bgen")
+    filepath = example_filepath("haplotypes.bgen")
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"]
     samples = bgen["samples"]
@@ -161,7 +153,7 @@ def test_bgen_reader_phased_genotype():
 
 
 def test_bgen_reader_variants_info():
-    filepath = get_filepath("example.32bits.bgen")
+    filepath = example_filepath("example.32bits.bgen")
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"]
     samples = bgen["samples"]
@@ -213,7 +205,7 @@ def test_bgen_reader_variants_info():
 
 
 def _test_bgen_reader_phased_genotype():
-    filepath = get_filepath("haplotypes.bgen")
+    filepath = example_filepath("haplotypes.bgen")
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"].compute()
     samples = bgen["samples"]
@@ -251,7 +243,7 @@ def _test_bgen_reader_phased_genotype():
 
 
 def test_bgen_reader_without_metadata():
-    filepath = get_filepath("example.32bits.bgen")
+    filepath = example_filepath("example.32bits.bgen")
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"].compute()
     samples = bgen["samples"]
@@ -264,14 +256,14 @@ def test_bgen_reader_without_metadata():
 def test_bgen_reader_with_wrong_metadata_file():
     with pytest.raises(RuntimeError):
         read_bgen(
-            get_filepath("example.32bits.bgen"),
+            example_filepath("example.32bits.bgen"),
             verbose=False,
-            metafile_filepath=get_filepath("wrong.metadata"),
+            metafile_filepath=example_filepath("wrong.metadata"),
         )
 
 
 def test_bgen_reader_with_nonexistent_metadata_file():
-    filepath = get_filepath("example.32bits.bgen")
+    filepath = example_filepath("example.32bits.bgen")
     folder = os.path.dirname(filepath)
     metafile_filepath = os.path.join(folder, "nonexistent.metadata")
 
@@ -286,7 +278,7 @@ def test_bgen_reader_file_notfound():
 
 
 def test_create_metadata_file(tmp_path):
-    filepath = get_filepath("example.32bits.bgen")
+    filepath = example_filepath("example.32bits.bgen")
     metafile_filepath = tmp_path / (filepath.name + ".metadata")
 
     try:
@@ -298,7 +290,7 @@ def test_create_metadata_file(tmp_path):
 
 
 def test_bgen_reader_complex():
-    filepath = get_filepath("complex.23bits.bgen")
+    filepath = example_filepath("complex.23bits.bgen")
     bgen = read_bgen(filepath, verbose=False)
     variants = bgen["variants"].compute()
     samples = bgen["samples"]
@@ -354,8 +346,8 @@ def test_bgen_reader_complex():
 
 def test_bgen_reader_complex_sample_file():
     bgen = read_bgen(
-        get_filepath("complex.23bits.bgen"),
-        samples_filepath=get_filepath("complex.sample"),
+        example_filepath("complex.23bits.bgen"),
+        samples_filepath=example_filepath("complex.sample"),
         verbose=False,
     )
     variants = bgen["variants"].compute()
