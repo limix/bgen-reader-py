@@ -1,4 +1,3 @@
-from numpy import empty, uint16, uint32, uint64, zeros
 from collections import OrderedDict
 from pathlib import Path
 from threading import RLock
@@ -6,10 +5,10 @@ from threading import RLock
 import dask.dataframe as dd
 from cachetools import LRUCache, cached
 from dask.delayed import delayed
+from numpy import empty, uint16, uint32, uint64, zeros
 from pandas import DataFrame
 
 from ._ffi import ffi, lib
-from ._string import create_string
 
 
 class bgen_metafile:
@@ -163,11 +162,6 @@ lock = RLock()
 def read_partition(metafile_filepath: Path, partition: int):
     with bgen_metafile(metafile_filepath) as metafile:
         return metafile.read_partition(partition)
-
-
-# def _read_allele_ids(allele_ids, nalleles):
-#     alleles = [create_string(allele_ids[i]) for i in range(nalleles)]
-#     return ",".join(alleles)
 
 
 def _ceildiv(a, b):
