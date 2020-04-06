@@ -62,10 +62,10 @@ def _compatibility():
 def large_bgen_filepath():
     from pathlib import Path
     from subprocess import check_call
-    from bgen_reader import BGEN_CACHE_HOME
+    from bgen_reader._environment import BGEN_READER_CACHE_HOME
     from bgen_reader._file import file_hash
 
-    filepath = BGEN_CACHE_HOME / "test" / "large.bgen"
+    filepath = BGEN_READER_CACHE_HOME / "test_data" / "large.bgen"
 
     expected = "b9e75b6c5c5e8c5e1ebd1b2f54a731aef99cfee628895d5008c019716b5909dc"
     if filepath.exists() and file_hash(filepath) == expected:
