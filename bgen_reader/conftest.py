@@ -3,12 +3,14 @@ from __future__ import unicode_literals
 import pytest
 
 
-def pytest_configure(*_):
+def pytest_configure(config):
     import doctest
 
     _compatibility()
     pandas_format()
     doctest.ELLIPSIS_MARKER = "-ignore-"
+
+    config.addinivalue_line("markers", "slow: mark test as slow to run")
 
 
 @pytest.fixture(autouse=True)
