@@ -1,15 +1,10 @@
 import pytest
 from numpy.testing import assert_allclose, assert_equal
 
-from bgen_reader import example_files, read_bgen
-from bgen_reader._example._files import can_run_with
+from bgen_reader import read_bgen
 
 
 @pytest.mark.slow
-# @pytest.mark.skipif(
-#     not can_run_with(["large.bgen"]), reason="cannot run with large.bgen file"
-# )
-# def test_large_file(capsys):
 def test_large_file(large_bgen_filepath):
     data = read_bgen(large_bgen_filepath, verbose=True)
     variants = data["variants"]

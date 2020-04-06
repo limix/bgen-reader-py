@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import Optional, Union
 
 from ._bgen_file import bgen_file
+from ._bgen_metafile import bgen_metafile
+from ._environment import BGEN_READER_CACHE_HOME
 from ._file import (
-    BGEN_CACHE_HOME,
     assert_file_exist,
     assert_file_readable,
     is_file_writable,
@@ -14,7 +15,6 @@ from ._file import (
 from ._genotype import create_genotypes
 from ._metafile import create_metafile
 from ._samples import generate_samples, read_samples_file
-from ._bgen_metafile import bgen_metafile
 
 
 def read_bgen(
@@ -141,10 +141,10 @@ def _infer_metafile_filepath(bgen_filepath: Path) -> Path:
             return metafile
         except RuntimeError as e:
             warnings.warn(str(e), UserWarning)
-            return BGEN_CACHE_HOME / "metafile" / path_to_filename(metafile)
+            return BGEN_READER_CACHE_HOME / "metafile" / path_to_filename(metafile)
     else:
         if is_file_writable(metafile):
             return metafile
 
         warnings.warn(_metafile_nowrite_dir.format(filepath=metafile), UserWarning)
-        return BGEN_CACHE_HOME / "metafile" / path_to_filename(metafile)
+        return BGEN_READER_CACHE_HOME / "metafile" / path_to_filename(metafile)

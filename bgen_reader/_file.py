@@ -1,23 +1,36 @@
 import errno
+import tempfile
 import os
 from pathlib import Path
-
-from xdg import XDG_CACHE_HOME
-
-BGEN_CACHE_HOME = XDG_CACHE_HOME / "bgen"
+from contextlib import contextmanager
 
 
-def _make_sure_dir_exist(dirpath: Path):
+def make_sure_dir_exist(dirpath: Path):
     dirpath.mkdir(parents=True, exist_ok=True)
-
-
-_make_sure_dir_exist(BGEN_CACHE_HOME / "metafile")
-_make_sure_dir_exist(BGEN_CACHE_HOME / "test")
 
 
 def assert_file_exist(filepath: Path):
     if not filepath.exists():
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filepath)
+
+
+@contextmanager
+def tmp_cwd():
+    """
+    Create and enter a temporary directory.
+
+    The previous working directory is saved and switched back when
+    leaving the context. The temporary directory is also recursively
+    removed at the context ending.
+    """
+    oldpwd = os.getcwd()
+    with tempfile.TemporaryDirectory() as tmpdir:
+
+        os.chdir(tmpdir)
+        try:
+            yield
+        finally:
+            os.chdir(oldpwd)
 
 
 def assert_file_readable(filepath: Path):
