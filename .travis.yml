@@ -14,11 +14,14 @@ matrix:
       env:
         - LIBRARY_PATH=/usr/local/lib
         - LD_LIBRARY_PATH=/usr/local/lib
+      before_install:
+        - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
     - os: osx
       osx_image: xcode11.2 # Python 3.7.4 running on macOS 10.14.4
       language: shell
       before_install:
         - python3 -m pip install --upgrade pip setuptools
+        - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
     - os: windows
       env:
         - INCLUDE="/c/ProgramData/chocolatey/lib/zstandard/tools/include"
@@ -47,7 +50,6 @@ addons:
       - libffi6
       - cmake
 install:
-  - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
   - curl -fsSL https://git.io/JerYI | GITHUB_USER=horta GITHUB_PROJECT=almosthere bash
   - curl -fsSL https://git.io/JerYI | GITHUB_USER=limix GITHUB_PROJECT=bgen bash
   - curl -fsSL $URL/check-readme.sh | bash
