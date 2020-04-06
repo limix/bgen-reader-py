@@ -1,6 +1,6 @@
 # bgen-reader
 
-[![Travis](https://img.shields.io/travis/com/limix/bgen-reader-py.svg?style=flat-square&label=linux%20%2F%20macos%20build)](https://travis-ci.com/limix/bgen-reader-py) [![AppVeyor](https://img.shields.io/appveyor/ci/Horta/bgen-reader-py.svg?style=flat-square&label=windows%20build)](https://ci.appveyor.com/project/Horta/bgen-reader-py) [![Doc](https://readthedocs.org/projects/bgen-reader/badge/?version=latest&style=flat-square)](https://bgen-reader.readthedocs.io) [![Forum](https://img.shields.io/badge/join%20the-community%20%F0%9F%92%AC-7878c4.svg?style=flat-square)](https://forum.limix.io/category/5/bgen-reader-support)
+[![Travis](https://travis-ci.com/limix/bgen-reader-py.svg?branch=master)](https://travis-ci.com/limix/bgen-reader-py) [![Documentation](https://readthedocs.org/projects/bgen-reader/badge/?version=latest)](https://bgen-reader.readthedocs.io/en/latest/?badge=latest)
 
 A [bgen file format](http://www.well.ox.ac.uk/~gav/bgen_format/) reader.
 
@@ -13,8 +13,6 @@ This python package is a wrapper around the [bgen library](https://github.com/li
 a low-memory footprint reader that efficiently reads bgen files.
 It fully supports the bgen format specifications: 1.2 and 1.3;
 as well as their optional compressed formats.
-
-Questions? Please, visit the [bgen-reader forum](https://forum.limix.io/category/5/bgen-reader-support) 💬.
 
 ## Install
 
