@@ -14,6 +14,7 @@ matrix:
       env:
         - LIBRARY_PATH=/usr/local/lib
         - LD_LIBRARY_PATH=/usr/local/lib
+        - BGEN_READER_EXTRA_LINK_ARGS="-Wl,-rpath,/usr/local/lib"
       before_install:
         - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
     - os: osx
