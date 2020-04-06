@@ -23,6 +23,7 @@ matrix:
         - python3 -m pip install --upgrade pip setuptools
         - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
     - os: windows
+      language: shell
       env:
         - INCLUDE="/c/ProgramData/chocolatey/lib/zstandard/tools/include"
         - INCLUDE="/c/Program Files/zlib/include"
