@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from numpy import all, isnan
 from numpy.testing import assert_allclose, assert_equal
 from bgen_reader._test_files import get_filepath

@@ -1,26 +1,21 @@
 import dask.dataframe as dd
 import pytest
 from dask.delayed import Delayed
-from numpy.testing import assert_, assert_allclose
+from numpy.testing import assert_allclose
 from pandas import Series
 
+from bgen_reader import allele_expectation, allele_frequency, compute_dosage, read_bgen
 from bgen_reader._test_files import get_filepath
-from bgen_reader import (
-    allele_expectation,
-    allele_frequency,
-    compute_dosage,
-    read_bgen,
-)
 
 
 def test_read_bgem_interface():
     filepath = get_filepath("haplotypes.bgen")
     bgen = read_bgen(filepath, verbose=False)
-    assert_(isinstance(bgen, dict))
-    assert_(isinstance(bgen["variants"], dd.DataFrame))
-    assert_(isinstance(bgen["samples"], Series))
-    assert_(isinstance(bgen["genotype"], list))
-    assert_(isinstance(bgen["genotype"][0], Delayed))
+    assert isinstance(bgen, dict)
+    assert isinstance(bgen["variants"], dd.DataFrame)
+    assert isinstance(bgen["samples"], Series)
+    assert isinstance(bgen["genotype"], list)
+    assert isinstance(bgen["genotype"][0], Delayed)
 
 
 def test_allele_expectation_interface():
