@@ -1,6 +1,7 @@
 import os
 from contextlib import contextmanager
 from shutil import copyfile
+import platform
 
 import dask.dataframe as dd
 import pytest
@@ -37,6 +38,7 @@ def test_bgen_samples_specify_samples_file():
     assert all(data["samples"] == samples)
 
 
+@pytest.mark.skipif(platform.system() != "Darwin", reason="only reliable on macos")
 def test_bgen_samples_outside_bgen_unreadable(tmp_path):
     bgen_filepath = example_filepath("complex.23bits.bgen")
     samples_filepath = tmp_path / "complex.sample"
@@ -46,6 +48,7 @@ def test_bgen_samples_outside_bgen_unreadable(tmp_path):
             read_bgen(bgen_filepath, samples_filepath=samples_filepath, verbose=False)
 
 
+@pytest.mark.skipif(platform.system() != "Darwin", reason="only reliable on macos")
 def test_bgen_file_not_readable(tmp_path):
     filepath = tmp_path / "haplotypes.bgen"
     copyfile(example_filepath("haplotypes.bgen"), filepath)
@@ -80,6 +83,7 @@ def test_metafile_wrong_filepath():
             read_bgen(filepath, metafile_filepath=fp, verbose=False)
 
 
+@pytest.mark.skipif(platform.system() != "Darwin", reason="only reliable on macos")
 def test_metafile_not_provided_no_permission_to_create(tmp_path):
     src = example_filepath("haplotypes.bgen")
     dst = tmp_path / "haplotypes.bgen"
