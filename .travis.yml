@@ -1,58 +1,47 @@
 language: python
-python: 3.6
+python: 3.7
 env:
   global:
-  - PKG_NAME=bgen_reader
-  - CIBW_SKIP="cp27-* cp34-* cp35-* *i686*"
-  - CIBW_BEFORE_BUILD_LINUX=ci/before-build-linux
-  - CIBW_BEFORE_BUILD_MACOS=ci/before-build-macos
-  - CIBW_TEST_COMMAND="python -c \"import $PKG_NAME; import sys; sys.exit($PKG_NAME.test())\""
-  - URL=https://raw.githubusercontent.com/horta/ci/master
+    - URL=https://raw.githubusercontent.com/horta/ci/master
+    - CIBW_SKIP="cp27-* cp34-* cp35-* cp36-* *i686*"
+    - CIBW_BEFORE_BUILD_LINUX="{project}/ci/linux-deps"
+    - CIBW_BEFORE_BUILD_MACOS="{project}/ci/macos-deps"
+    - CIBW_TEST_COMMAND="bash {project}/ci/test"
 matrix:
   include:
     - os: linux
-      sudo: required
-      services:
-        - docker
+      services: docker
+      env:
+        - LIBRARY_PATH=/usr/local/lib
+        - LD_LIBRARY_PATH=/usr/local/lib
     - os: osx
-      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
-      language: shell       # 'language: python' is an error on Travis CI macOS
+      osx_image: xcode11.2 # Python 3.7.4 running on macOS 10.14.4
+      language: shell
       before_install:
-        - pip3 install --upgrade pip
-        - pip3 install --upgrade virtualenv
-        - virtualenv $HOME/venv # virtualenv will use Python 3
-        - source $HOME/venv/bin/activate
+        - python3 -m pip install --upgrade pip setuptools
 addons:
   apt:
     packages:
-    - libffi-dev
-    - libffi6
-    - cmake
+      - libffi-dev
+      - libffi6
+      - cmake
 install:
-- bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
-- bash <(curl -fsSL https://raw.githubusercontent.com/horta/almosthere/master/install)
-- bash <(curl -fsSL https://raw.githubusercontent.com/limix/bgen/master/install)
-- bash <(curl -fsSL $URL/travis-check-readme.sh)
-- bash <(curl -fsSL $URL/travis-py-min-deps.sh)
-- bash <(curl -fsSL $URL/travis-py-check-style.sh)
-- bash <(curl -fsSL $URL/travis-py-check-black.sh)
-- bash <(curl -fsSL $URL/travis-py-dev-test.sh)
-- bash <(curl -fsSL $URL/travis-py-install-test.sh)
-- bash <(curl -fsSL $URL/travis-py-doctest.sh)
+  - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
+  - curl -fsSL https://git.io/JerYI | GITHUB_USER=horta GITHUB_PROJECT=almosthere bash
+  - curl -fsSL https://git.io/JerYI | GITHUB_USER=limix GITHUB_PROJECT=bgen bash
 script:
-- bash <(curl -fsSL $URL/travis-py-sdist-test.sh)
-- git clean -xdf
-- python -m pip install cibuildwheel>=0.12.0
-- cibuildwheel --output-dir wheelhouse
-- |
-  if [ "${TRAVIS_TAG:-}" != "" ]; then
-    python -m pip install twine
-    python -m twine upload --skip-existing wheelhouse/*
-  fi
+  - python3 -m cibuildwheel --output-dir wheelhouse
+after_success:
+  - |
+    if [ "${TRAVIS_TAG:-}" != "" ]; then
+      python3 -m pip install twine -U
+      python3 -m twine upload --skip-existing wheelhouse/*
+    fi
+  - git clean -xdfq
 notifications:
   email:
     recipients:
-    - danilo.horta@pm.me
+      - danilo.horta@pm.me
     on_success: never
     on_failure: always
 deploy:

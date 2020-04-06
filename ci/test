@@ -1,0 +1,3 @@
+#!/bin/bash
+
+(cd ~/ && python -c "import bgen_reader; import sys; sys.exit(bgen_reader.test())")
