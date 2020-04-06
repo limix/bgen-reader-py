@@ -21,6 +21,12 @@ with open(join(folder, "bgen_reader", "partition.h"), "r") as f:
 with open(join(folder, "bgen_reader", "partition.c"), "r") as f:
     partition_c = f.read()
 
+with open(join(folder, "bgen_reader", "samples.h"), "r") as f:
+    ffibuilder.cdef(f.read())
+
+with open(join(folder, "bgen_reader", "samples.c"), "r") as f:
+    samples_c = f.read()
+
 if platform.system() == "Windows":
     win = Windows()
     progfiles = win.get_programfiles()
@@ -44,6 +50,7 @@ ffibuilder.set_source(
     fr"""
     #include "bgen/bgen.h"
     {partition_c}
+    {samples_c}
     """,
     libraries=libs,
     library_dirs=library_dirs,

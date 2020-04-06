@@ -12,7 +12,7 @@ Functions
 allele_expectation  Compute the expectation of each allele.
 allele_frequency    Compute allele frequency from its expectation.
 compute_dosage      Compute dosage from allele expectation.
-create_metafile     Create variants metadata file.
+create_metafile     Create metafile.
 download            Download a file from a given url.
 example_files       Create a temporary folder with the given files.
 read_bgen           Read a given BGEN file.
@@ -43,14 +43,14 @@ and reinstall the package again."""
 __version__ = "4.0.0"
 
 __all__ = [
-    "__version__",
-    "test",
-    "read_bgen",
-    "create_metafile",
-    "allele_expectation",
-    "example_files",
-    "compute_dosage",
-    "download",
-    "allele_frequency",
     "BGEN_CACHE_HOME",
+    "__version__",
+    "allele_expectation",
+    "allele_frequency",
+    "compute_dosage",
+    "create_metafile",
+    "download",
+    "example_files",
+    "read_bgen",
+    "test",
 ]

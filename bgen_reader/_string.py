@@ -1,5 +1,6 @@
-from ._ffi import ffi, lib
 from pathlib import Path
+
+from ._ffi import ffi, lib
 
 
 def make_sure_bytes(p):

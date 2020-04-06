@@ -1,11 +1,10 @@
 from math import floor, sqrt
 from pathlib import Path
 
+from numpy import asarray, float64, full, nan, zeros
 from pandas import Series
-from numpy import asarray, full, nan, float64
 
 from ._ffi import ffi, lib
-from ._string import create_string
 
 
 class bgen_file:
@@ -36,14 +35,19 @@ class bgen_file:
             raise RuntimeError(f"Could not fetch samples from the bgen file.")
 
         try:
-            ids = [
-                create_string(lib.bgen_samples_get(bgen_samples, i))
-                for i in range(nsamples)
-            ]
+            samples_max_len = ffi.new("uint32_t[]", 1)
+            lib.read_samples_part1(bgen_samples, nsamples, samples_max_len)
+            samples = zeros(nsamples, dtype=f"U{samples_max_len[0]}")
+            lib.read_samples_part2(
+                bgen_samples,
+                nsamples,
+                ffi.from_buffer("wchar_t[]", samples),
+                samples_max_len[0],
+            )
         finally:
             lib.bgen_samples_destroy(bgen_samples)
 
-        return Series(ids, dtype=str, name="id")
+        return Series(samples, dtype=str, name="id")
 
     def create_metafile(self, filepath: Path, verbose: bool):
         n = _estimate_best_npartitions(self.nvariants)

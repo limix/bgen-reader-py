@@ -47,20 +47,13 @@ static void read_partition_part2(struct bgen_partition const* partition, wchar_t
     for (uint32_t i = 0; i < nvariants; ++i) {
         struct bgen_variant const* v = bgen_partition_get_variant(partition, i);
 
-        /* size_t j = 0; */
         mbstowcs(id + i * id_stride, bgen_string_data(v->id), bgen_string_length(v->id));
-        /* for (j = 0; j < bgen_string_length(v->id); ++j) */
-        /*     id[i * id_stride + j] = bgen_string_data(v->id)[j]; */
 
         mbstowcs(rsid + i * rsid_stride, bgen_string_data(v->rsid),
                  bgen_string_length(v->rsid));
-        /* for (j = 0; j < bgen_string_length(v->rsid); ++j) */
-        /*     rsid[i * rsid_stride + j] = bgen_string_data(v->rsid)[j]; */
 
         mbstowcs(chrom + i * chrom_stride, bgen_string_data(v->chrom),
                  bgen_string_length(v->chrom));
-        /* for (j = 0; j < bgen_string_length(v->chrom); ++j) */
-        /*     chrom[i * chrom_stride + j] = bgen_string_data(v->chrom)[j]; */
 
         size_t j = 0;
         for (uint16_t r = 0; r < v->nalleles; ++r) {
@@ -69,15 +62,8 @@ static void read_partition_part2(struct bgen_partition const* partition, wchar_t
                           bgen_string_data(v->allele_ids[r]),
                           bgen_string_length(v->allele_ids[r]));
 
-            /* for (unsigned k = 0; k < bgen_string_length(v->allele_ids[r]); ++k) { */
-            /*     allele_ids[i * allele_ids_stride + j] =
-             * bgen_string_data(v->allele_ids[r])[k]; */
-            /*     ++j; */
-            /* } */
             if (r + 1 < v->nalleles) {
                 j += mbstowcs(allele_ids + i * allele_ids_stride + j, ",", 1);
-                /* allele_ids[i * allele_ids_stride + j] = ','; */
-                /* ++j; */
             }
         }
     }
