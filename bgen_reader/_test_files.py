@@ -3,7 +3,7 @@ from pathlib import Path
 import boto3
 
 from ._environment import BGEN_READER_CACHE_HOME
-from ._file import file_hash, tmp_cwd
+from ._file import file_hash
 
 _filenames = {
     "complex.23bits.bgen": "af9a0232fdf339512ef3d23c39a4c40dc8908e79c0aafae62063e6f3bb0c6fe3",
