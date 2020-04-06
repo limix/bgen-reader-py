@@ -12,7 +12,7 @@ from ._file import (
     path_to_filename,
 )
 from ._genotype import create_genotypes
-from ._metadata import create_metafile
+from ._metafile import create_metafile
 from ._samples import generate_samples, read_samples_file
 from ._bgen_metafile import bgen_metafile
 

@@ -5,6 +5,17 @@ def get_genotypes(ploidy, nalleles):
     return g
 
 
+def genotypes_to_allele_counts(genotypes):
+    nalleles = genotypes[-1][0]
+    counts = []
+    for g in genotypes:
+        count = [0] * nalleles
+        for gi in g:
+            count[gi - 1] += 1
+        counts.append(count)
+    return counts
+
+
 def _make_genotype(ploidy, start, end):
     tups = []
     if ploidy == 0:
@@ -16,14 +27,3 @@ def _make_genotype(ploidy, start, end):
         for ti in t:
             tups += [[i] + ti]
     return tups
-
-
-def genotypes_to_allele_counts(genotypes):
-    nalleles = genotypes[-1][0]
-    counts = []
-    for g in genotypes:
-        count = [0] * nalleles
-        for gi in g:
-            count[gi - 1] += 1
-        counts.append(count)
-    return counts
