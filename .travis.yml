@@ -12,6 +12,7 @@ matrix:
     - os: linux
       services: docker
       env:
+        - C_INCLUDE_PATH=/usr/local/include
         - LIBRARY_PATH=/usr/local/lib
         - LD_LIBRARY_PATH=/usr/local/lib
         - BGEN_READER_EXTRA_LINK_ARGS="-Wl,-rpath,/usr/local/lib"
@@ -19,6 +20,10 @@ matrix:
         - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
     - os: osx
       osx_image: xcode11.2 # Python 3.7.4 running on macOS 10.14.4
+      env:
+        - C_INCLUDE_PATH=/usr/local/include
+        - LIBRARY_PATH=/usr/local/lib
+        - LD_LIBRARY_PATH=/usr/local/lib
       language: shell
       before_install:
         - python3 -m pip install --upgrade pip setuptools
