@@ -32,13 +32,13 @@ matrix:
       language: shell
       env:
         - INCLUDE="/c/ProgramData/chocolatey/lib/zstandard/tools/include"
-        - INCLUDE="/c/Program Files/zlib/include"
-        - INCLUDE="/c/Program Files/athr/include"
-        - INCLUDE="/c/Program Files/bgen/include"
+        - INCLUDE="/c/Program Files/zlib/include:$INCLUDE"
+        - INCLUDE="/c/Program Files/athr/include:$INCLUDE"
+        - INCLUDE="/c/Program Files/bgen/include:$INCLUDE"
         - LIB="/c/ProgramData/chocolatey/lib/zstandard/tools/dll"
-        - LIB="/c/Program Files/zlib/lib"
-        - LIB="/c/Program Files/athr/lib"
-        - LIB="/c/Program Files/bgen/lib"
+        - LIB="/c/Program Files/zlib/lib:$LIB"
+        - LIB="/c/Program Files/athr/lib:$LIB"
+        - LIB="/c/Program Files/bgen/lib:$LIB"
         - CMAKE_GENERATOR="Visual Studio 15 2017 Win64"
       before_install:
         - choco install python --version 3.8.1
