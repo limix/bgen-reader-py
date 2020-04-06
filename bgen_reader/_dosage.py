@@ -152,7 +152,7 @@ def compute_dosage(expec, alt=None):
         ...     dims=["sample", "genotype"],
         ... )
         >>> # Print the genotype probabilities.
-        >>> print(p.to_series().unstack(level=-1))
+        >>> print(p.to_series().unstack(level=-1))  # doctest: +NORMALIZE_WHITESPACE
         genotype          0        1        2
         sample
         sample_001  0.00488  0.02838  0.96674
@@ -174,7 +174,7 @@ def compute_dosage(expec, alt=None):
         ...     dims=["sample", "allele"],
         ... )
         >>> # Print the allele expectations.
-        >>> print(e.to_series().unstack(level=-1))
+        >>> print(e.to_series().unstack(level=-1))  # doctest: +NORMALIZE_WHITESPACE
         allele            A        G
         sample
         sample_001  0.03815  1.96185
@@ -194,7 +194,7 @@ def compute_dosage(expec, alt=None):
         >>> f = DataFrame(allele_frequency(e), columns=[variant_name], index=alleles)
         >>> f.index.name = "allele"
         >>> # Allele frequencies.
-        >>> print(f) # doctest: +IGNORE_EXCEPTION_DETAIL, +NORMALIZE_WHITESPACE
+        >>> print(f) # doctest: +NORMALIZE_WHITESPACE
                 01:RSID_5
         allele
         A       305.97218
@@ -204,7 +204,7 @@ def compute_dosage(expec, alt=None):
         >>> d = compute_dosage(e, alt=alt_idx).to_series()
         >>> d = DataFrame(d.values, columns=[f"alt={alt}"], index=d.index)
         >>> # Dosages when considering G as the alternative allele.
-        >>> print(d) # doctest: +IGNORE_EXCEPTION_DETAIL, +NORMALIZE_WHITESPACE
+        >>> print(d) # doctest: +NORMALIZE_WHITESPACE
                       alt=G
         sample
         sample_001  1.96185
