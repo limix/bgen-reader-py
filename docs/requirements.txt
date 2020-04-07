@@ -2,3 +2,4 @@ limix-sphinx-theme>=0.0.4
 pytest-sphinx>=0.2.2
 sphinx>=2.4.0
 sphinx_rtd_theme>=0.4.3
+bgen-reader>=4.0.0
