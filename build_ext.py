@@ -9,7 +9,7 @@ ffibuilder = FFI()
 libs = ["bgen", "athr"]
 
 if platform.system() == "Windows":
-    libs += ["libz", "libzstd"]
+    libs += ["zlib", "libzstd"]
 else:
     libs += ["z", "zstd"]
 
