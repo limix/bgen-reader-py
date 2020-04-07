@@ -6,6 +6,7 @@ env:
     - CIBW_SKIP="pp* cp27-* cp34-* cp35-* cp36-* *i686* *-win32"
     - CIBW_BEFORE_BUILD_LINUX="{project}/ci/linux-deps"
     - CIBW_BEFORE_BUILD_MACOS="{project}/ci/macos-deps"
+    - CIBW_BEFORE_BUILD_WINDOWS="{project}/ci/win-deps"
     - CIBW_TEST_COMMAND="bash {project}/ci/test"
 matrix:
   include:
