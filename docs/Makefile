@@ -14,7 +14,7 @@ help:
 .PHONY: help Makefile
 
 html: Makefile
-	pip install -r requirements.txt && cd docs
+	pip install -r requirements.txt
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 # Catch-all target: route all unknown targets to Sphinx using the new
