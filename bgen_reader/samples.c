@@ -18,11 +18,11 @@ static void read_samples_part1(struct bgen_samples* samples, uint32_t nsamples,
 }
 
 static void read_samples_part2(struct bgen_samples const* samples, uint32_t nsamples,
-                               wchar_t* const sample_array, uint32_t samples_stride)
+                               char* const sample_array, uint32_t samples_stride)
 {
     for (uint32_t i = 0; i < nsamples; ++i) {
         struct bgen_string const* sample = bgen_samples_get(samples, i);
-        mbstowcs(sample_array + i * samples_stride, bgen_string_data(sample),
-                 bgen_string_length(sample));
+        memcpy(sample_array + i * samples_stride, bgen_string_data(sample),
+               bgen_string_length(sample));
     }
 }

@@ -37,11 +37,11 @@ class bgen_file:
         try:
             samples_max_len = ffi.new("uint32_t[]", 1)
             lib.read_samples_part1(bgen_samples, nsamples, samples_max_len)
-            samples = zeros(nsamples, dtype=f"U{samples_max_len[0]}")
+            samples = zeros(nsamples, dtype=f"S{samples_max_len[0]}")
             lib.read_samples_part2(
                 bgen_samples,
                 nsamples,
-                ffi.from_buffer("wchar_t[]", samples),
+                ffi.from_buffer("char[]", samples),
                 samples_max_len[0],
             )
         finally:

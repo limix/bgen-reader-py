@@ -68,22 +68,22 @@ class bgen_metafile:
         # print(f"Elapsed: {time() - start} read_partition")
 
         # start = time()
-        vid = zeros(nvariants, dtype=f"U{vid_max_len[0]}")
-        rsid = zeros(nvariants, dtype=f"U{rsid_max_len[0]}")
-        chrom = zeros(nvariants, dtype=f"U{chrom_max_len[0]}")
-        allele_ids = zeros(nvariants, dtype=f"U{allele_ids_max_len[0]}")
+        vid = zeros(nvariants, dtype=f"S{vid_max_len[0]}")
+        rsid = zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
+        chrom = zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
+        allele_ids = zeros(nvariants, dtype=f"S{allele_ids_max_len[0]}")
         # print(f"Elapsed: {time() - start} create_strings")
 
         # start = time()
         lib.read_partition_part2(
             partition,
-            ffi.from_buffer("wchar_t[]", vid),
+            ffi.from_buffer("char[]", vid),
             vid_max_len[0],
-            ffi.from_buffer("wchar_t[]", rsid),
+            ffi.from_buffer("char[]", rsid),
             rsid_max_len[0],
-            ffi.from_buffer("wchar_t[]", chrom),
+            ffi.from_buffer("char[]", chrom),
             chrom_max_len[0],
-            ffi.from_buffer("wchar_t[]", allele_ids),
+            ffi.from_buffer("char[]", allele_ids),
             allele_ids_max_len[0],
         )
         # print(f"Elapsed: {time() - start} read_partition2")
@@ -91,12 +91,12 @@ class bgen_metafile:
         # start = time()
         data = OrderedDict(
             [
-                ("id", vid),
-                ("rsid", rsid),
-                ("chrom", chrom),
+                ("id", vid.astype(str)),
+                ("rsid", rsid.astype(str)),
+                ("chrom", chrom.astype(str)),
                 ("pos", position),
                 ("nalleles", nalleles),
-                ("allele_ids", allele_ids),
+                ("allele_ids", allele_ids.astype(str)),
                 ("vaddr", offset),
             ]
         )
