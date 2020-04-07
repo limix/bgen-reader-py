@@ -4,3 +4,6 @@ cp /c/Windows/system32/athr.dll bgen_reader/
 cp /c/Windows/system32/bgen.dll bgen_reader/
 cp /c/Windows/system32/zlib.dll bgen_reader/
 cp /c/Windows/system32/zstd.dll bgen_reader/
+
+pwd
+ls bgen_reader/
