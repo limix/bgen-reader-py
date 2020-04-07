@@ -8,6 +8,6 @@ include bgen_reader/partition.h
 include bgen_reader/samples.c
 include bgen_reader/samples.h
 include bgen_reader/zlib.dll
-include bgen_reader/zstd.dll
+include bgen_reader/libzstd.dll
 include build_ext.py
 include version.py
