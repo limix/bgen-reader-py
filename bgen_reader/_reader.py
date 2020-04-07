@@ -96,6 +96,12 @@ def read_bgen(
             )
         create_metafile(filepath, metafile_filepath, verbose)
     elif os.path.getmtime(metafile_filepath) < os.path.getmtime(filepath):
+        from ._bgen_metafile import cache as metacache
+        from ._genotype import cache as bgencache
+
+        metacache.clear()
+        bgencache.clear()
+
         if verbose:
             print(
                 f"File `{filepath}` has been modified after the creation of `{metafile_filepath}`."
@@ -132,7 +138,7 @@ in future runs.
 
 
 def _infer_metafile_filepath(bgen_filepath: Path) -> Path:
-    metafile = bgen_filepath.with_suffix(".metadata")
+    metafile = bgen_filepath.with_suffix(bgen_filepath.suffix + ".metafile")
     if metafile.exists():
         try:
             assert_file_readable(metafile)
