@@ -1,11 +1,17 @@
 import os
+import platform
 from os.path import join
 from typing import List
 
 from cffi import FFI
 
 ffibuilder = FFI()
-libs = ["bgen", "z", "zstd", "athr"]
+libs = ["bgen", "athr"]
+
+if platform.system() == "Windows":
+    libs += ["libz", "libzstd"]
+else:
+    libs += ["z", "zstd"]
 
 folder = os.path.dirname(os.path.abspath(__file__))
 
