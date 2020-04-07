@@ -3,7 +3,7 @@
 yum install -y libffi libffi-devel zlib-devel
 yum remove -y cmake
 
-pip install cmake
+python -m pip install cmake numpy pandas
 
 curl https://raw.githubusercontent.com/horta/zstd.install/master/install --output install-zstd
 bash install-zstd
