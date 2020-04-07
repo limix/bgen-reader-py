@@ -1,23 +1,29 @@
 import time
+from pathlib import Path
 
 
-def _get_version():
-    import bgen_reader
+def read(filepath):
+    import codecs
 
-    return bgen_reader.__version__
-
-
-def _get_name():
-    import bgen_reader
-
-    return bgen_reader.__name__
+    with codecs.open(filepath, "r") as fp:
+        return fp.read()
 
 
-project = _get_name()
+def find_version(filepath):
+    import re
+
+    version_file = read(filepath)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
+
+
+project = "bgen-reader"
 copyright = "2018, Danilo Horta"
 author = "Danilo Horta"
 
-version = _get_version()
+version = find_version(Path(__file__).parents[0] / Path("../bgen_reader/__init__.py"))
 release = version
 today = time.strftime("%B %d, %Y")
 
@@ -41,7 +47,7 @@ autosectionlabel_prefix_document = False
 source_suffix = ".rst"
 
 master_doc = "index"
-man_pages = [(master_doc, _get_name(), "{} documentation".format(project), [author], 1)]
+man_pages = [(master_doc, project, "{} documentation".format(project), [author], 1)]
 language = None
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "conf.py"]
