@@ -1,5 +1,4 @@
 from pathlib import Path
-from urllib.request import urlretrieve
 
 from ._environment import BGEN_READER_CACHE_HOME
 from ._file import file_hash
@@ -19,6 +18,8 @@ _filenames = {
 
 
 def example_filepath(filename: str):
+    import requests
+
     url = "https://bgen-examples.s3.amazonaws.com"
 
     if filename not in _filenames:
@@ -31,7 +32,9 @@ def example_filepath(filename: str):
         filepath.unlink()
 
     if not filepath.exists():
-        urlretrieve(f"{url}/bgen-examples/{filename}", filepath)
+        r = requests.get(f"{url}/bgen-examples/{filename}")
+        with open(filepath, "wb") as f:
+            f.write(r.content)
 
     if file_hash(filepath) != _filenames[filename]:
         msg = (

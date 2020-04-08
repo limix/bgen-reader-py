@@ -70,7 +70,6 @@ addons:
       - libffi6
       - cmake
 install:
-  - curl https://bgen-examples.s3.eu-west-2.amazonaws.com/complex.23bits.bgen --output complex.23bits.bgen
   - curl -fsSL https://git.io/JerYI | GITHUB_USER=horta GITHUB_PROJECT=almosthere bash
   - curl -fsSL https://git.io/JerYI | GITHUB_USER=limix GITHUB_PROJECT=bgen bash
   - curl -fsSL $URL/check-readme.sh | bash
