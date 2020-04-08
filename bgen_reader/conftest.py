@@ -78,7 +78,7 @@ def large_bgen_filepath():
         raise RuntimeError(f"Could not find {pass_filepath} file.")
 
     cmd = (
-        "curl http://rest.s3for.me/bgen/large.bgen.bz2.enc -s | "
+        "curl https://bgen-examples.s3.amazonaws.com/bgen-examples/large.bgen.bz2.enc -s | "
         "openssl enc -d -pbkdf2 -aes-256-cbc -kfile /Users/horta/pass |"
         f"bunzip2 > {filepath}"
     )

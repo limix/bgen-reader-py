@@ -19,6 +19,7 @@ _filenames = {
 
 def example_filepath(filename: str):
     import requests
+    from fake_useragent import UserAgent
 
     url = "https://bgen-examples.s3.amazonaws.com"
 
@@ -32,7 +33,7 @@ def example_filepath(filename: str):
         filepath.unlink()
 
     if not filepath.exists():
-        r = requests.get(f"{url}/bgen-examples/{filename}")
+        r = requests.get(f"{url}/bgen-examples/{filename}", headers=UserAgent().random)
         with open(filepath, "wb") as f:
             f.write(r.content)
 
