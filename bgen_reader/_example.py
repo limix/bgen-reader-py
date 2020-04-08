@@ -20,7 +20,7 @@ _filenames = {
 def example_filepath(filename: str):
     import requests
 
-    url = "https://bgen-examples.s3.eu-west-2.amazonaws.com"
+    url = "https://bgen-examples.s3.amazonaws.com"
 
     if filename not in _filenames:
         raise ValueError(f"Unknown filename {filename}.")
@@ -32,7 +32,7 @@ def example_filepath(filename: str):
         filepath.unlink()
 
     if not filepath.exists():
-        r = requests.get(f"{url}/bgen-examples/{filename}")
+        r = requests.get(f"{url}/{filename}")
         r.raise_for_status()
         with open(filepath, "wb") as f:
             f.write(r.content)
