@@ -1,6 +1,5 @@
 from pathlib import Path
-
-import boto3
+from urllib.request import urlretrieve
 
 from ._environment import BGEN_READER_CACHE_HOME
 from ._file import file_hash
@@ -20,11 +19,7 @@ _filenames = {
 
 
 def example_filepath(filename: str):
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id="AKIATTDGVX24Z3IGAWFM",
-        aws_secret_access_key="xXQXkBzKCAtohUIVYxJckBS50dEbkrF/wUcTRPWj",
-    )
+    url = "https://bgen-examples.s3.eu-west-2.amazonaws.com"
 
     if filename not in _filenames:
         raise ValueError(f"Unknown filename {filename}.")
@@ -36,7 +31,7 @@ def example_filepath(filename: str):
         filepath.unlink()
 
     if not filepath.exists():
-        s3.download_file("bgen-examples", filename, str(filepath))
+        urlretrieve(f"{url}/bgen-examples/{filename}", filepath)
 
     if file_hash(filepath) != _filenames[filename]:
         msg = (
