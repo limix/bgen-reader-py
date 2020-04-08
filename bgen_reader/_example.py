@@ -19,7 +19,7 @@ _filenames = {
 
 
 def example_filepath(filename: str):
-    url = "https://bgen-examples.s3.eu-west-2.amazonaws.com"
+    url = "https://bgen-examples.s3.amazonaws.com"
 
     if filename not in _filenames:
         raise ValueError(f"Unknown filename {filename}.")
