@@ -19,18 +19,19 @@ from bgen_reader._file import (
 from bgen_reader._bgen_metafile import bgen_metafile
 from bgen_reader._ffi import ffi, lib
 
-#!!!cmk should this be 'read_bgen2' instead?
+#!!!cmk0 should this be 'read_bgen2' instead?
 @contextmanager
 def bgen_reader2(filename, sample=None, verbose=False):
     bgen2 = Bgen2(filename,sample=sample,verbose=verbose)
     yield bgen2
     del bgen2
 
-#!!!cmk can we have it both a contextmanger and not?
+#!!!cmk1 can we have it both a contextmanger and not?
 #!!!cmk add type info
 #!!!cmk write doc
 #!!!cmk test doc
-#!!!cmk create test cases that generate big datasets (if qctool is available)
+#!!!cmk1 create test cases that generate big datasets (if qctool is available)
+#!!!cmk1 create test cases with full coverage
 #!!!cmk ok to have metadata2.npz location be fixed for now?
 class Bgen2(object):
     def __init__(self, filename, sample=None, verbose=False):
@@ -84,11 +85,11 @@ class Bgen2(object):
             assert_file_readable(sample_file)
             return read_samples_file(sample_file, self._verbose)
 
-    #!!!cmk add an nvariants property and nsamples
-    #!!!cmk should have dtype (because float32 is often enough and is 1/2 the size) and order
+    #!!!cmk0 add an nvariants property and nsamples
+    #!!!cmk0 should have dtype (because float32 is often enough and is 1/2 the size) and order
     def read(self, variants=None, max_ncombs=None): #!!!cmk also allow samples to be selected?
         #!!!cmk allow single ints, lists of ints, lists of bools, None, and slices
-        #!!!cmk could allow strings (variant names) and lists of strings
+        #!!!cmk (DECIDE LATER) could allow strings (variant names) and lists of strings
 
         max_ncombs = max_ncombs or self.max_ncombs
 
@@ -112,8 +113,8 @@ class Bgen2(object):
                 p = np.full((len(self.samples), ncombs[out_index]), np.nan, order='C', dtype='float64')
             genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
             lib.bgen_genotype_read(genotype, ffi.cast("double *", p.ctypes.data))
-            #ploidy = asarray([lib.bgen_ploidy(vg, i) for i in range(nsamples)], int) #!!!cmk what is this? It will likely be a different call
-            #missing = asarray([lib.bgen_missing(vg, i) for i in range(nsamples)], bool) #!!!cmk why is this need instead of just seeing nan,nan,nan
+            #ploidy = asarray([lib.bgen_ploidy(vg, i) for i in range(nsamples)], int) #!!!cmk0 what is this? It will likely be a different call
+            #missing = asarray([lib.bgen_missing(vg, i) for i in range(nsamples)], bool) #!!!cmk0 why is this need instead of just seeing nan,nan,nan
             lib.bgen_genotype_close(genotype)
             val[:,out_index,:ncombs[out_index]] = p
         return val
@@ -215,7 +216,7 @@ if __name__ == "__main__":
             geno = bgen2.read(-1) # read the 200,000th variate's data
             #geno = bgen2.read() # read all, uses the ncombs from the first variant
             geno = bgen2.read(slice(5)) # read first 5, uses the ncombs from the first variant
-            #!!!cmk is there any prettier way for users to specify slices?
+            #!!!cmk0 is there any prettier way for users to specify slices?
             geno = bgen2.read(bgen2.chrom=='5',max_ncombs=4) # read chrom1, set max_combs explicitly
     if True:
         filename = r'm:\deldir\2500x500000.bgen'
