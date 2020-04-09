@@ -21,7 +21,7 @@ from bgen_reader._ffi import ffi, lib
 
 #!!!cmk0 should this be 'read_bgen2' instead?
 @contextmanager
-def bgen_reader2(filename, sample=None, verbose=False):
+def bgen_reader2(filename, sample=None, verbose=False): #!!!cmk0 have these inputs match the names in api#1 exactly
     bgen2 = Bgen2(filename,sample=sample,verbose=verbose)
     yield bgen2
     del bgen2
@@ -49,6 +49,7 @@ class Bgen2(object):
         metadata2 = self.filename + ".metadata2.npz"
         if os.path.exists(metadata2):
             d = np.load(metadata2) #!!!cmk could do memory mapping instead
+            #!!!cmk why are some properties plural and others aren't?
             self.id = d['id']
             self.rsid = d['rsid']
             self.vaddr = d['vaddr']
@@ -85,13 +86,17 @@ class Bgen2(object):
             assert_file_readable(sample_file)
             return read_samples_file(sample_file, self._verbose)
 
-    #!!!cmk0 add an nvariants property and nsamples
-    #!!!cmk0 should have dtype (because float32 is often enough and is 1/2 the size) and order
-    def read(self, variants=None, max_ncombs=None): #!!!cmk also allow samples to be selected?
+    #!!!cmk test each option
+    def read(self, variants=None, max_ncombs=None, dtype=np.float, order='F', return_missing=False, return_ploidy=False): #!!!cmk also allow samples to be selected?
+        '''
+        !!!cmkwrite doc
+        !!!cmk tell probs will be 3D array
+        !!!cmk if both missing and ploidy are returned, missing will be first. and both will be 2-D arrays
+        '''
         #!!!cmk allow single ints, lists of ints, lists of bools, None, and slices
         #!!!cmk (DECIDE LATER) could allow strings (variant names) and lists of strings
 
-        max_ncombs = max_ncombs or self.max_ncombs
+        max_ncombs = max_ncombs or self.max_ncombs #!!!cmk test user setting max_ncombs to 0 and 1
 
         if type(variants) is np.int: #!!!make sure this works with all int types
             variants = [variants]
@@ -103,7 +108,12 @@ class Bgen2(object):
             ncombs = self.ncombs[variants]
 
         #allocating p only once make reading 10x5M data 30% faster
-        val = np.full((len(self.samples), len(vaddr), max_ncombs), np.nan, order='F', dtype='float64') #!!!cmk test on selecting zero variants
+        val = np.full((len(self.samples), len(vaddr), max_ncombs), np.nan, dtype=dtype, order=order) #!!!cmk test on selecting zero variants
+        if return_missing:
+            missing_val = np.full((len(self.samples), len(vaddr)), False, dtype='bool', order=order)
+        if return_ploidy:
+            ploidy_val = np.full((len(self.samples), len(vaddr)), 0, dtype='int', order=order)
+
         p = None
 
         #LATER multithread?
@@ -113,11 +123,20 @@ class Bgen2(object):
                 p = np.full((len(self.samples), ncombs[out_index]), np.nan, order='C', dtype='float64')
             genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
             lib.bgen_genotype_read(genotype, ffi.cast("double *", p.ctypes.data))
-            #ploidy = asarray([lib.bgen_ploidy(vg, i) for i in range(nsamples)], int) #!!!cmk0 what is this? It will likely be a different call
-            #missing = asarray([lib.bgen_missing(vg, i) for i in range(nsamples)], bool) #!!!cmk0 why is this need instead of just seeing nan,nan,nan
-            lib.bgen_genotype_close(genotype)
             val[:,out_index,:ncombs[out_index]] = p
-        return val
+
+            if return_missing:
+                missing_val[:,out_index] = [lib.bgen_genotype_missing(genotype, i) for i in range(self.nsamples)]
+            if return_ploidy:
+                ploidy_val[:,out_index] = [lib.bgen_genotype_ploidy(genotype, i) for i in range(self.nsamples)]
+
+            lib.bgen_genotype_close(genotype)
+
+        if not return_missing and not return_ploidy:
+            return val
+        else:
+            val_array = [val] + ([missing_val] if return_missing else []) + ([ploidy_val] if return_ploidy else [])
+            return tuple(val_array)
 
     def _map_metadata(self,metafile_filepath): 
         with bgen_metafile(Path(metafile_filepath)) as mf:
@@ -179,6 +198,8 @@ class Bgen2(object):
                 allele_ids_list.append(allele_ids)
                 vaddr_list.append(offset)
 
+        #!!!cmk do these need to be @properties?
+        ##!!cmk do these need to pre-declared.                    
         #!!!cmk use concatenate(...out=) instead
         self.id = np.array(np.concatenate(id_list),dtype='str')#dtype needed to make unicode
         self.rsid = np.array(np.concatenate(rsid_list),dtype='str')
@@ -199,6 +220,24 @@ class Bgen2(object):
         self.ncombs = np.array(ncombs_list,dtype='int')
         self.phased = np.array(phased_list,dtype='bool')
 
+    @property
+    def nvariants(self) -> int:
+        '''!!!cmk doc this all all others
+        '''
+        return len(self.id)
+
+    @property
+    def nsamples(self) -> int:
+        '''!!!cmk doc this all all others
+        '''
+        return len(self.samples)
+
+    @property
+    def shape(self) -> (int,int,int):
+        '''!!!cmk doc this all all others
+        '''
+        return (self.nsamples,self.nvariants,self.max_ncombs)
+
     def __repr__(self): 
         return "{0}('{1}')".format(self.__class__.__name__,self.filename)
 
@@ -209,15 +248,15 @@ class Bgen2(object):
 if __name__ == "__main__":
     if True:
         #filename = r'm:\deldir\1000x500000.bgen'
-        #filename = r'D:\OneDrive\Shares\bgenreaderpy\1x1000000.bgen'
+        #filename = r'D:\OneDrive\Shares\bgenraaderpy\1x1000000.bgen'
         filename = r'M:\del35\temp1024x16384-8.bgen'
         with bgen_reader2(filename) as bgen2:
             print(bgen2.id[:5]) #other property arrays include risd,chrom,position,nallels, and allele_ids
             geno = bgen2.read(-1) # read the 200,000th variate's data
             #geno = bgen2.read() # read all, uses the ncombs from the first variant
             geno = bgen2.read(slice(5)) # read first 5, uses the ncombs from the first variant
-            #!!!cmk0 is there any prettier way for users to specify slices?
             geno = bgen2.read(bgen2.chrom=='5',max_ncombs=4) # read chrom1, set max_combs explicitly
+            geno, missing = bgen2.read(0,return_missing=True)
     if True:
         filename = r'm:\deldir\2500x500000.bgen'
         with bgen_reader2(filename,verbose=True) as bgen2:
