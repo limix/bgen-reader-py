@@ -103,3 +103,8 @@ ENV/
 
 # mypy
 .mypy_cache/
+/.vs
+/bgen_reader/zstd.dll
+/bgen_reader/zlib.dll
+/bgen_reader/bgen.dll
+/bgen_reader/athr.dll
