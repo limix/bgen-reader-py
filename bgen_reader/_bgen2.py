@@ -42,6 +42,7 @@ class open_bgen(object):
         self._bgen = self._bgen_context_manager.__enter__()
 
         self.samples = np.array(self._get_samples(samples_filepath),dtype='str')
+        self._sample_range = np.arange(len(self.samples),dtype=np.int)
 
         metadata2 = filepath.with_suffix('.metadata2.npz')
         if metadata2.exists():
@@ -81,9 +82,17 @@ class open_bgen(object):
             assert_file_exist(sample_file)
             assert_file_readable(sample_file)
             return read_samples_file(sample_file, self._verbose)
+
+    @staticmethod
+    def _fix_up_index(index):
+        if type(index) is np.int: #!!!make sure this works with all int types
+            return [index]
+        return index
+
+
     #!!!cmk test each option
      #!!!cmk0 also allow samples to be selected?
-    def read(self, variants_index=None, dtype=np.float, order='F', max_combinations=None, return_probabilities=True, return_missings=False, return_ploidies=False):
+    def read(self, index=None, dtype=np.float, order='F', max_combinations=None, return_probabilities=True, return_missings=False, return_ploidies=False):
         '''
         !!!cmkwrite doc
         !!!cmk tell probs will be 3D array
@@ -94,8 +103,17 @@ class open_bgen(object):
 
         max_combinations = max_combinations or self.max_combinations #!!!cmk test user setting max_combinations to 0 and 1
 
-        if type(variants_index) is np.int: #!!!make sure this works with all int types
-            variants_index = [variants_index]
+        if not isinstance(index,tuple): #!!!test with np.s_[,]
+            index = (None,index)
+        #!!!cmk raise error if not 
+        samples_index = self._fix_up_index(index[0])
+        variants_index = self._fix_up_index(index[1])
+
+        if samples_index is None:
+            samples_index = self._sample_range
+        else:
+            samples_index = self._sample_range[samples_index]
+
         if variants_index is None:
             vaddr = self._vaddr
             ncombinations = self.ncombinations
@@ -105,12 +123,12 @@ class open_bgen(object):
 
         #allocating p only once make reading 10x5M data 30% faster
         if return_probabilities:
-            val = np.full((len(self.samples), len(vaddr), max_combinations), np.nan, dtype=dtype, order=order) #!!!cmk test on selecting zero variants
+            val = np.full((len(samples_index), len(vaddr), max_combinations), np.nan, dtype=dtype, order=order) #!!!cmk test on selecting zero variants
             p = None #!!!cmk0 'p' seems hard to read about 'prop_buffer'?
         if return_missings:
-            missing_val = np.full((self.nsamples, len(vaddr)), False, dtype='bool', order=order)
+            missing_val = np.full((len(samples_index), len(vaddr)), False, dtype='bool', order=order)
         if return_ploidies:
-            ploidy_val = np.full((self.nsamples, len(vaddr)), 0, dtype='int', order=order)
+            ploidy_val = np.full((len(samples_index), len(vaddr)), 0, dtype='int', order=order)
 
 
         #LATER multithread?
@@ -122,13 +140,13 @@ class open_bgen(object):
                 if p is None or ncombinations[out_index] != p.shape[-1]:
                     p = np.full((len(self.samples), ncombinations[out_index]), np.nan, order='C', dtype='float64')
                 lib.bgen_genotype_read(genotype, ffi.cast("double *", p.ctypes.data))
-                val[:,out_index,:ncombinations[out_index]] = p
+                val[:,out_index,:ncombinations[out_index]] = p if (samples_index is self._sample_range) else p[samples_index,:,:]
 
             if return_missings:
-                missing_val[:,out_index] = [lib.bgen_genotype_missing(genotype, i) for i in range(self.nsamples)]
+                missing_val[:,out_index] = [lib.bgen_genotype_missing(genotype, i) for i in samples_index]
 
             if return_ploidies:
-                ploidy_val[:,out_index] = [lib.bgen_genotype_ploidy(genotype, i) for i in range(self.nsamples)]
+                ploidy_val[:,out_index] = [lib.bgen_genotype_ploidy(genotype, i) for i in samples_index]
 
             lib.bgen_genotype_close(genotype)
 
