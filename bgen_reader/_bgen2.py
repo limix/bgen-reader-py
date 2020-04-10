@@ -36,26 +36,26 @@ class open_bgen(object):
 
 
         self._verbose = verbose
-        self.filepath = filepath#!!!cmk0 get str of this as a true property from _bgen object
+        self._filepath = filepath
 
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
 
-        self.samples = np.array(self._get_samples(samples_filepath),dtype='str')
-        self._sample_range = np.arange(len(self.samples),dtype=np.int)
+        self._samples = np.array(self._get_samples(samples_filepath),dtype='str')
+        self._sample_range = np.arange(len(self._samples),dtype=np.int)
 
         metadata2 = filepath.with_suffix('.metadata2.npz')
         if metadata2.exists():
             d = np.load(str(metadata2))
-            self.ids = d['ids']
-            self.rsids = d['rsids']
+            self._ids = d['ids']
+            self._rsids = d['rsids']
             self._vaddr = d['vaddr']
-            self.chromosomes = d['chromosomes']
-            self.positions = d['positions']
-            self.nalleles = d['nalleles']
-            self.allele_ids = d['allele_ids']
-            self.ncombinations = d['ncombinations']
-            self.phased = d['phased']
+            self._chromosomes = d['chromosomes']
+            self._positions = d['positions']
+            self._nalleles = d['nalleles']
+            self._allele_ids = d['allele_ids']
+            self._ncombinations = d['ncombinations']
+            self._phased = d['phased']
         else:
             tempdir = None
             try:
@@ -63,13 +63,50 @@ class open_bgen(object):
                 metafile_filepath = tempdir+'/bgen.metadata'
                 self._bgen.create_metafile(Path(metafile_filepath),verbose=self._verbose)
                 self._map_metadata(metafile_filepath)
-                np.savez(metadata2,ids=self.ids,rsids=self.rsids,vaddr=self._vaddr,chromosomes=self.chromosomes,positions=self.positions,
-                         nalleles=self.nalleles,allele_ids=self.allele_ids,ncombinations=self.ncombinations,phased=self.phased)
+                np.savez(metadata2,ids=self._ids,rsids=self._rsids,vaddr=self._vaddr,chromosomes=self._chromosomes,positions=self._positions,
+                         nalleles=self._nalleles,allele_ids=self._allele_ids,ncombinations=self._ncombinations,phased=self._phased)
             finally:
                 if tempdir is not None:
                     shutil.rmtree(tempdir)
 
-        self.max_combinations = max(self.ncombinations)
+        self.max_combinations = max(self._ncombinations)
+
+    @property
+    def samples(self):
+        return self._samples
+
+    @property
+    def ids(self):
+        return self._ids
+
+    @property
+    def rsids(self):
+        return self._rsids
+
+    @property
+    def chromosomes(self):
+        return self._chromosomes
+
+    @property
+    def positions(self):
+        return self._positions
+
+    @property
+    def nalleles(self):
+        return self._nalleles
+
+    @property
+    def allele_ids(self):
+        return self._allele_ids
+
+    #!!!cmk these need types and docstrings
+    @property
+    def ncombinations(self):
+        return self._ncombinations
+
+    @property
+    def phased(self):
+        return self._phased
 
     def _get_samples(self,sample_file): #!!!cmk similar code in _reader.py
         if sample_file is None:
@@ -91,7 +128,6 @@ class open_bgen(object):
 
 
     #!!!cmk test each option
-     #!!!cmk0 also allow samples to be selected?
     def read(self, index=None, dtype=np.float, order='F', max_combinations=None, return_probabilities=True, return_missings=False, return_ploidies=False):
         '''
         !!!cmkwrite doc
@@ -116,15 +152,15 @@ class open_bgen(object):
 
         if variants_index is None:
             vaddr = self._vaddr
-            ncombinations = self.ncombinations
+            ncombinations = self._ncombinations
         else:
             vaddr = self._vaddr[variants_index]
-            ncombinations = self.ncombinations[variants_index]
+            ncombinations = self._ncombinations[variants_index]
 
-        #allocating p only once make reading 10x5M data 30% faster
+        #allocating prob_buffer only when its size changes makes reading 10x5M data 30% faster
         if return_probabilities:
             val = np.full((len(samples_index), len(vaddr), max_combinations), np.nan, dtype=dtype, order=order) #!!!cmk test on selecting zero variants
-            p = None #!!!cmk0 'p' seems hard to read about 'prop_buffer'?
+            prob_buffer = None
         if return_missings:
             missing_val = np.full((len(samples_index), len(vaddr)), False, dtype='bool', order=order)
         if return_ploidies:
@@ -137,10 +173,10 @@ class open_bgen(object):
             genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
 
             if return_probabilities:
-                if p is None or ncombinations[out_index] != p.shape[-1]:
-                    p = np.full((len(self.samples), ncombinations[out_index]), np.nan, order='C', dtype='float64')
-                lib.bgen_genotype_read(genotype, ffi.cast("double *", p.ctypes.data))
-                val[:,out_index,:ncombinations[out_index]] = p if (samples_index is self._sample_range) else p[samples_index,:,:]
+                if prob_buffer is None or ncombinations[out_index] != prob_buffer.shape[-1]:
+                    prob_buffer = np.full((len(self._samples), ncombinations[out_index]), np.nan, order='C', dtype='float64')
+                lib.bgen_genotype_read(genotype, ffi.cast("double *", prob_buffer.ctypes.data))
+                val[:,out_index,:ncombinations[out_index]] = prob_buffer if (samples_index is self._sample_range) else prob_buffer[samples_index,:,:]
 
             if return_missings:
                 missing_val[:,out_index] = [lib.bgen_genotype_missing(genotype, i) for i in samples_index]
@@ -216,16 +252,15 @@ class open_bgen(object):
                 allele_ids_list.append(allele_ids)
                 vaddr_list.append(offset)
 
-        #!!!cmk0 these need to be @properties?
         ##!!cmk do these need to pre-declared.                    
         #!!!cmk use concatenate(...out=) instead
-        self.ids = np.array(np.concatenate(id_list),dtype='str')#dtype needed to make unicode
-        self.rsids = np.array(np.concatenate(rsid_list),dtype='str')
+        self._ids = np.array(np.concatenate(id_list),dtype='str') # dtype needed to make unicode
+        self._rsids = np.array(np.concatenate(rsid_list),dtype='str')
         self._vaddr = np.concatenate(vaddr_list)
-        self.chromosomes = np.array(np.concatenate(chrom_list),dtype='str') 
-        self.positions = np.concatenate(position_list)
-        self.nalleles = np.concatenate(nalleles_list)
-        self.allele_ids = np.array(np.concatenate(nalleles_list),dtype='str') #cmk check that main api doesn't return bytes
+        self._chromosomes = np.array(np.concatenate(chrom_list),dtype='str') 
+        self._positions = np.concatenate(position_list)
+        self._nalleles = np.concatenate(nalleles_list)
+        self._allele_ids = np.array(np.concatenate(nalleles_list),dtype='str') #cmk check that main api doesn't return bytes
 
         for i,vaddr0 in enumerate(self._vaddr):
             if self._verbose and len(id_list)%1000==0:
@@ -235,8 +270,8 @@ class open_bgen(object):
             phased_list.append(lib.bgen_genotype_phased(genotype))
             lib.bgen_genotype_close(genotype)
 
-        self.ncombinations = np.array(ncombinations_list,dtype='int')
-        self.phased = np.array(phased_list,dtype='bool')
+        self._ncombinations = np.array(ncombinations_list,dtype='int')
+        self._phased = np.array(phased_list,dtype='bool')
 
     @property
     def nvariants(self) -> int:
@@ -248,7 +283,7 @@ class open_bgen(object):
     def nsamples(self) -> int:
         '''!!!cmk doc this all all others
         '''
-        return len(self.samples)
+        return len(self._samples)
 
     @property
     def shape(self) -> (int,int,int):
@@ -257,7 +292,7 @@ class open_bgen(object):
         return (self.nsamples,self.nvariants,self.max_combinations)
 
     def __repr__(self): 
-        return "{0}('{1}')".format(self.__class__.__name__,self.filepath)
+        return "{0}('{1}')".format(self.__class__.__name__,self._filepath)
 
     #!!!cmk here and elsewhere tell users to use 'del bgen12' not 'bgen12' so that object will be really gone and not just a zombie
     
