@@ -20,7 +20,6 @@ from bgen_reader._file import (
 from bgen_reader._bgen_metafile import bgen_metafile
 from bgen_reader._ffi import ffi, lib
 
-#!!!cmk1 can we have it both a contextmanger and not?
 #!!!cmk add type info
 #!!!cmk write doc
 #!!!cmk test doc
@@ -37,7 +36,7 @@ class open_bgen(object):
 
 
         self._verbose = verbose
-        self.filepath = filepath#!!!cmk get str of this as a true property from _bgen object
+        self.filepath = filepath#!!!cmk0 get str of this as a true property from _bgen object
 
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
@@ -47,7 +46,6 @@ class open_bgen(object):
         metadata2 = filepath.with_suffix('.metadata2.npz')
         if metadata2.exists():
             d = np.load(str(metadata2))
-            #!!!cmk why are some properties plural and others aren't?
             self.ids = d['ids']
             self.rsids = d['rsids']
             self._vaddr = d['vaddr']
@@ -83,9 +81,9 @@ class open_bgen(object):
             assert_file_exist(sample_file)
             assert_file_readable(sample_file)
             return read_samples_file(sample_file, self._verbose)
-    #!!!cmk is 'variants' a good name? How about 'variants_index' or something????
     #!!!cmk test each option
-    def read(self, variants=None, max_combinations=None, dtype=np.float, order='F', return_probabilities=True,return_missings=False, return_ploidies=False): #!!!cmk also allow samples to be selected?
+     #!!!cmk0 also allow samples to be selected?
+    def read(self, variants_index=None, dtype=np.float, order='F', max_combinations=None, return_probabilities=True, return_missings=False, return_ploidies=False):
         '''
         !!!cmkwrite doc
         !!!cmk tell probs will be 3D array
@@ -96,19 +94,19 @@ class open_bgen(object):
 
         max_combinations = max_combinations or self.max_combinations #!!!cmk test user setting max_combinations to 0 and 1
 
-        if type(variants) is np.int: #!!!make sure this works with all int types
-            variants = [variants]
-        if variants is None:
+        if type(variants_index) is np.int: #!!!make sure this works with all int types
+            variants_index = [variants_index]
+        if variants_index is None:
             vaddr = self._vaddr
             ncombinations = self.ncombinations
         else:
-            vaddr = self._vaddr[variants]
-            ncombinations = self.ncombinations[variants]
+            vaddr = self._vaddr[variants_index]
+            ncombinations = self.ncombinations[variants_index]
 
         #allocating p only once make reading 10x5M data 30% faster
         if return_probabilities:
             val = np.full((len(self.samples), len(vaddr), max_combinations), np.nan, dtype=dtype, order=order) #!!!cmk test on selecting zero variants
-            p = None #!!!cmk 'p' seems hard to read about 'prop_buffer'?
+            p = None #!!!cmk0 'p' seems hard to read about 'prop_buffer'?
         if return_missings:
             missing_val = np.full((self.nsamples, len(vaddr)), False, dtype='bool', order=order)
         if return_ploidies:
@@ -200,12 +198,12 @@ class open_bgen(object):
                 allele_ids_list.append(allele_ids)
                 vaddr_list.append(offset)
 
-        #!!!cmk do these need to be @properties?
+        #!!!cmk0 these need to be @properties?
         ##!!cmk do these need to pre-declared.                    
         #!!!cmk use concatenate(...out=) instead
         self.ids = np.array(np.concatenate(id_list),dtype='str')#dtype needed to make unicode
         self.rsids = np.array(np.concatenate(rsid_list),dtype='str')
-        self._vaddr = np.concatenate(vaddr_list) #!!!cmk hide this one. Of no use to users
+        self._vaddr = np.concatenate(vaddr_list)
         self.chromosomes = np.array(np.concatenate(chrom_list),dtype='str') 
         self.positions = np.concatenate(position_list)
         self.nalleles = np.concatenate(nalleles_list)
