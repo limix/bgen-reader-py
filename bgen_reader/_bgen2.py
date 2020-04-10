@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from tempfile import mkdtemp
 import shutil
 from pathlib import Path
+from typing import Optional, Union
 from numpy import empty, uint16, uint32, uint64, zeros
 
 #!!!cmk figure out a good name of this file
@@ -19,13 +20,6 @@ from bgen_reader._file import (
 from bgen_reader._bgen_metafile import bgen_metafile
 from bgen_reader._ffi import ffi, lib
 
-#!!!cmk0 should this be 'read_bgen2' instead?
-@contextmanager
-def bgen_reader2(filename, sample=None, verbose=False): #!!!cmk0 have these inputs match the names in api#1 exactly
-    bgen2 = Bgen2(filename,sample=sample,verbose=verbose)
-    yield bgen2
-    del bgen2
-
 #!!!cmk1 can we have it both a contextmanger and not?
 #!!!cmk add type info
 #!!!cmk write doc
@@ -33,22 +27,26 @@ def bgen_reader2(filename, sample=None, verbose=False): #!!!cmk0 have these inpu
 #!!!cmk1 create test cases that generate big datasets (if qctool is available)
 #!!!cmk1 create test cases with full coverage
 #!!!cmk ok to have metadata2.npz location be fixed for now?
-class Bgen2(object):
-    def __init__(self, filename, sample=None, verbose=False):
+class open_bgen(object):
+    def __init__(self, filepath: Union[str, Path],
+                 samples_filepath: Optional[Union[str, Path]] = None,
+                 verbose : bool = False):
+        filepath = Path(filepath)
+        assert_file_exist(filepath)
+        assert_file_readable(filepath)
+
+
         self._verbose = verbose
-        self.filename = filename
+        self.filepath = filepath
 
-        assert os.path.exists(filename), "Expect file to exist ('{0}')".format(filename) #!!!cmk still useful?
-
-        self._bgen_context_manager = bgen_file(Path(filename))
+        self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
 
+        self.samples = np.array(self._get_samples(samples_filepath),dtype='str')
 
-        self.samples = np.array(self._get_samples(sample),dtype='str')
-
-        metadata2 = self.filename + ".metadata2.npz"
-        if os.path.exists(metadata2):
-            d = np.load(metadata2) #!!!cmk could do memory mapping instead
+        metadata2 = filepath.with_suffix('.metadata2.npz')
+        if metadata2.exists():
+            d = np.load(str(metadata2))
             #!!!cmk why are some properties plural and others aren't?
             self.id = d['id']
             self.rsid = d['rsid']
@@ -74,7 +72,7 @@ class Bgen2(object):
 
         self.max_ncombs = max(self.ncombs)
 
-    def _get_samples(self,sample_file):
+    def _get_samples(self,sample_file): #!!!cmk similar code in _reader.py
         if sample_file is None:
             if self._bgen.contain_samples:
                 return self._bgen.read_samples()
@@ -114,7 +112,7 @@ class Bgen2(object):
         if return_ploidy:
             ploidy_val = np.full((len(self.samples), len(vaddr)), 0, dtype='int', order=order)
 
-        p = None
+        p = None #!!!cmk 'p' seems hard to read about 'prop_buffer'?
 
         #LATER multithread?
         #!!!cmk if verbose is true, give some status
@@ -239,27 +237,38 @@ class Bgen2(object):
         return (self.nsamples,self.nvariants,self.max_ncombs)
 
     def __repr__(self): 
-        return "{0}('{1}')".format(self.__class__.__name__,self.filename)
+        return "{0}('{1}')".format(self.__class__.__name__,self.filepath)
 
-    def __del__(self):
+    #!!!cmk here and elsewhere tell users to use 'del bgen12' not 'bgen12' so that object will be really gone and not just a zombie
+    
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
         if hasattr(self,'_bgen_context_manager') and self._bgen_context_manager is not None:  # we need to test this because Python doesn't guarantee that __init__ was fully run
             self._bgen_context_manager.__exit__(None,None,None)
+            del self._bgen_context_manager # This allows __del__ and __exit__ to be called twice on the same object with no bad effect.
+
+    def __del__(self):
+        self.__exit__()
 
 if __name__ == "__main__":
     if True:
-        #filename = r'm:\deldir\1000x500000.bgen'
-        #filename = r'D:\OneDrive\Shares\bgenraaderpy\1x1000000.bgen'
-        filename = r'M:\del35\temp1024x16384-8.bgen'
-        with bgen_reader2(filename) as bgen2:
+        #filepath = r'm:\deldir\1000x500000.bgen'
+        #filepath = r'D:\OneDrive\Shares\bgenraaderpy\1x1000000.bgen'
+        filepath = r'M:\del35\temp1024x16384-8.bgen'
+        with open_bgen(filepath) as bgen2:
             print(bgen2.id[:5]) #other property arrays include risd,chrom,position,nallels, and allele_ids
             geno = bgen2.read(-1) # read the 200,000th variate's data
             #geno = bgen2.read() # read all, uses the ncombs from the first variant
             geno = bgen2.read(slice(5)) # read first 5, uses the ncombs from the first variant
             geno = bgen2.read(bgen2.chrom=='5',max_ncombs=4) # read chrom1, set max_combs explicitly
             geno, missing = bgen2.read(0,return_missing=True)
+        bgen2 = open_bgen(filepath)
+        geno, missing = bgen2.read(0,return_missing=True)
     if True:
-        filename = r'm:\deldir\2500x500000.bgen'
-        with bgen_reader2(filename,verbose=True) as bgen2:
+        filepath = r'm:\deldir\2500x500000.bgen'
+        with open_bgen(filepath,verbose=True) as bgen2:
             print(bgen2.read(0)[0,0,:])
             print(bgen2.read(-1)[0,0,:])
     print('!!!done')
