@@ -176,7 +176,7 @@ class open_bgen(object):
                 if prob_buffer is None or ncombinations[out_index] != prob_buffer.shape[-1]:
                     prob_buffer = np.full((len(self._samples), ncombinations[out_index]), np.nan, order='C', dtype='float64')
                 lib.bgen_genotype_read(genotype, ffi.cast("double *", prob_buffer.ctypes.data))
-                val[:,out_index,:ncombinations[out_index]] = prob_buffer if (samples_index is self._sample_range) else prob_buffer[samples_index,:,:]
+                val[:,out_index,:ncombinations[out_index]] = prob_buffer if (samples_index is self._sample_range) else prob_buffer[samples_index,:]
 
             if return_missings:
                 missing_val[:,out_index] = [lib.bgen_genotype_missing(genotype, i) for i in samples_index]

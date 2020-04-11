@@ -289,19 +289,19 @@ def test_bgen_reader_complex():
     assert_equal(bgen2.samples[3], "sample_3")
 
     g = bgen2.read((0,0))
-    assert_allclose(g[:2], [1, 0])
-    assert isnan(g[2])
+    assert_allclose(g[0,0,:2], [1, 0])
+    assert isnan(g[0,0,2])
 
     g = bgen2.read((1,0))
-    assert_allclose(g[:3], [1, 0, 0])
+    assert_allclose(g[0,0,:3], [1, 0, 0])
 
     g = bgen2.read((-1,-1))
-    assert_allclose(g[:5], [0, 0, 0, 1, 0])
+    assert_allclose(g[0,0,:5], [0, 0, 0, 1, 0])
 
     ploidy = bgen2.read(0,return_probabilities=False,return_ploidies=True)
-    assert_allclose(ploidy, [1, 2, 2, 2])
+    assert_allclose(ploidy[:,0], [1, 2, 2, 2])
     ploidy = bgen2.read(-1,return_probabilities=False,return_ploidies=True)
-    assert_allclose(ploidy, [4, 4, 4, 4])
+    assert_allclose(ploidy[:,0], [4, 4, 4, 4])
 
     assert_equal(bgen2.phased.dtype.name, "bool")
     ideal = array([False, True, True, False, True, True, True, True, False, False])
