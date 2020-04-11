@@ -38,7 +38,7 @@ and reinstall the package again."""
 
     raise RuntimeError(str(e) + _ffi_err)
 
-__version__ = "4.0.3"
+__version__ = "4.0.4"
 
 __all__ = [
     "__version__",
