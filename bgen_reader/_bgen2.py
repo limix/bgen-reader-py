@@ -34,9 +34,9 @@ class open_bgen(object):
         assert_file_exist(filepath)
         assert_file_readable(filepath)
 
-
         self._verbose = verbose
         self._filepath = filepath
+
 
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
@@ -44,7 +44,7 @@ class open_bgen(object):
         self._samples = np.array(self._get_samples(samples_filepath),dtype='str')
         self._sample_range = np.arange(len(self._samples),dtype=np.int)
 
-        metadata2 = filepath.with_suffix('.metadata2.npz')
+        metadata2 = self._metadatapath_from_filename(filepath)
         if metadata2.exists():
             d = np.load(str(metadata2))
             self._ids = d['ids']
@@ -70,6 +70,11 @@ class open_bgen(object):
                     shutil.rmtree(tempdir)
 
         self.max_combinations = max(self._ncombinations)
+
+    #This is static so that test code can use it easily.        
+    @staticmethod
+    def _metadatapath_from_filename(filename):
+        return Path(filename).with_suffix('.metadata2.npz')
 
     @property
     def samples(self):
@@ -108,6 +113,24 @@ class open_bgen(object):
     def phased(self):
         return self._phased
 
+    @property
+    def nvariants(self) -> int:
+        '''!!!cmk doc this all all others
+        '''
+        return len(self.ids)
+
+    @property
+    def nsamples(self) -> int:
+        '''!!!cmk doc this all all others
+        '''
+        return len(self._samples)
+
+    @property
+    def shape(self) -> (int,int,int):
+        '''!!!cmk doc this all all others
+        '''
+        return (self.nsamples,self.nvariants,self.max_combinations)
+
     def _get_samples(self,sample_file): #!!!cmk similar code in _reader.py
         if sample_file is None:
             if self._bgen.contain_samples:
@@ -125,7 +148,6 @@ class open_bgen(object):
         if type(index) is np.int: #!!!make sure this works with all int types
             return [index]
         return index
-
 
     #!!!cmk test each option
     def read(self, index=None, dtype=np.float, order='F', max_combinations=None, return_probabilities=True, return_missings=False, return_ploidies=False):
@@ -273,26 +295,8 @@ class open_bgen(object):
         self._ncombinations = np.array(ncombinations_list,dtype='int')
         self._phased = np.array(phased_list,dtype='bool')
 
-    @property
-    def nvariants(self) -> int:
-        '''!!!cmk doc this all all others
-        '''
-        return len(self.id)
-
-    @property
-    def nsamples(self) -> int:
-        '''!!!cmk doc this all all others
-        '''
-        return len(self._samples)
-
-    @property
-    def shape(self) -> (int,int,int):
-        '''!!!cmk doc this all all others
-        '''
-        return (self.nsamples,self.nvariants,self.max_combinations)
-
-    def __repr__(self): 
-        return "{0}('{1}')".format(self.__class__.__name__,self._filepath)
+    def __str__(self): 
+        return "{0}('{1}')".format(self.__class__.__name__,self._filepath.name)
 
     #!!!cmk here and elsewhere tell users to use 'del bgen12' not 'bgen12' so that object will be really gone and not just a zombie
     
@@ -307,7 +311,7 @@ class open_bgen(object):
     def __del__(self):
         self.__exit__()
 
-#!!!cnj check how this works (if at all) with the other parts of the API (Dosage, Expectation, ...)   
+#!!!cmk check how this works (if at all) with the other parts of the API (Dosage, Expectation, ...)   
 
 if __name__ == "__main__":
     if True:

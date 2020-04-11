@@ -10,27 +10,31 @@ from numpy import array, array_equal, isnan
 from numpy.testing import assert_allclose, assert_equal
 from pandas import Series
 
-from bgen_reader import open_bgen as ignorecmk
 from bgen_reader import open_bgen
-#from bgen_reader import example_filepath #!!!cmk put this back
-def example_filepath(filename):
-    return r'D:\OneDrive\programs\bgen-reader-py\bgen_reader\_example/'+filename
+from bgen_reader import example_filepath
+
+def example_filepath2(filename):
+    filepath = example_filepath(filename)
+    metadata2_path = open_bgen._metadatapath_from_filename(filepath)
+    if metadata2_path.exists():
+        metadata2_path.unlink()
+    return filepath
 
 def test_bgen_samples_inside_bgen():
-    data = open_bgen(example_filepath("haplotypes.bgen"), verbose=False)
+    data = open_bgen(example_filepath2("haplotypes.bgen"), verbose=False)
     samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
     assert all(data.samples == samples)
 
 
 def test_bgen_samples_not_present():
-    data = open_bgen(example_filepath("complex.23bits.no.samples.bgen"), verbose=False)
+    data = open_bgen(example_filepath2("complex.23bits.no.samples.bgen"), verbose=False)
     samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
     assert all(data.samples == samples)
 
 
 def test_bgen_samples_specify_samples_file():
     data = open_bgen(
-        example_filepath("complex.23bits.bgen"),
+        example_filepath2("complex.23bits.bgen"),
         samples_filepath=example_filepath("complex.sample"),
         verbose=False,
     )
@@ -40,7 +44,7 @@ def test_bgen_samples_specify_samples_file():
 
 @pytest.mark.skipif(platform.system() != "Darwin", reason="only reliable on macos")
 def test_bgen_samples_outside_bgen_unreadable(tmp_path):
-    bgen_filepath = example_filepath("complex.23bits.bgen")
+    bgen_filepath = example_filepath2("complex.23bits.bgen")
     samples_filepath = tmp_path / "complex.sample"
     copyfile(example_filepath("complex.sample"), samples_filepath)
     with noread_permission(samples_filepath):
@@ -51,7 +55,7 @@ def test_bgen_samples_outside_bgen_unreadable(tmp_path):
 @pytest.mark.skipif(platform.system() != "Darwin", reason="only reliable on macos")
 def test_bgen_file_not_readable(tmp_path):
     filepath = tmp_path / "haplotypes.bgen"
-    copyfile(example_filepath("haplotypes.bgen"), filepath)
+    copyfile(example_filepath2("haplotypes.bgen"), filepath)
     with noread_permission(filepath):
         with pytest.raises(PermissionError):
             open_bgen(filepath, verbose=False)
@@ -63,12 +67,12 @@ def test_bgen_file_dont_exist():
 
 
 def test_metafile_not_provided():
-    open_bgen(example_filepath("haplotypes.bgen"), verbose=False)
+    open_bgen(example_filepath2("haplotypes.bgen"), verbose=False)
 
 
 @pytest.mark.skipif(platform.system() != "Darwin", reason="only reliable on macos")
 def test_metafile_not_provided_no_permission_to_create(tmp_path):
-    src = example_filepath("haplotypes.bgen")
+    src = example_filepath2("haplotypes.bgen")
     dst = tmp_path / "haplotypes.bgen"
     copyfile(src, dst)
     path = os.path.dirname(dst)
@@ -96,8 +100,8 @@ def noread_permission(path):
     finally:
         os.chmod(path, perm)
 
-def test_bgen_reader_phased_genotype():
-    filepath = example_filepath("haplotypes.bgen")
+def test_open_bgen_phased_genotype():
+    filepath = example_filepath2("haplotypes.bgen")
     bgen2 = open_bgen(filepath, verbose=False)
 
     assert_equal(bgen2.chromosomes[0], "1")
@@ -124,8 +128,8 @@ def test_bgen_reader_phased_genotype():
     assert_allclose(g[0,0,:], [1.0, 0.0, 0.0, 1.0])
 
 
-def test_bgen_reader_variants_info():
-    filepath = example_filepath("example.32bits.bgen")
+def test_open_bgen_variants_info():
+    filepath = example_filepath2("example.32bits.bgen")
     bgen2 = open_bgen(filepath, verbose=False)
 
     assert_equal(bgen2.chromosomes[0], "01")
@@ -168,9 +172,41 @@ def test_bgen_reader_variants_info():
     g = bgen2.read((2,1))
     assert_allclose(g[0,0,:], b)
 
-#!!!cmk why is there also a (no '_') test_bgen_reader_phased_genotype?
-def _test_bgen_reader_phased_genotype():
-    filepath = example_filepath("haplotypes.bgen")
+def test_to_improve_coverage():
+    filepath = example_filepath2("example.32bits.bgen")
+    bgen2 = open_bgen(filepath, verbose=False) #Creates metadata2.npz file
+    assert_equal(bgen2.ncombinations[-1],3)
+    assert_equal(bgen2.phased[-1], False)
+    with open_bgen(filepath) as bgen2: #Reuses metadata2.npz file
+        assert_equal(str(bgen2),"open_bgen('{0}')".format(filepath.name))
+        assert_equal(bgen2.nsamples, 500)
+        assert_equal(bgen2.nvariants, 199)
+        assert_equal(bgen2.shape, (500,199,3))
+        assert_equal(bgen2.ids[-1], "SNPID_200")
+        assert_equal(bgen2.rsids[-1], "RSID_200")
+        assert_equal(bgen2.chromosomes[-1], "01")
+        assert_equal(bgen2.positions[-1], 100001)
+        assert_equal(bgen2.nalleles[-1], 2)
+        assert_equal(bgen2.allele_ids[-1], "A,G")
+        assert_equal(bgen2.ncombinations[-1],3)
+        assert_equal(bgen2.phased[-1], False)
+        assert_equal(bgen2.samples[-1], "sample_500")
+
+        b = [
+            0.97970582847010945215516,
+            0.01947019668749305418287,
+            0.00082397484239749366197,
+        ]
+        g = bgen2.read((2,1))
+        assert_allclose(g[0,0,:], b)
+
+        g = bgen2.read()
+        assert_allclose(g[2,1,:], b)
+
+#!!!cmk why is there also a (no '_') test_open_bgen_phased_genotype?
+def _test_open_bgen_phased_genotype():
+    filepath = example_filepath2("haplotypes.bgen")
+    remove_any_metadata2_file(filepath)
     bgen2 = open_bgen(filepath, verbose=False)
 
     assert_equal(bgen2.chromosomes[0], "1")
@@ -200,19 +236,19 @@ def _test_bgen_reader_phased_genotype():
     assert_allclose(g[0,0,:], a)
 
 
-def test_bgen_reader_without_metadata():
-    filepath = example_filepath("example.32bits.bgen")
+def test_open_bgen_without_metadata():
+    filepath = example_filepath2("example.32bits.bgen")
     bgen2 = open_bgen(filepath, verbose=False)
     assert_equal(bgen2.allele_ids[7], "A,G")
     assert_equal(bgen2.samples[-1], "sample_500")
 
-def test_bgen_reader_file_notfound():
+def test_open_bgen_file_notfound():
     with pytest.raises(FileNotFoundError):
         open_bgen("/1/2/3/example.32bits.bgen", verbose=False)
 
 
-def test_bgen_reader_complex():
-    filepath = example_filepath("complex.23bits.bgen")
+def test_open_bgen_complex():
+    filepath = example_filepath2("complex.23bits.bgen")
     bgen2 = open_bgen(filepath, verbose=False)
 
     assert_equal(bgen2.chromosomes[0], "01")
@@ -259,9 +295,9 @@ def test_bgen_reader_complex():
     assert array_equal(bgen2.phased, ideal)
 
 
-def test_bgen_reader_complex_sample_file():
+def test_open_bgen_complex_sample_file():
     bgen2 = open_bgen(
-        example_filepath("complex.23bits.bgen"),
+        example_filepath2("complex.23bits.bgen"),
         samples_filepath=example_filepath("complex.sample"),
         verbose=False,
     )
