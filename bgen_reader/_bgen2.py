@@ -260,7 +260,7 @@ class open_bgen(object):
         self._chromosomes = np.array(np.concatenate(chrom_list),dtype='str') 
         self._positions = np.concatenate(position_list)
         self._nalleles = np.concatenate(nalleles_list)
-        self._allele_ids = np.array(np.concatenate(nalleles_list),dtype='str') #cmk check that main api doesn't return bytes
+        self._allele_ids = np.array(np.concatenate(allele_ids_list),dtype='str') #cmk check that main api doesn't return bytes
 
         for i,vaddr0 in enumerate(self._vaddr):
             if self._verbose and len(id_list)%1000==0:

@@ -108,3 +108,5 @@ ENV/
 /bgen_reader/zlib.dll
 /bgen_reader/bgen.dll
 /bgen_reader/athr.dll
+/bgen_reader/test/runpytest.py
+/TestResults
