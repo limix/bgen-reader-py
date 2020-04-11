@@ -110,3 +110,4 @@ ENV/
 /bgen_reader/athr.dll
 /bgen_reader/test/runpytest.py
 /TestResults
+/bgen_reader/_example

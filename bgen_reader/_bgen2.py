@@ -116,9 +116,9 @@ class open_bgen(object):
                 return generate_samples(self._bgen.nsamples)
         else:
             samples_filepath = Path(sample_file)
-            assert_file_exist(sample_file)
-            assert_file_readable(sample_file)
-            return read_samples_file(sample_file, self._verbose)
+            assert_file_exist(samples_filepath)
+            assert_file_readable(samples_filepath)
+            return read_samples_file(samples_filepath, self._verbose)
 
     @staticmethod
     def _fix_up_index(index):

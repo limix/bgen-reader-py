@@ -207,7 +207,7 @@ def test_bgen_reader_variants_info():
     g = bgen["genotype"][1].compute()["probs"]
     assert_allclose(g[2, :], b)
 
-
+#!!!cmk why is there also a (no '_') test_bgen_reader_phased_genotype?
 def _test_bgen_reader_phased_genotype():
     filepath = example_filepath("haplotypes.bgen")
     bgen = read_bgen(filepath, verbose=False)
