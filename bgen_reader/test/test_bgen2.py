@@ -431,6 +431,7 @@ def test_read_indexing():
     assert missing.shape == (0,0)
     assert ploidy.shape == (0,0)
 
+    #!!!cmk add test for negatives
 
 def test_read_multiple_returns():
     filepath = example_filepath2("example.32bits.bgen")

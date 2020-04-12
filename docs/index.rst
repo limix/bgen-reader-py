@@ -21,6 +21,7 @@ as well as their optional compressed formats.
 
    install
    quickstart
+   open
    read
    dosage
    expectation

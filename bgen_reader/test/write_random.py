@@ -10,7 +10,7 @@ import subprocess
 from bgen_reader._helper import _log_in_place
 
 
-def _write_random(filepath, nsamples, nvariants, bits=16, compression=None, chrom_count=22, verbose=False, seed=0, block_size=None, qctool_path=None, cleanup_temp_files=True):
+def _write_random(filepath, nsamples, nvariants, bits=16, compression=None, chrom_count=22, verbose=True, seed=0, block_size=None, qctool_path=None, cleanup_temp_files=True):
     '''
     !!!cmk doc
     '''
