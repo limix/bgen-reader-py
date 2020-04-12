@@ -205,6 +205,7 @@ def test_to_improve_coverage():
         g = bgen2.read()
         assert_allclose(g[2,1,:], b)
 
+#!!!!cmk how to mark this as slow? (It takes hours to generate data)
 def test_bigfile(verbose=False):
     nsamples = 2500
     nvariants = 500*1000
