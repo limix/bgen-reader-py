@@ -6,6 +6,9 @@ import shutil
 from pathlib import Path
 from typing import Optional, Union
 from numpy import empty, uint16, uint32, uint64, zeros
+import time
+import datetime
+import sys
 
 #!!!cmk figure out a good name of this file
 #!!!cmk change 'from bgen_reader.' to 'from .'
@@ -19,11 +22,14 @@ from bgen_reader._file import (
 )
 from bgen_reader._bgen_metafile import bgen_metafile
 from bgen_reader._ffi import ffi, lib
-#!!!cmk test that metadata2.npz gets updated if file dates say it should
+from bgen_reader._helper import _log_in_place
+from bgen_reader.test.write_random import _write_random
+
+#!!!cmk0 test that metadata2.npz gets updated if file dates say it should
 #!!!cmk add type info
 #!!!cmk write doc
 #!!!cmk test doc
-#!!!cmk1 create test cases that generate big datasets (if qctool is available)
+#!!!cmk0 create test cases that generate big datasets (if qctool is available)
 #!!!cmk ok to have metadata2.npz location be fixed for now?
 class open_bgen(object):
     def __init__(self, filepath: Union[str, Path],
@@ -148,13 +154,14 @@ class open_bgen(object):
             return [index]
         return index
 
-    #!!!cmk test each option
+    #!!!cmk0 test each option
     def read(self, index=None, dtype=np.float, order='F', max_combinations=None, return_probabilities=True, return_missings=False, return_ploidies=False):
         '''
         !!!cmkwrite doc
         !!!cmk tell probs will be 3D array
         !!!cmk if both missing and ploidy are returned, missing will be first. and both will be 2-D arrays
         '''
+        #!!!cmk test every input type and zero length(s)
         #!!!cmk allow single ints, lists of ints, lists of bools, None, and slices
         #!!!cmk (DECIDE LATER) could allow strings (variant names) and lists of strings
 
@@ -189,23 +196,26 @@ class open_bgen(object):
 
 
         #LATER multithread?
-        #!!!cmk if verbose is true, give some status
-        for out_index,vaddr0 in enumerate(vaddr):
-            genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
+        with _log_in_place('reading', self._verbose) as updater:
+            for out_index,vaddr0 in enumerate(vaddr):
+                if out_index%100==0: #!!!cmk improve the freq
+                    updater('part {0:,} of {1:,}'.format(out_index,len(vaddr))) #!!!cmk make this nice
 
-            if return_probabilities:
-                if prob_buffer is None or ncombinations[out_index] != prob_buffer.shape[-1]:
-                    prob_buffer = np.full((len(self._samples), ncombinations[out_index]), np.nan, order='C', dtype='float64')
-                lib.bgen_genotype_read(genotype, ffi.cast("double *", prob_buffer.ctypes.data))
-                val[:,out_index,:ncombinations[out_index]] = prob_buffer if (samples_index is self._sample_range) else prob_buffer[samples_index,:]
+                genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
 
-            if return_missings:
-                missing_val[:,out_index] = [lib.bgen_genotype_missing(genotype, i) for i in samples_index]
+                if return_probabilities:
+                    if prob_buffer is None or ncombinations[out_index] != prob_buffer.shape[-1]:
+                        prob_buffer = np.full((len(self._samples), ncombinations[out_index]), np.nan, order='C', dtype='float64')
+                    lib.bgen_genotype_read(genotype, ffi.cast("double *", prob_buffer.ctypes.data))
+                    val[:,out_index,:ncombinations[out_index]] = prob_buffer if (samples_index is self._sample_range) else prob_buffer[samples_index,:]
 
-            if return_ploidies:
-                ploidy_val[:,out_index] = [lib.bgen_genotype_ploidy(genotype, i) for i in samples_index]
+                if return_missings:
+                    missing_val[:,out_index] = [lib.bgen_genotype_missing(genotype, i) for i in samples_index]
 
-            lib.bgen_genotype_close(genotype)
+                if return_ploidies:
+                    ploidy_val[:,out_index] = [lib.bgen_genotype_ploidy(genotype, i) for i in samples_index]
+
+                lib.bgen_genotype_close(genotype)
 
         result_array = ([val] if return_probabilities else []) + ([missing_val] if return_missings else []) + ([ploidy_val] if return_ploidies else [])
         if len(result_array)==1:
@@ -214,85 +224,87 @@ class open_bgen(object):
             return tuple(result_array)
 
     def _map_metadata(self,metafile_filepath): 
-        with bgen_metafile(Path(metafile_filepath)) as mf:
-            nparts = mf.npartitions
-            id_list, rsid_list,chrom_list,position_list,vaddr_list,nalleles_list,allele_ids_list,ncombinations_list,phased_list = [],[],[],[],[],[],[],[],[]
+        with _log_in_place('metadata', self._verbose) as updater:
+            with bgen_metafile(Path(metafile_filepath)) as mf:
+                nparts = mf.npartitions
+                id_list, rsid_list,chrom_list,position_list,vaddr_list,nalleles_list,allele_ids_list,ncombinations_list,phased_list = [],[],[],[],[],[],[],[],[]
 
-            #!!!If verbose, should tell how it is going
-            for ipart in range(nparts): #LATER multithread?
+                #!!!If verbose, should tell how it is going
+                for ipart2 in range(nparts): #LATER multithread?
+                    updater('step 2: part {0:,} of {1:,}'.format(ipart2,nparts)) #!!!cmk make this nice
 
-                #!!!cmk this code is very similar to other code
-                partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart)
-                if partition == ffi.NULL:
-                    raise RuntimeError(f"Could not read partition {partition}.")
+                    #!!!cmk this code is very similar to other code
+                    partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
+                    if partition == ffi.NULL:
+                        raise RuntimeError(f"Could not read partition {partition}.")
 
-                #cmk similar code in _bgen_metafile.py
-                nvariants = lib.bgen_partition_nvariants(partition)
+                    #cmk similar code in _bgen_metafile.py
+                    nvariants = lib.bgen_partition_nvariants(partition)
 
-                position = empty(nvariants, dtype=uint32)
-                nalleles = empty(nvariants, dtype=uint16)
-                offset = empty(nvariants, dtype=uint64)
-                vid_max_len = ffi.new("uint32_t[]", 1)
-                rsid_max_len = ffi.new("uint32_t[]", 1)
-                chrom_max_len = ffi.new("uint32_t[]", 1)
-                allele_ids_max_len = ffi.new("uint32_t[]", 1)
-                position_ptr = ffi.cast("uint32_t *", ffi.from_buffer(position))
-                nalleles_ptr = ffi.cast("uint16_t *", ffi.from_buffer(nalleles))
-                offset_ptr = ffi.cast("uint64_t *", ffi.from_buffer(offset))
-                lib.read_partition_part1(
-                    partition,
-                    position_ptr,
-                    nalleles_ptr,
-                    offset_ptr,
-                    vid_max_len,
-                    rsid_max_len,
-                    chrom_max_len,
-                    allele_ids_max_len,
-                )
-                vid = zeros(nvariants, dtype=f"S{vid_max_len[0]}")
-                rsid = zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
-                chrom = zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
-                allele_ids = zeros(nvariants, dtype=f"S{allele_ids_max_len[0]}")
-                lib.read_partition_part2(
-                    partition,
-                    ffi.from_buffer("char[]", vid),
-                    vid_max_len[0],
-                    ffi.from_buffer("char[]", rsid),
-                    rsid_max_len[0],
-                    ffi.from_buffer("char[]", chrom),
-                    chrom_max_len[0],
-                    ffi.from_buffer("char[]", allele_ids),
-                    allele_ids_max_len[0],
-                 )
+                    position = empty(nvariants, dtype=uint32)
+                    nalleles = empty(nvariants, dtype=uint16)
+                    offset = empty(nvariants, dtype=uint64)
+                    vid_max_len = ffi.new("uint32_t[]", 1)
+                    rsid_max_len = ffi.new("uint32_t[]", 1)
+                    chrom_max_len = ffi.new("uint32_t[]", 1)
+                    allele_ids_max_len = ffi.new("uint32_t[]", 1)
+                    position_ptr = ffi.cast("uint32_t *", ffi.from_buffer(position))
+                    nalleles_ptr = ffi.cast("uint16_t *", ffi.from_buffer(nalleles))
+                    offset_ptr = ffi.cast("uint64_t *", ffi.from_buffer(offset))
+                    lib.read_partition_part1(
+                        partition,
+                        position_ptr,
+                        nalleles_ptr,
+                        offset_ptr,
+                        vid_max_len,
+                        rsid_max_len,
+                        chrom_max_len,
+                        allele_ids_max_len,
+                    )
+                    vid = zeros(nvariants, dtype=f"S{vid_max_len[0]}")
+                    rsid = zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
+                    chrom = zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
+                    allele_ids = zeros(nvariants, dtype=f"S{allele_ids_max_len[0]}")
+                    lib.read_partition_part2(
+                        partition,
+                        ffi.from_buffer("char[]", vid),
+                        vid_max_len[0],
+                        ffi.from_buffer("char[]", rsid),
+                        rsid_max_len[0],
+                        ffi.from_buffer("char[]", chrom),
+                        chrom_max_len[0],
+                        ffi.from_buffer("char[]", allele_ids),
+                        allele_ids_max_len[0],
+                     )
 
-                id_list.append(vid)
-                rsid_list.append(rsid)
-                chrom_list.append(chrom)
-                position_list.append(position)
-                nalleles_list.append(nalleles)
-                allele_ids_list.append(allele_ids)
-                vaddr_list.append(offset)
+                    id_list.append(vid)
+                    rsid_list.append(rsid)
+                    chrom_list.append(chrom)
+                    position_list.append(position)
+                    nalleles_list.append(nalleles)
+                    allele_ids_list.append(allele_ids)
+                    vaddr_list.append(offset)
 
-        ##!!cmk do these need to pre-declared.                    
-        #!!!cmk use concatenate(...out=) instead
-        self._ids = np.array(np.concatenate(id_list),dtype='str') # dtype needed to make unicode
-        self._rsids = np.array(np.concatenate(rsid_list),dtype='str')
-        self._vaddr = np.concatenate(vaddr_list)
-        self._chromosomes = np.array(np.concatenate(chrom_list),dtype='str') 
-        self._positions = np.concatenate(position_list)
-        self._nalleles = np.concatenate(nalleles_list)
-        self._allele_ids = np.array(np.concatenate(allele_ids_list),dtype='str') #cmk check that main api doesn't return bytes
+            ##!!cmk do these need to pre-declared.                    
+            #!!!cmk use concatenate(...out=) instead
+            self._ids = np.array(np.concatenate(id_list),dtype='str') # dtype needed to make unicode
+            self._rsids = np.array(np.concatenate(rsid_list),dtype='str')
+            self._vaddr = np.concatenate(vaddr_list)
+            self._chromosomes = np.array(np.concatenate(chrom_list),dtype='str') 
+            self._positions = np.concatenate(position_list)
+            self._nalleles = np.concatenate(nalleles_list)
+            self._allele_ids = np.array(np.concatenate(allele_ids_list),dtype='str') #cmk check that main api doesn't return bytes
 
-        for i,vaddr0 in enumerate(self._vaddr):
-            if self._verbose and len(id_list)%1000==0:
-                print('{0}'.format(len(id_list)))#!!!cmk put in standard-style status message. Elsewhere, too?
-            genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
-            ncombinations_list.append(lib.bgen_genotype_ncombs(genotype))
-            phased_list.append(lib.bgen_genotype_phased(genotype))
-            lib.bgen_genotype_close(genotype)
+            for i,vaddr0 in enumerate(self._vaddr):
+                if i%1000==0: #!!!cmk improve the freq
+                    updater('step 3: part {0:,} of {1:,}'.format(i,self.nvariants)) #!!!cmk make this nice
+                genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
+                ncombinations_list.append(lib.bgen_genotype_ncombs(genotype))
+                phased_list.append(lib.bgen_genotype_phased(genotype))
+                lib.bgen_genotype_close(genotype)
 
-        self._ncombinations = np.array(ncombinations_list,dtype='int')
-        self._phased = np.array(phased_list,dtype='bool')
+            self._ncombinations = np.array(ncombinations_list,dtype='int')
+            self._phased = np.array(phased_list,dtype='bool')
 
     def __str__(self): 
         return "{0}('{1}')".format(self.__class__.__name__,self._filepath.name)
@@ -313,15 +325,19 @@ class open_bgen(object):
 #!!!cmk check how this works (if at all) with the other parts of the API (Dosage, Expectation, ...)   
 
 
+
 if __name__ == "__main__":
     if True:
-        filepath = r'm:\deldir\40x50x3.bgen'
-        _write_random(filepath, 40, 50, chrom_count=5, cleanup_temp_files=False)
+        from bgen_reader.test.test_bgen2 import test_bigfile
+        test_bigfile(verbose=True)
+    if True:
+        filepath = r'm:\deldir\400x500x3.bgen'
+        _write_random(filepath, 400, 500, chrom_count=5, cleanup_temp_files=False)
     if True:
         #filepath = r'm:\deldir\1000x500000.bgen'
         #filepath = r'D:\OneDrive\Shares\bgenraaderpy\1x1000000.bgen'
         filepath = r'M:\del35\temp1024x16384-8.bgen'
-        with open_bgen(filepath) as bgen2:
+        with open_bgen(filepath,verbose=True) as bgen2:
             print(bgen2.ids[:5]) #other property arrays include risd,chromosomes,positions,nallels, and allele_ids
             geno = bgen2.read(-1) # read the 200,000th variate's data
             #geno = bgen2.read() # read all, uses the ncombinations from the first variant

@@ -205,16 +205,19 @@ def test_to_improve_coverage():
         g = bgen2.read()
         assert_allclose(g[2,1,:], b)
 
-def test_bigfile():
+def test_bigfile(verbose=False):
     nsamples = 2500
     nvariants = 500*1000
     bits=16
     test_data_folder = BGEN_READER_CACHE_HOME / "test_data"
     filepath = test_data_folder / "{0}x{1}.{2}bits.bgen".format(nsamples,nvariants,bits)
     if not filepath.exists():
-        _write_random(filepath,nsamples,nvariants,bits=bits,cleanup_temp_files=False) #!!!cmk change to cleanup_temp_files=True (the default)
-    #!!!cmk remove metadata2.npz file
-    with open_bgen(filepath,verbose=True) as bgen2:
+        _write_random(filepath,nsamples,nvariants,bits=bits,verbose=verbose,cleanup_temp_files=False) #!!!cmk change to cleanup_temp_files=True (the default)
+    metadata2_path = open_bgen._metadatapath_from_filename(filepath)
+    if metadata2_path.exists():
+        metadata2_path.unlink()
+
+    with open_bgen(filepath,verbose=verbose) as bgen2:
         assert bgen2.nsamples == nsamples #!!!cmk use other asserts?
         assert bgen2.nvariants == nvariants
         val = bgen2.read(-1)

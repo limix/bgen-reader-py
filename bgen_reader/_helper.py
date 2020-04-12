@@ -1,3 +1,8 @@
+from contextlib import contextmanager
+import time
+import datetime
+import sys
+
 def get_genotypes(ploidy, nalleles):
     g = [_make_genotype(p, 1, nalleles) for p in ploidy]
     g = sorted([list(reversed(i)) for i in g])
@@ -27,3 +32,41 @@ def _make_genotype(ploidy, start, end):
         for ti in t:
             tups += [[i] + ti]
     return tups
+
+#best location?
+@contextmanager
+def _log_in_place(name, verbose, time_lambda=time.time, show_log_diffs=False):
+    '''
+        Create an one-argument function to write messages to. All messages will be on the same line and
+        will include time.
+
+    '''
+    #!!! what if logging messages aren't suppose to go to stdout?
+    t_wait = time_lambda()
+    last_len = [0] #We have to make this an array so that the value is by reference.
+    last_message_hash = [None]
+    line_end = '\r'
+    every_printed = [False] #Don't print the final newline if nothing is ever printed
+
+    def writer(message):
+        if not verbose:
+            return
+        time_str = str(datetime.timedelta(seconds=time_lambda()-t_wait))
+        if '.' in time_str:
+            time_str = time_str[:time_str.index('.')+3] #Time to the 1/100th of a sec
+        s = "{0} -- time={1}, {2}".format(name,time_str,message)
+        if show_log_diffs:
+            message_hash = hash(message)
+            if message_hash !=  last_message_hash[0] and last_message_hash[0] is not None:
+                sys.stdout.write('\n')
+            last_message_hash[0] = message_hash
+        sys.stdout.write("{0}{1}\r".format(s," "*max(0,last_len[0]-len(s)))) #Pad with spaces to cover up previous message
+        every_printed[0] = True
+        last_len[0] = len(s)
+
+    yield writer
+
+    if not verbose:
+        return
+    if every_printed[0]:
+        sys.stdout.write("\n")                

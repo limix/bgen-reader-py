@@ -7,8 +7,10 @@ from numpy import empty, uint16, uint32, uint64, zeros
 import math
 import subprocess
 
+from bgen_reader._helper import _log_in_place
 
-def _write_random(filepath, nsamples, nvariants, bits=16, compression=None, seed=0, chrom_count=22, block_size=None, qctool_path=None, cleanup_temp_files=True):
+
+def _write_random(filepath, nsamples, nvariants, bits=16, compression=None, chrom_count=22, verbose=False, seed=0, block_size=None, qctool_path=None, cleanup_temp_files=True):
     '''
     !!!cmk doc
     '''
@@ -51,33 +53,33 @@ def _write_random(filepath, nsamples, nvariants, bits=16, compression=None, seed
     start = 0
     updater_freq = 10000
     index = -1
-    #!!!cmk with log_in_place("writing text values ", logging.INFO) as updater:
-    with gen_temp_filepath.open('w',newline='\n') as genfp:
-        while start < nvariants:
-            val = randoms_state.random((nsamples,min(block_size,nvariants-start),3))
-            val /= val.sum(axis=2,keepdims=True)  #make probabilities sum to 1
-            missing = randoms_state.rand(val.shape[0],val.shape[1])<missing_rate
-            val[missing,:] = np.nan
+    with _log_in_place("_write_random", verbose) as updater:
+        with gen_temp_filepath.open('w',newline='\n') as genfp:
+            while start < nvariants:
+                val = randoms_state.random((nsamples,min(block_size,nvariants-start),3))
+                val /= val.sum(axis=2,keepdims=True)  #make probabilities sum to 1
+                missing = randoms_state.rand(val.shape[0],val.shape[1])<missing_rate
+                val[missing,:] = np.nan
 
-            for ivariants_in_block in range(val.shape[1]):
-                ivariants = start+ivariants_in_block
-                id = 'SNP{0}'.format(ivariants+1)
-                rsid = 'RS{0}'.format(ivariants+1)
-                chrom = chromosomes[ivariants]
-                pos = positions[ivariants]
-                genfp.write('{0} {1} {2} {3} A G'.format(chrom,id,rsid,pos))
-                for isamples in range(nsamples):
-                    index += 1
-                    if updater_freq>1 and index>0 and index % updater_freq == 0:
-                        print('{0:,} of {1:,} ({2:2}%)'.format(index,nsamples*nvariants,100.0*index/(nsamples*nvariants))) #!!!cmk
-                    prob_dist = val[isamples,ivariants_in_block,:]
-                    if not np.isnan(prob_dist).any():
-                        s = ' ' + ' '.join((format_function(num) for num in prob_dist))
-                        genfp.write(s)
-                    else:
-                        genfp.write(' 0 0 0')
-                genfp.write('\n')
-            start += val.shape[1]
+                for ivariants_in_block in range(val.shape[1]):
+                    ivariants = start+ivariants_in_block
+                    id = 'SNP{0}'.format(ivariants+1)
+                    rsid = 'RS{0}'.format(ivariants+1)
+                    chrom = chromosomes[ivariants]
+                    pos = positions[ivariants]
+                    genfp.write('{0} {1} {2} {3} A G'.format(chrom,id,rsid,pos))
+                    for isamples in range(nsamples):
+                        index += 1
+                        if updater_freq>1 and index>0 and index % updater_freq == 0:
+                            updater('{0:,} of {1:,} ({2:2}%)'.format(index,nsamples*nvariants,100.0*index/(nsamples*nvariants))) #!!!cmk
+                        prob_dist = val[isamples,ivariants_in_block,:]
+                        if not np.isnan(prob_dist).any():
+                            s = ' ' + ' '.join((format_function(num) for num in prob_dist))
+                            genfp.write(s)
+                        else:
+                            genfp.write(' 0 0 0')
+                    genfp.write('\n')
+                start += val.shape[1]
     #https://www.well.ox.ac.uk/~gav/qctool_v2/documentation/sample_file_formats.html
     with sample_filepath.open('w',newline='\n') as samplefp:
         samplefp.write('ID\n')
@@ -100,6 +102,8 @@ def _write_random(filepath, nsamples, nvariants, bits=16, compression=None, seed
     cmd = '{0} -g {1} -s {2} -og {3}{4}{5}'.format(qctool_path,gen_filepath.name,sample_filepath.name,filepath.name,
                         ' -bgen-bits {0}'.format(bits) if bits is not None else '',
                         ' -bgen-compression {0}'.format(compression) if compression is not None else '')
+    if verbose:
+        print('Calling qctool to convert *.gen to *.bgen')
     try:
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
     except subprocess.CalledProcessError as exc:
