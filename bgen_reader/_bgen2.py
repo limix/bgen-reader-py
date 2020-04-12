@@ -25,11 +25,9 @@ from bgen_reader._ffi import ffi, lib
 from bgen_reader._helper import _log_in_place
 from bgen_reader.test.write_random import _write_random
 
-#!!!cmk0 test that metadata2.npz gets updated if file dates say it should
 #!!!cmk add type info
 #!!!cmk write doc
 #!!!cmk test doc
-#!!!cmk0 create test cases that generate big datasets (if qctool is available)
 #!!!cmk ok to have metadata2.npz location be fixed for now?
 class open_bgen(object):
     def __init__(self, filepath: Union[str, Path],
@@ -50,6 +48,8 @@ class open_bgen(object):
         self._sample_range = np.arange(len(self._samples),dtype=np.int)
 
         metadata2 = self._metadatapath_from_filename(filepath)
+        if metadata2.exists() and os.path.getmtime(metadata2) < os.path.getmtime(filepath):
+            metadata2.unlink()
         if metadata2.exists():
             d = np.load(str(metadata2))
             self._ids = d['ids']
@@ -150,8 +150,13 @@ class open_bgen(object):
 
     @staticmethod
     def _fix_up_index(index):
-        if type(index) is np.int: #!!!make sure this works with all int types
+        if index is None: #make a shortcut for None
+            return index
+        try: #If index is an int, return it in an array
+            index = index.__index__() #(see https://stackoverflow.com/questions/3501382/checking-whether-a-variable-is-an-integer-or-not)
             return [index]
+        except:
+            pass
         return index
 
     #!!!cmk0 test each option
@@ -327,7 +332,7 @@ class open_bgen(object):
 
 
 if __name__ == "__main__":
-    if True:
+    if False:
         from bgen_reader.test.test_bgen2 import test_bigfile
         test_bigfile(verbose=True)
     if True:
@@ -351,4 +356,4 @@ if __name__ == "__main__":
         with open_bgen(filepath,verbose=True) as bgen2:
             print(bgen2.read(0)[0,0,:])
             print(bgen2.read(-1)[0,0,:])
-    print('!!!done')
+    print('!!!cmk')

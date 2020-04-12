@@ -205,11 +205,23 @@ def test_to_improve_coverage():
         g = bgen2.read()
         assert_allclose(g[2,1,:], b)
 
+    #confirm that out-of-date metadata2 file will be updated
+    metadata2 = open_bgen._metadatapath_from_filename(filepath)
+    assert  os.path.getmtime(metadata2) >= os.path.getmtime(filepath)
+    filepath.touch()
+    assert  os.path.getmtime(metadata2) <= os.path.getmtime(filepath)
+    bgen2 = open_bgen(filepath, verbose=False) #Creates metadata2.npz file
+    assert  os.path.getmtime(metadata2) >= os.path.getmtime(filepath)
+
+
 #!!!!cmk how to mark this as slow? (It takes hours to generate data)
-def test_bigfile(verbose=False):
-    nsamples = 2500
-    nvariants = 500*1000
-    bits=16
+def cmktest_bigfile(verbose=False):
+    random_file_tests(nsamples=2500,nvariants = 500*1000, bits=16)
+
+def test_small_random_file(verbose=False):
+    random_file_tests(nsamples=25,nvariants=1000, bits=8, verbose=True) #!!!cmk verbose
+
+def random_file_tests(nsamples,nvariants,bits,verbose=False):
     test_data_folder = BGEN_READER_CACHE_HOME / "test_data"
     filepath = test_data_folder / "{0}x{1}.{2}bits.bgen".format(nsamples,nvariants,bits)
     if not filepath.exists():
@@ -354,6 +366,92 @@ def test_open_bgen_complex_sample_file():
     assert_allclose(ploidy[:,0], [1, 2, 2, 2])
     assert_allclose(missing[:,0], [0, 0, 0, 0])
     assert_allclose(bgen2.phased, [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])
+
+def test_read_dtype_and_order():
+    filepath = example_filepath2("example.32bits.bgen")
+    bgen2 = open_bgen(filepath, verbose=False)
+    full = bgen2.read()
+    assert full.dtype == np.float64
+    assert full.flags['F_CONTIGUOUS'] and not full.flags['C_CONTIGUOUS']
+
+    val = bgen2.read(None, dtype='float32',order='C')
+    assert val.dtype == np.float32
+    assert val.flags['C_CONTIGUOUS'] and not val.flags['F_CONTIGUOUS']
+    assert np.allclose(full,val,equal_nan=True)
+
+def test_read_indexing():
+    filepath = example_filepath2("example.32bits.bgen")
+    bgen2 = open_bgen(filepath, verbose=False)
+    full = bgen2.read()
+
+    val = bgen2.read(22)
+    assert np.allclose(full[:,[22]],val,equal_nan=True)
+
+    val = bgen2.read([22])
+    assert np.allclose(full[:,[22]],val,equal_nan=True)
+
+    val = bgen2.read([22,30])
+    assert np.allclose(full[:,[22,30]],val,equal_nan=True)
+
+    val = bgen2.read(slice(10,30,2))
+    assert np.allclose(full[:,10:30:2],val,equal_nan=True)
+
+    bool_list = [i%2==0 for i in range(bgen2.nvariants)]
+    val = bgen2.read(bool_list)
+    assert np.allclose(full[:,bool_list],val,equal_nan=True)
+    
+    val = bgen2.read((None,None))
+    assert np.allclose(full,val,equal_nan=True)
+
+    val = bgen2.read((22,None))
+    assert np.allclose(full[[22],:],val,equal_nan=True)
+
+    val = bgen2.read((22,[11,9]))
+    assert np.allclose(full[[22],:][:,[11,9]],val,equal_nan=True)
+
+    val = bgen2.read(([22,30],[11,9]))
+    assert np.allclose(full[[22,30],:][:,[11,9]],val,equal_nan=True)
+
+    val = bgen2.read((slice(10,30,2),[11,9]))
+    assert np.allclose(full[10:30:2,:][:,[11,9]],val,equal_nan=True)
+
+    bool_list = [i%2==0 for i in range(bgen2.nsamples)]
+    val = bgen2.read((bool_list,[11,9]))
+    assert np.allclose(full[bool_list,:][:,[11,9]],val,equal_nan=True)
+
+    #Read no variants
+    val, missing, ploidy = bgen2.read([],return_missings=True,return_ploidies=True)
+    assert val.shape == (bgen2.nsamples,0,bgen2.max_combinations)
+    assert missing.shape == (bgen2.nsamples,0)
+    assert ploidy.shape == (bgen2.nsamples,0)
+
+    #Read no samples and no variants
+    val, missing, ploidy = bgen2.read(([],[]),return_missings=True,return_ploidies=True)
+    assert val.shape == (0,0,bgen2.max_combinations)
+    assert missing.shape == (0,0)
+    assert ploidy.shape == (0,0)
+
+
+def test_read_multiple_returns():
+    filepath = example_filepath2("example.32bits.bgen")
+    bgen2 = open_bgen(filepath, verbose=False)
+    full,full_missing,full_ploidy = bgen2.read(return_missings=True,return_ploidies=True)
+
+    val,missing = bgen2.read(return_missings=True)
+    assert np.allclose(full,val,equal_nan=True)
+    assert np.allclose(full_missing,missing,equal_nan=False)
+
+    ploidy = bgen2.read(return_probabilities=False,return_ploidies=True)
+    assert np.allclose(full_ploidy,ploidy,equal_nan=False)
+
+    val,missing = bgen2.read((slice(10,30,2),[11,9]),return_missings=True)
+    assert np.allclose(full[10:30:2,:][:,[11,9]],val,equal_nan=True)
+    assert np.allclose(full_missing[10:30:2,:][:,[11,9]],missing,equal_nan=False)
+
+    ploidy = bgen2.read((slice(10,30,2),[11,9]),return_probabilities=False,return_ploidies=True)
+    assert np.allclose(full_ploidy[10:30:2,:][:,[11,9]],ploidy,equal_nan=False)
+
+
 
 if __name__ == '__main__': #!!!cmk remove?
     pytest.main([__file__])
