@@ -2,16 +2,18 @@ import os
 from contextlib import contextmanager
 from shutil import copyfile
 import platform
+from pathlib import Path
+import numpy as np
 
-import dask.dataframe as dd
 import pytest
-from dask.delayed import Delayed
 from numpy import array, array_equal, isnan
 from numpy.testing import assert_allclose, assert_equal
 from pandas import Series
 
-from bgen_reader import open_bgen
+from bgen_reader import open_bgen #!!!cmk switch to relative
 from bgen_reader import example_filepath
+from bgen_reader._environment import BGEN_READER_CACHE_HOME
+from bgen_reader.test.write_random import _write_random
 
 def example_filepath2(filename):
     filepath = example_filepath(filename)
@@ -202,6 +204,24 @@ def test_to_improve_coverage():
 
         g = bgen2.read()
         assert_allclose(g[2,1,:], b)
+
+def test_bigfile():
+    nsamples = 2500
+    nvariants = 500*1000
+    bits=16
+    test_data_folder = BGEN_READER_CACHE_HOME / "test_data"
+    filepath = test_data_folder / "{0}x{1}.{2}bits.bgen".format(nsamples,nvariants,bits)
+    if not filepath.exists():
+        _write_random(filepath,nsamples,nvariants,bits=bits,cleanup_temp_files=False) #!!!cmk change to cleanup_temp_files=True (the default)
+    #!!!cmk remove metadata2.npz file
+    with open_bgen(filepath,verbose=True) as bgen2:
+        assert bgen2.nsamples == nsamples #!!!cmk use other asserts?
+        assert bgen2.nvariants == nvariants
+        val = bgen2.read(-1)
+        assert val.shape == (nsamples,1,3)
+        mean = np.nanmean(val)
+        assert mean!=mean or (0 <= mean and mean <= 1)
+
 
 #!!!cmk why is there also a (no '_') test_open_bgen_phased_genotype?
 def _test_open_bgen_phased_genotype():

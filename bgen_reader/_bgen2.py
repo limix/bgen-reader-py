@@ -19,12 +19,11 @@ from bgen_reader._file import (
 )
 from bgen_reader._bgen_metafile import bgen_metafile
 from bgen_reader._ffi import ffi, lib
-
+#!!!cmk test that metadata2.npz gets updated if file dates say it should
 #!!!cmk add type info
 #!!!cmk write doc
 #!!!cmk test doc
 #!!!cmk1 create test cases that generate big datasets (if qctool is available)
-#!!!cmk1 create test cases with full coverage
 #!!!cmk ok to have metadata2.npz location be fixed for now?
 class open_bgen(object):
     def __init__(self, filepath: Union[str, Path],
@@ -313,7 +312,11 @@ class open_bgen(object):
 
 #!!!cmk check how this works (if at all) with the other parts of the API (Dosage, Expectation, ...)   
 
+
 if __name__ == "__main__":
+    if True:
+        filepath = r'm:\deldir\40x50x3.bgen'
+        _write_random(filepath, 40, 50, chrom_count=5, cleanup_temp_files=False)
     if True:
         #filepath = r'm:\deldir\1000x500000.bgen'
         #filepath = r'D:\OneDrive\Shares\bgenraaderpy\1x1000000.bgen'
