@@ -173,33 +173,37 @@ class open_bgen(object):
             Returns
             -------
             zero to three :class:`numpy.ndarray`
-                if return_probabilities is ``True`` (the default), the first return value will be 
-                    a ``dtype`` array of size (nsamples_out,nvariants_out,max_combinations).
-                if return_missings is ``True``, the next return value will be a bool array of size (nsamples_out,nvariants_out).
-                if return_ploidies is ``True``, the next return value will be an int array of size (nsamples_out,nvariants_out).
 
-            Index
-            -----
+                * if return_probabilities is ``True`` (the default), the first return value will be 
+                  a ``dtype`` array of size (nsamples_out,nvariants_out,max_combinations).
+                * if return_missings is ``True``, the next return value will be a bool array of size (nsamples_out,nvariants_out).
+                * if return_ploidies is ``True``, the next return value will be an int array of size (nsamples_out,nvariants_out).
 
-            Read all values:
 
-            ``None``: Read all samples and variants
+            Notes
+            ------
 
-            Read selected variants:
-            *variant_index*          : Real all samples from the variant specified where *variant_index* is of the form:
+            Indexes
 
-            *ivariant* (an ``int``) : Read all samples from the *ivariant* variant.
-            [*ivariant0*, ...,*ivarianty*] (an ``list of ints``) : Read all samples from the *ivariant*s given
-            slice(*variant_start*,*variant_stop*,*variant_step*) : Read all samples from the slice of variants given.
-            [*bool0*, ...,*booln*] (an ``list of bools``) : Read all samples from the variants where the ``bool`` is ``True``.
+            * Read all values:
 
-            Read selected samples:
+                ``None``: Read all samples and variants
 
-            (*sample_index*,None) : Read all the variants for the sample's specified, where *sample_index* follows the form of *variant_index*.
+            * Read selected variants:
 
-            Read selected samples and variants:
+                * *variant_index*          : Real all samples from the variant specified where *variant_index* is of the form:
+                * *ivariant* (an ``int``) : Read all samples from the *ivariant* variant.
+                * [*ivariant0*, ...,*ivarianty*] (an ``list of ints``) : Read all samples from the *ivariant*s given
+                * slice(*variant_start*,*variant_stop*,*variant_step*) : Read all samples from the slice of variants given.
+                * [*bool0*, ...,*booln*] (an ``list of bools``) : Read all samples from the variants where the ``bool`` is ``True``.
 
-            (*sample_index*,*variant_index*)
+            * Read selected samples:
+
+                * (*sample_index*,None) : Read all the variants for the sample's specified, where *sample_index* follows the form of *variant_index*.
+
+            * Read selected samples and variants:
+
+                * (*sample_index*,*variant_index*)
 
 
             Examples
