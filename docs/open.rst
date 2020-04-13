@@ -2,6 +2,6 @@
 Open
 ****
 
-.. autofunction:: bgen_reader.open_bgen
+.. autoclass:: bgen_reader.open_bgen
     :noindex:
 
