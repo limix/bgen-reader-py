@@ -9,6 +9,7 @@ from numpy import empty, uint16, uint32, uint64, zeros
 import time
 import datetime
 import sys
+import math
 
 #!!!cmk change 'from bgen_reader.' to 'from .'
 from bgen_reader._bgen_file import bgen_file
@@ -367,8 +368,10 @@ class open_bgen(object):
 
             """
             #LATER could allow strings (variant names) and lists of strings
+            if not hasattr(self,'_bgen_context_manager'):
+                raise ValueError('I/O operation on a closed file')
 
-            max_combinations = max_combinations or self.max_combinations #!!!cmk test user setting max_combinations to 0 and 1
+            max_combinations = max_combinations or self.max_combinations
 
             if not isinstance(index,tuple):
                 index = (None,index)
@@ -386,6 +389,9 @@ class open_bgen(object):
             else:
                 vaddr = self._vaddr[variants_index]
                 ncombinations = self._ncombinations[variants_index]
+            if len(ncombinations)>0 and max(ncombinations) > max_combinations:
+                raise ValueError('Need at least {0} max_combinations, but only {1} given'.format(max(ncombinations),max_combinations))
+
 
             #allocating prob_buffer only when its size changes makes reading 10x5M data 30% faster
             if return_probabilities:
@@ -398,9 +404,12 @@ class open_bgen(object):
 
 
             #LATER multithread?
+            approx_read_seconds = len(vaddr)/20000.0+len(vaddr)*self.nsamples/(2*1000*1000.0)
+            vaddr_per_second = max(1,len(vaddr) // int(max(1,approx_read_seconds)))
+            vaddr_per_second = 10**(int(math.log10(vaddr_per_second)+.5)) #Do "logarithmic rounding" to make numbers look nicer, e.g. 999 -> 1000
             with _log_in_place('reading', self._verbose) as updater:
                 for out_index,vaddr0 in enumerate(vaddr):
-                    if out_index%100==0: #!!!cmk0 improve the freq
+                    if out_index%vaddr_per_second==0:
                         updater('part {0:,} of {1:,}'.format(out_index,len(vaddr)))
 
                     genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
@@ -463,8 +472,6 @@ class open_bgen(object):
 
         """
         return len(self.ids)
-
-    #!!!cmk add a close method and test that any readers afterword raise a ValueError
 
     @property
     def max_combinations(self) -> int:
@@ -699,7 +706,7 @@ class open_bgen(object):
             return index
         try: #If index is an int, return it in an array
             index = index.__index__() #(see https://stackoverflow.com/questions/3501382/checking-whether-a-variable-is-an-integer-or-not)
-            return [index] #!!!cmk should we return one less dimension?
+            return [index]
         except:
             pass
         return index
@@ -778,7 +785,7 @@ class open_bgen(object):
             self._allele_ids = np.array(np.concatenate(allele_ids_list),dtype='str') #cmk0 check that main api doesn't return bytes
 
             for i,vaddr0 in enumerate(self._vaddr):
-                if i%1000==0: #!!!cmk improve the freq
+                if i%1000==0:
                     updater('step 3: part {0:,} of {1:,}'.format(i,self.nvariants))
                 genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
                 ncombinations_list.append(lib.bgen_genotype_ncombs(genotype))
@@ -791,7 +798,30 @@ class open_bgen(object):
     def __str__(self): 
         return "{0}('{1}')".format(self.__class__.__name__,self._filepath.name)
 
-    #!!!cmk0 -- add 'close' (with note that better to use del)
+    def close(self):
+        """Close a :class:`open_bgen` object that was opened for reading.
+
+        Notes
+        -----
+
+        Better alternatives to :meth:`close` include the ``with`` statement (closes file automatically) and
+        the ``del`` statement (which closes the file and *deletes* the object).
+        (Doing nothing, while not better, is usually fine.)
+
+        .. doctest::
+
+            >>> from bgen_reader import example_filepath, open_bgen
+            >>> file = example_filepath("haplotypes.bgen")
+            >>> bgen = open_bgen(file, verbose=False)
+            >>> print(bgen.read(2))
+            [[[1. 0. 0. 1.]]
+             [[0. 1. 0. 1.]]
+             [[1. 0. 1. 0.]]
+             [[0. 1. 1. 0.]]]
+            >>> bgen.close()     #'del bgen' is better.
+
+            """
+        self.__exit__()
     
     def __enter__(self):
         return self
@@ -828,11 +858,13 @@ if __name__ == "__main__":
             geno, missing = bgen2.read(0,return_missings=True)
         bgen2 = open_bgen(filepath)
         geno, missing = bgen2.read(0,return_missings=True)
-    if False:
+    if True:
         filepath = r'm:\deldir\2500x500000.bgen'
+        #filepath = r'D:\OneDrive\Shares\bgenreaderpy\1x1000000.bgen'
         with open_bgen(filepath,verbose=True) as bgen2:
-            print(bgen2.read(0)[0,0,:])
-            print(bgen2.read(-1)[0,0,:])
+            val = bgen2.read((0,None))
+            #print(bgen2.read(0)[0,0,:])
+            #print(bgen2.read(-1)[0,0,:])
 
     if True:
         import pytest

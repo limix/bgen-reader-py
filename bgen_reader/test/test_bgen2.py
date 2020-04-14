@@ -214,8 +214,8 @@ def test_to_improve_coverage():
     assert  os.path.getmtime(metadata2) >= os.path.getmtime(filepath)
 
 
-#!!!!cmk dhebi how to mark this as slow? (It takes hours to generate data. After that, it takes a few minutes to run)
-def cmktest_bigfile(verbose=False):
+@pytest.mark.slow #It takes hours to generate data locally. After that, it takes a few minutes to run.
+def test_bigfile(verbose=False):
     random_file_tests(nsamples=2500,nvariants = 500*1000, bits=16)
 
 def test_small_random_file(verbose=False):
@@ -332,6 +332,38 @@ def test_open_bgen_complex_sample_file():
     assert_allclose(ploidy[:,0], [1, 2, 2, 2])
     assert_allclose(missing[:,0], [0, 0, 0, 0])
     assert_allclose(bgen2.phased, [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])
+
+def test_close_del_with():
+    filepath = example_filepath2("example.32bits.bgen")
+    with open_bgen(filepath, verbose=False) as bgen2:
+        pass
+    with pytest.raises(ValueError) as e_info:
+        bgen2.read()
+
+    bgen2 = open_bgen(filepath, verbose=False)
+    del bgen2
+    with pytest.raises(Exception) as e_info:
+        bgen2.samples
+
+    bgen2 = open_bgen(filepath, verbose=False)
+    bgen2.close()
+    bgen2.samples
+    with pytest.raises(ValueError) as e_info:
+        bgen2.read()
+
+def test_read_max_combinations():
+    filepath = example_filepath2("example.32bits.bgen")
+    with open_bgen(filepath, verbose=False) as bgen2:
+        assert np.mean(np.isnan(bgen2.read())) < 2.1e-05 #main data as only a few missing
+        val = bgen2.read(max_combinations=5)
+        assert np.mean(np.isnan(val[:,:,:3])) < 2.1e-05 #main data as only a few missing
+        assert np.all(np.isnan(val[:,:,3:])) #all the extra are NaN
+    with pytest.raises(ValueError) as e_info:
+        bgen2.read(max_combinations=2)
+    with pytest.raises(ValueError) as e_info:
+        bgen2.read(max_combinations=1)
+    with pytest.raises(ValueError) as e_info:
+        bgen2.read(max_combinations=0)
 
 def test_read_dtype_and_order():
     filepath = example_filepath2("example.32bits.bgen")
