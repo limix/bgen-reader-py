@@ -214,7 +214,7 @@ def test_to_improve_coverage():
     assert  os.path.getmtime(metadata2) >= os.path.getmtime(filepath)
 
 
-#!!!!cmk how to mark this as slow? (It takes hours to generate data)
+#!!!!cmk dhebi how to mark this as slow? (It takes hours to generate data. After that, it takes a few minutes to run)
 def cmktest_bigfile(verbose=False):
     random_file_tests(nsamples=2500,nvariants = 500*1000, bits=16)
 
@@ -231,46 +231,12 @@ def random_file_tests(nsamples,nvariants,bits,verbose=False):
         metadata2_path.unlink()
 
     with open_bgen(filepath,verbose=verbose) as bgen2:
-        assert bgen2.nsamples == nsamples #!!!cmk use other asserts?
+        assert bgen2.nsamples == nsamples
         assert bgen2.nvariants == nvariants
         val = bgen2.read(-1)
         assert val.shape == (nsamples,1,3)
         mean = np.nanmean(val)
         assert mean!=mean or (0 <= mean and mean <= 1)
-
-
-#!!!cmk why is there also a (no '_') test_open_bgen_phased_genotype?
-def _test_open_bgen_phased_genotype():
-    filepath = example_filepath2("haplotypes.bgen")
-    remove_any_metadata2_file(filepath)
-    bgen2 = open_bgen(filepath, verbose=False)
-
-    assert_equal(bgen2.chromosomes[0], "1")
-    assert_equal(bgen2.ids[0], "SNP1")
-    assert_equal(bgen2.nalleles[0], 2)
-    assert_equal(bgen2.allele_ids[0], "A,G")
-    assert_equal(bgen2.positions[0], 1)
-    assert_equal(bgen2.rsids[0], "RS1")
-
-    assert_equal(bgen2.chromosomes[2], "1")
-    assert_equal(bgen2.ids[2], "SNP3")
-    assert_equal(bgen2.nalleles[2], 2)
-    assert_equal(bgen2.allele_ids[2], "A,G")
-    assert_equal(bgen2.positions[2], 3)
-    assert_equal(bgen2.rsids[2], "RS3")
-
-    assert_equal(bgen2.samples[0], "sample_0")
-    assert_equal(bgen2.samples[2], "sample_2")
-    assert_equal(bgen2.samples[-1], "sample_3")
-
-    g = bgen2.read((0,0))
-    a = [1.0, 0.0, 1.0, 0.0]
-    assert_allclose(g[0,0,:], a)
-
-    a = [1.0, 0.0, 0.0, 1.0]
-    g = bgen2.read((-1,-1))
-    assert_allclose(g[0,0,:], a)
-
 
 def test_open_bgen_without_metadata():
     filepath = example_filepath2("example.32bits.bgen")
@@ -419,6 +385,12 @@ def test_read_indexing():
     val = bgen2.read((bool_list,[11,9]))
     assert np.allclose(full[bool_list,:][:,[11,9]],val,equal_nan=True)
 
+    val = bgen2.read(([-1],[-1]))
+    assert np.allclose(full[-1,-1],val,equal_nan=True)
+
+    val = bgen2.read(np.s_[10:30:2,:5])
+    assert np.allclose(full[10:30:2,:5,:],val,equal_nan=True)
+
     #Read no variants
     val, missing, ploidy = bgen2.read([],return_missings=True,return_ploidies=True)
     assert val.shape == (bgen2.nsamples,0,bgen2.max_combinations)
@@ -430,9 +402,6 @@ def test_read_indexing():
     assert val.shape == (0,0,bgen2.max_combinations)
     assert missing.shape == (0,0)
     assert ploidy.shape == (0,0)
-
-    #!!!cmk add test for negatives
-    #!!!cmk add test for np._s[two part]
 
 def test_read_multiple_returns():
     filepath = example_filepath2("example.32bits.bgen")

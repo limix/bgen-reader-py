@@ -49,7 +49,7 @@ class open_bgen(object):
     See Also
     --------
 
-    read : read genotype information from a `open_bgen` object. (cmk this and references aren't working) (cmk any way to see a list of the properties?)
+    read : read genotype information from a `open_bgen` object. (cmk dhebi references in the docs aren't working) (cmk dhebi any way to see a list of the list of methods and properties in the docs?)
 
     Examples
     --------
@@ -164,9 +164,9 @@ class open_bgen(object):
         self._max_combinations = max(self._ncombinations)
 
     def read(self, index=None,
-                       dtype = np.float64, #!!!cmk : Union(type,str) can't get to work
+                       dtype = np.float64, #!!!cmk dhebi : Union(type,str) can't get typing to work
                        order: str ='F',
-                       max_combinations: int = None, #cmk Optional(int)
+                       max_combinations: int = None, #cmk dhebi Optional(int) can't get to work
                        return_probabilities: bool = True,
                        return_missings: bool = False,
                        return_ploidies: bool = False):
@@ -370,9 +370,8 @@ class open_bgen(object):
 
             max_combinations = max_combinations or self.max_combinations #!!!cmk test user setting max_combinations to 0 and 1
 
-            if not isinstance(index,tuple): #!!!test with np.s_[,]
+            if not isinstance(index,tuple):
                 index = (None,index)
-            #!!!cmk raise error if not 
             samples_index = self._fix_up_index(index[0])
             variants_index = self._fix_up_index(index[1])
 
@@ -390,7 +389,7 @@ class open_bgen(object):
 
             #allocating prob_buffer only when its size changes makes reading 10x5M data 30% faster
             if return_probabilities:
-                val = np.full((len(samples_index), len(vaddr), max_combinations), np.nan, dtype=dtype, order=order) #!!!cmk test on selecting zero variants
+                val = np.full((len(samples_index), len(vaddr), max_combinations), np.nan, dtype=dtype, order=order)
                 prob_buffer = None
             if return_missings:
                 missing_val = np.full((len(samples_index), len(vaddr)), False, dtype='bool', order=order)
@@ -402,7 +401,7 @@ class open_bgen(object):
             with _log_in_place('reading', self._verbose) as updater:
                 for out_index,vaddr0 in enumerate(vaddr):
                     if out_index%100==0: #!!!cmk0 improve the freq
-                        updater('part {0:,} of {1:,}'.format(out_index,len(vaddr))) #!!!cmk make this nice
+                        updater('part {0:,} of {1:,}'.format(out_index,len(vaddr)))
 
                     genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
 
@@ -642,9 +641,9 @@ class open_bgen(object):
         """
         return self._allele_ids
 
-    #!!!cmk these need types and docstrings
+    #!!!cmk these need typed
     @property
-    def ncombinations(self):
+    def ncombinations(self) -> [int]: #!!!cmk dhebi is this the right type?
         """
         The number of values needed for each variant's probability distribution (an :class:`numpy.array` of int)
 
@@ -715,7 +714,7 @@ class open_bgen(object):
                 #!!!If verbose, should tell how it is going
                 for ipart2 in range(nparts): #LATER multithread?
                     #!!!cmk in notebook this message doesn't appear on one line
-                    updater('step 2: part {0:,} of {1:,}'.format(ipart2,nparts)) #!!!cmk make this nice 
+                    updater('step 2: part {0:,} of {1:,}'.format(ipart2,nparts))
 
                     #!!!cmk this code is very similar to other code
                     partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
@@ -780,7 +779,7 @@ class open_bgen(object):
 
             for i,vaddr0 in enumerate(self._vaddr):
                 if i%1000==0: #!!!cmk improve the freq
-                    updater('step 3: part {0:,} of {1:,}'.format(i,self.nvariants)) #!!!cmk make this nice
+                    updater('step 3: part {0:,} of {1:,}'.format(i,self.nvariants))
                 genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
                 ncombinations_list.append(lib.bgen_genotype_ncombs(genotype))
                 phased_list.append(lib.bgen_genotype_phased(genotype))

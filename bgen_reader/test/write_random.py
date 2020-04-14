@@ -12,7 +12,7 @@ from bgen_reader._helper import _log_in_place
 
 def _write_random(filepath, nsamples, nvariants, bits=16, compression=None, chrom_count=22, verbose=True, seed=0, block_size=None, qctool_path=None, cleanup_temp_files=True):
     '''
-    !!!cmk doc
+    If the external qctools is available, generates a random (unphased, diploid) BGEN file of any size.
     '''
     qctool_path = qctool_path or os.environ.get('QCTOOLPATH')
     assert qctool_path is not None, "Bgen.write() requires a path to an external qctool program either via the qctool_path input or by setting the QCTOOLPATH environment variable."
@@ -71,7 +71,7 @@ def _write_random(filepath, nsamples, nvariants, bits=16, compression=None, chro
                     for isamples in range(nsamples):
                         index += 1
                         if updater_freq>1 and index>0 and index % updater_freq == 0:
-                            updater('{0:,} of {1:,} ({2:2}%)'.format(index,nsamples*nvariants,100.0*index/(nsamples*nvariants))) #!!!cmk
+                            updater('{0:,} of {1:,} ({2:2}%)'.format(index,nsamples*nvariants,100.0*index/(nsamples*nvariants)))
                         prob_dist = val[isamples,ivariants_in_block,:]
                         if not np.isnan(prob_dist).any():
                             s = ' ' + ' '.join((format_function(num) for num in prob_dist))

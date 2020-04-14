@@ -207,45 +207,6 @@ def test_bgen_reader_variants_info():
     g = bgen["genotype"][1].compute()["probs"]
     assert_allclose(g[2, :], b)
 
-#!!!cmk why is there also a (no '_') test_bgen_reader_phased_genotype?
-def _test_bgen_reader_phased_genotype():
-    filepath = example_filepath("haplotypes.bgen")
-    bgen = read_bgen(filepath, verbose=False)
-    variants = bgen["variants"].compute()
-    samples = bgen["samples"]
-    assert "genotype" in bgen
-
-    assert_equal(variants.loc[0, "chrom"], "1")
-    assert_equal(variants.loc[0, "id"], "SNP1")
-    assert_equal(variants.loc[0, "nalleles"], 2)
-    assert_equal(variants.loc[0, "allele_ids"], "A,G")
-    assert_equal(variants.loc[0, "pos"], 1)
-    assert_equal(variants.loc[0, "rsid"], "RS1")
-
-    assert_equal(variants.loc[2, "chrom"], "1")
-    assert_equal(variants.loc[2, "id"], "SNP3")
-    assert_equal(variants.loc[2, "nalleles"], 2)
-    assert_equal(variants.loc[2, "allele_ids"], "A,G")
-    assert_equal(variants.loc[2, "pos"], 3)
-    assert_equal(variants.loc[2, "rsid"], "RS3")
-
-    assert_equal(samples.loc[0], "sample_0")
-    assert_equal(samples.loc[2], "sample_2")
-
-    n = samples.shape[0]
-    assert_equal(samples.loc[n - 1], "sample_3")
-
-    g = bgen["genotype"][0].compute()["probs"]
-    a = [1.0, 0.0, 1.0, 0.0]
-    assert_allclose(g[0, :], a)
-
-    k = len(variants)
-    n = len(samples)
-    a = [1.0, 0.0, 0.0, 1.0]
-    g = bgen["genotype"][k - 1].compute()["probs"]
-    assert_allclose(g[n - 1, :], a)
-
-
 def test_bgen_reader_without_metadata():
     filepath = example_filepath("example.32bits.bgen")
     bgen = read_bgen(filepath, verbose=False)
