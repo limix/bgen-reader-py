@@ -111,3 +111,4 @@ ENV/
 /bgen_reader/test/runpytest.py
 /TestResults
 /bgen_reader/_example
+/.vscode

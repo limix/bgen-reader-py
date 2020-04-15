@@ -1,34 +1,37 @@
-import os
-import numpy as np
-from contextlib import contextmanager
-from tempfile import mkdtemp
-import shutil
-from pathlib import Path
-from typing import Optional, Union
-from numpy import empty, uint16, uint32, uint64, zeros
-import time
 import datetime
-import sys
 import math
+import os
+import shutil
+import sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+from tempfile import mkdtemp
+from typing import Any, List, Optional, Tuple, Union
+
+import numpy as np
+from numpy import empty, uint16, uint32, uint64, zeros
 
 #!!!cmk change 'from bgen_reader.' to 'from .'
 from bgen_reader._bgen_file import bgen_file
-from bgen_reader._samples import generate_samples, read_samples_file
+from bgen_reader._bgen_metafile import bgen_metafile
+from bgen_reader._ffi import ffi, lib
 from bgen_reader._file import (
     assert_file_exist,
     assert_file_readable,
     is_file_writable,
     path_to_filename,
 )
-from bgen_reader._bgen_metafile import bgen_metafile
-from bgen_reader._ffi import ffi, lib
 from bgen_reader._helper import _log_in_place
+from bgen_reader._samples import generate_samples, read_samples_file
 from bgen_reader.test.write_random import _write_random
+
 
 #!!!cmk add type info
 #!!!cmk write doc
 #!!!cmk test doc
-#!!!cmk improve formatting https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
+#!!!cmk improve formatting
+# https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 class open_bgen(object):
     """
     A NumPy-inspired class for fast opening and reading of BGEN files.
@@ -118,9 +121,13 @@ class open_bgen(object):
 
     .. _sample format: https://www.well.ox.ac.uk/~gav/qctool/documentation/sample_file_formats.html
     """
-    def __init__(self, filepath: Union[str, Path],
-                 samples_filepath: Optional[Union[str, Path]] = None,
-                 verbose : bool = True):
+
+    def __init__(
+        self,
+        filepath: Union[str, Path],
+        samples_filepath: Optional[Union[str, Path]] = None,
+        verbose: bool = True,
+    ):
         filepath = Path(filepath)
         assert_file_exist(filepath)
         assert_file_readable(filepath)
@@ -128,53 +135,73 @@ class open_bgen(object):
         self._verbose = verbose
         self._filepath = filepath
 
-
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
 
-        self._samples = np.array(self._get_samples(samples_filepath),dtype='str')
-        self._sample_range = np.arange(len(self._samples),dtype=np.int)
+        self._samples = np.array(self._get_samples(samples_filepath), dtype="str")
+        self._sample_range = np.arange(len(self._samples), dtype=np.int)
 
         metadata2 = self._metadatapath_from_filename(filepath)
-        if metadata2.exists() and os.path.getmtime(metadata2) < os.path.getmtime(filepath):
+        if metadata2.exists() and os.path.getmtime(metadata2) < os.path.getmtime(
+            filepath
+        ):
             metadata2.unlink()
         if metadata2.exists():
             d = np.load(str(metadata2))
-            self._ids = d['ids']
-            self._rsids = d['rsids']
-            self._vaddr = d['vaddr']
-            self._chromosomes = d['chromosomes']
-            self._positions = d['positions']
-            self._nalleles = d['nalleles']
-            self._allele_ids = d['allele_ids']
-            self._ncombinations = d['ncombinations']
-            self._phased = d['phased']
+            self._ids = d["ids"]
+            self._rsids = d["rsids"]
+            self._vaddr = d["vaddr"]
+            self._chromosomes = d["chromosomes"]
+            self._positions = d["positions"]
+            self._nalleles = d["nalleles"]
+            self._allele_ids = d["allele_ids"]
+            self._ncombinations = d["ncombinations"]
+            self._phased = d["phased"]
         else:
             tempdir = None
             try:
-                tempdir = Path(mkdtemp(prefix='pysnptools'))
-                metafile_filepath = tempdir / 'bgen.metadata'
-                self._bgen.create_metafile(metafile_filepath,verbose=self._verbose)
+                tempdir = Path(mkdtemp(prefix="pysnptools"))
+                metafile_filepath = tempdir / "bgen.metadata"
+                self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
                 self._map_metadata(metafile_filepath)
-                np.savez(metadata2,ids=self._ids,rsids=self._rsids,vaddr=self._vaddr,chromosomes=self._chromosomes,positions=self._positions,
-                         nalleles=self._nalleles,allele_ids=self._allele_ids,ncombinations=self._ncombinations,phased=self._phased)
+                np.savez(
+                    metadata2,
+                    ids=self._ids,
+                    rsids=self._rsids,
+                    vaddr=self._vaddr,
+                    chromosomes=self._chromosomes,
+                    positions=self._positions,
+                    nalleles=self._nalleles,
+                    allele_ids=self._allele_ids,
+                    ncombinations=self._ncombinations,
+                    phased=self._phased,
+                )
             finally:
                 if tempdir is not None:
                     shutil.rmtree(tempdir)
 
         self._max_combinations = max(self._ncombinations)
 
-    def read(self, index=None,
-                       dtype = np.float64, #!!!cmk dhebi : Union(type,str) can't get typing to work
-                       order: str ='F',
-                       max_combinations: int = None, #cmk dhebi Optional(int) can't get to work
-                       return_probabilities: bool = True,
-                       return_missings: bool = False,
-                       return_ploidies: bool = False):
-            #!!!cmkwrite doc
-            #!!!cmk tell probs will be 3D array
-            #!!!cmk if both missing and ploidy are returned, missing will be first. and both will be 2-D arrays
-            """
+    def read(
+        self,
+        index: Optional[Any] = None,
+        dtype: Optional[Union[type, str]] = np.float64,
+        order: Optional[str] = "F",
+        max_combinations: Optional[int] = None,
+        return_probabilities: Optional[bool] = True,
+        return_missings: Optional[bool] = False,
+        return_ploidies: Optional[bool] = False,
+    ) -> Union[
+        None,
+        np.ndarray,
+        Tuple[np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray, np.ndarray],
+    ]:
+        #!!!cmkwrite doc
+        #!!!cmk tell probs will be 3D array
+        #!!!cmk if both missing and ploidy are returned, missing will be
+        # first.  and both will be 2-D arrays
+        """
             Read genotype information from an :class:`open_bgen` object.
 
             Parameters
@@ -367,73 +394,110 @@ class open_bgen(object):
                 [2]
 
             """
-            #LATER could allow strings (variant names) and lists of strings
-            if not hasattr(self,'_bgen_context_manager'):
-                raise ValueError('I/O operation on a closed file')
+        # LATER could allow strings (variant names) and lists of strings
+        if not hasattr(self, "_bgen_context_manager"):
+            raise ValueError("I/O operation on a closed file")
 
-            max_combinations = max_combinations or self.max_combinations
+        max_combinations = max_combinations or self.max_combinations
 
-            if not isinstance(index,tuple):
-                index = (None,index)
-            samples_index = self._fix_up_index(index[0])
-            variants_index = self._fix_up_index(index[1])
+        if not isinstance(index, tuple):
+            index = (None, index)
+        samples_index = self._fix_up_index(index[0])
+        variants_index = self._fix_up_index(index[1])
 
-            if samples_index is None:
-                samples_index = self._sample_range
-            else:
-                samples_index = self._sample_range[samples_index]
+        if samples_index is None:
+            samples_index = self._sample_range
+        else:
+            samples_index = self._sample_range[samples_index]
 
-            if variants_index is None:
-                vaddr = self._vaddr
-                ncombinations = self._ncombinations
-            else:
-                vaddr = self._vaddr[variants_index]
-                ncombinations = self._ncombinations[variants_index]
-            if len(ncombinations)>0 and max(ncombinations) > max_combinations:
-                raise ValueError('Need at least {0} max_combinations, but only {1} given'.format(max(ncombinations),max_combinations))
+        if variants_index is None:
+            vaddr = self._vaddr
+            ncombinations = self._ncombinations
+        else:
+            vaddr = self._vaddr[variants_index]
+            ncombinations = self._ncombinations[variants_index]
+        if len(ncombinations) > 0 and max(ncombinations) > max_combinations:
+            raise ValueError(
+                "Need at least {0} max_combinations, but only {1} given".format(
+                    max(ncombinations), max_combinations
+                )
+            )
 
+        # allocating prob_buffer only when its size changes makes reading
+        # 10x5M data 30% faster
+        if return_probabilities:
+            val = np.full(
+                (len(samples_index), len(vaddr), max_combinations),
+                np.nan,
+                dtype=dtype,
+                order=order,
+            )
+            prob_buffer = None
+        if return_missings:
+            missing_val = np.full(
+                (len(samples_index), len(vaddr)), False, dtype="bool", order=order
+            )
+        if return_ploidies:
+            ploidy_val = np.full(
+                (len(samples_index), len(vaddr)), 0, dtype="int", order=order
+            )
 
-            #allocating prob_buffer only when its size changes makes reading 10x5M data 30% faster
-            if return_probabilities:
-                val = np.full((len(samples_index), len(vaddr), max_combinations), np.nan, dtype=dtype, order=order)
-                prob_buffer = None
-            if return_missings:
-                missing_val = np.full((len(samples_index), len(vaddr)), False, dtype='bool', order=order)
-            if return_ploidies:
-                ploidy_val = np.full((len(samples_index), len(vaddr)), 0, dtype='int', order=order)
+        # LATER multithread?
+        approx_read_seconds = len(vaddr) / 20000.0 + len(vaddr) * self.nsamples / (
+            2 * 1000 * 1000.0
+        )
+        vaddr_per_second = max(1, len(vaddr) // int(max(1, approx_read_seconds)))
+        vaddr_per_second = 10 ** (
+            int(math.log10(vaddr_per_second) + 0.5)
+        )  # Do "logarithmic rounding" to make numbers look nicer, e.g.  999 -> 1000
+        with _log_in_place("reading", self._verbose) as updater:
+            for out_index, vaddr0 in enumerate(vaddr):
+                if out_index % vaddr_per_second == 0:
+                    updater("part {0:,} of {1:,}".format(out_index, len(vaddr)))
 
+                genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
 
-            #LATER multithread?
-            approx_read_seconds = len(vaddr)/20000.0+len(vaddr)*self.nsamples/(2*1000*1000.0)
-            vaddr_per_second = max(1,len(vaddr) // int(max(1,approx_read_seconds)))
-            vaddr_per_second = 10**(int(math.log10(vaddr_per_second)+.5)) #Do "logarithmic rounding" to make numbers look nicer, e.g. 999 -> 1000
-            with _log_in_place('reading', self._verbose) as updater:
-                for out_index,vaddr0 in enumerate(vaddr):
-                    if out_index%vaddr_per_second==0:
-                        updater('part {0:,} of {1:,}'.format(out_index,len(vaddr)))
+                if return_probabilities:
+                    if (
+                        prob_buffer is None
+                        or ncombinations[out_index] != prob_buffer.shape[-1]
+                    ):
+                        prob_buffer = np.full(
+                            (len(self._samples), ncombinations[out_index]),
+                            np.nan,
+                            order="C",
+                            dtype="float64",
+                        )
+                    lib.bgen_genotype_read(
+                        genotype, ffi.cast("double *", prob_buffer.ctypes.data)
+                    )
+                    val[:, out_index, : ncombinations[out_index]] = (
+                        prob_buffer
+                        if (samples_index is self._sample_range)
+                        else prob_buffer[samples_index, :]
+                    )
 
-                    genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
+                if return_missings:
+                    missing_val[:, out_index] = [
+                        lib.bgen_genotype_missing(genotype, i) for i in samples_index
+                    ]
 
-                    if return_probabilities:
-                        if prob_buffer is None or ncombinations[out_index] != prob_buffer.shape[-1]:
-                            prob_buffer = np.full((len(self._samples), ncombinations[out_index]), np.nan, order='C', dtype='float64')
-                        lib.bgen_genotype_read(genotype, ffi.cast("double *", prob_buffer.ctypes.data))
-                        val[:,out_index,:ncombinations[out_index]] = prob_buffer if (samples_index is self._sample_range) else prob_buffer[samples_index,:]
+                if return_ploidies:
+                    ploidy_val[:, out_index] = [
+                        lib.bgen_genotype_ploidy(genotype, i) for i in samples_index
+                    ]
 
-                    if return_missings:
-                        missing_val[:,out_index] = [lib.bgen_genotype_missing(genotype, i) for i in samples_index]
+                lib.bgen_genotype_close(genotype)
 
-                    if return_ploidies:
-                        ploidy_val[:,out_index] = [lib.bgen_genotype_ploidy(genotype, i) for i in samples_index]
-
-                    lib.bgen_genotype_close(genotype)
-
-            result_array = ([val] if return_probabilities else []) + ([missing_val] if return_missings else []) + ([ploidy_val] if return_ploidies else [])
-            if len(result_array)==1:
-                return result_array[0]
-            else:
-                return tuple(result_array)
-
+        result_array = (
+            ([val] if return_probabilities else [])
+            + ([missing_val] if return_missings else [])
+            + ([ploidy_val] if return_ploidies else [])
+        )
+        if len(result_array) == 1:
+            return result_array[0]
+        else:
+            return tuple(result_array)
 
     @property
     def nsamples(self) -> int:
@@ -493,7 +557,7 @@ class open_bgen(object):
         return self._max_combinations
 
     @property
-    def shape(self) -> (int,int,int):
+    def shape(self) -> (int, int, int):
         """
         The tuple (nsamples, nvariants, max_combinations)
 
@@ -509,14 +573,15 @@ class open_bgen(object):
             (4, 4, 4)
 
         """
-        return (self.nsamples,self.nvariants,self.max_combinations)
-#This is static so that test code can use it easily.        
+        return (self.nsamples, self.nvariants, self.max_combinations)
+
+    # This is static so that test code can use it easily.
     @staticmethod
     def _metadatapath_from_filename(filename):
-        return Path(filename).with_suffix('.metadata2.npz')
+        return Path(filename).with_suffix(".metadata2.npz")
 
     @property
-    def samples(self):
+    def samples(self) -> List[str]:
         """
         The sample identifiers (an :class:`numpy.array` of strings)
 
@@ -535,7 +600,7 @@ class open_bgen(object):
         return self._samples
 
     @property
-    def ids(self):
+    def ids(self) -> List[str]:
         """
         The variant identifiers (an :class:`numpy.array` of strings)
 
@@ -554,7 +619,7 @@ class open_bgen(object):
         return self._ids
 
     @property
-    def rsids(self):
+    def rsids(self) -> List[str]:
         """
         The variant RS numbers (an :class:`numpy.array` of strings)
 
@@ -573,7 +638,7 @@ class open_bgen(object):
         return self._rsids
 
     @property
-    def chromosomes(self):
+    def chromosomes(self) -> List[str]:
         """
         The chromosome of each variant (an :class:`numpy.array` of strings)
 
@@ -592,7 +657,7 @@ class open_bgen(object):
         return self._chromosomes
 
     @property
-    def positions(self):
+    def positions(self) -> List[int]:
         """
         The genetic position of each variant (an :class:`numpy.array` of int)
 
@@ -611,7 +676,7 @@ class open_bgen(object):
         return self._positions
 
     @property
-    def nalleles(self):
+    def nalleles(self) -> List[int]:
         """
         The number of alleles for each variant (an :class:`numpy.array` of int)
 
@@ -630,7 +695,7 @@ class open_bgen(object):
         return self._nalleles
 
     @property
-    def allele_ids(self):
+    def allele_ids(self) -> List[str]:
         """
         The comma-delimited list of alleles for each variant (an :class:`numpy.array` of strings)
 
@@ -650,7 +715,7 @@ class open_bgen(object):
 
     #!!!cmk these need typed
     @property
-    def ncombinations(self) -> [int]: #!!!cmk dhebi is this the right type?
+    def ncombinations(self) -> List[int]:
         """
         The number of values needed for each variant's probability distribution (an :class:`numpy.array` of int)
 
@@ -669,7 +734,7 @@ class open_bgen(object):
         return self._ncombinations
 
     @property
-    def phased(self) -> [bool]:
+    def phased(self) -> List[bool]:
         """
         ``True`` if and only if this variant is phased (an :class:`numpy.array` of bool)
 
@@ -686,9 +751,7 @@ class open_bgen(object):
 
         """
         return self._phased
-
-
-    def _get_samples(self,sample_file): #!!!cmk similar code in _reader.py
+    def _get_samples(self, sample_file):  #!!!cmk similar code in _reader.py
         if sample_file is None:
             if self._bgen.contain_samples:
                 return self._bgen.read_samples()
@@ -702,33 +765,45 @@ class open_bgen(object):
 
     @staticmethod
     def _fix_up_index(index):
-        if index is None: #make a shortcut for None
+        if index is None:  # make a shortcut for None
             return index
-        try: #If index is an int, return it in an array
-            index = index.__index__() #(see https://stackoverflow.com/questions/3501382/checking-whether-a-variable-is-an-integer-or-not)
+        try:  # If index is an int, return it in an array
+            index = index.__index__()  # (see
+            # https://stackoverflow.com/questions/3501382/checking-whether-a-variable-is-an-integer-or-not)
             return [index]
         except:
             pass
         return index
 
-    
-    def _map_metadata(self,metafile_filepath): 
-        with _log_in_place('metadata', self._verbose) as updater:
+    def _map_metadata(self, metafile_filepath):
+        with _log_in_place("metadata", self._verbose) as updater:
             with bgen_metafile(Path(metafile_filepath)) as mf:
                 nparts = mf.npartitions
-                id_list, rsid_list,chrom_list,position_list,vaddr_list,nalleles_list,allele_ids_list,ncombinations_list,phased_list = [],[],[],[],[],[],[],[],[]
+                (
+                    id_list,
+                    rsid_list,
+                    chrom_list,
+                    position_list,
+                    vaddr_list,
+                    nalleles_list,
+                    allele_ids_list,
+                    ncombinations_list,
+                    phased_list,
+                ) = ([], [], [], [], [], [], [], [], [])
 
                 #!!!If verbose, should tell how it is going
-                for ipart2 in range(nparts): #LATER multithread?
+                for ipart2 in range(nparts):  # LATER multithread?
                     #!!!cmk in notebook this message doesn't appear on one line
-                    updater('step 2: part {0:,} of {1:,}'.format(ipart2,nparts))
+                    updater("step 2: part {0:,} of {1:,}".format(ipart2, nparts))
 
                     #!!!cmk this code is very similar to other code
-                    partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
+                    partition = lib.bgen_metafile_read_partition(
+                        mf._bgen_metafile, ipart2
+                    )
                     if partition == ffi.NULL:
                         raise RuntimeError(f"Could not read partition {partition}.")
 
-                    #cmk similar code in _bgen_metafile.py
+                    # cmk similar code in _bgen_metafile.py
                     nvariants = lib.bgen_partition_nvariants(partition)
 
                     position = empty(nvariants, dtype=uint32)
@@ -765,7 +840,7 @@ class open_bgen(object):
                         chrom_max_len[0],
                         ffi.from_buffer("char[]", allele_ids),
                         allele_ids_max_len[0],
-                     )
+                    )
 
                     id_list.append(vid)
                     rsid_list.append(rsid)
@@ -775,28 +850,32 @@ class open_bgen(object):
                     allele_ids_list.append(allele_ids)
                     vaddr_list.append(offset)
 
-            #LATER  use concatenate(...out=) instead
-            self._ids = np.array(np.concatenate(id_list),dtype='str') # dtype needed to make unicode
-            self._rsids = np.array(np.concatenate(rsid_list),dtype='str')
+            # LATER use concatenate(...out=) instead
+            self._ids = np.array(
+                np.concatenate(id_list), dtype="str"
+            )  # dtype needed to make unicode
+            self._rsids = np.array(np.concatenate(rsid_list), dtype="str")
             self._vaddr = np.concatenate(vaddr_list)
-            self._chromosomes = np.array(np.concatenate(chrom_list),dtype='str') 
+            self._chromosomes = np.array(np.concatenate(chrom_list), dtype="str")
             self._positions = np.concatenate(position_list)
             self._nalleles = np.concatenate(nalleles_list)
-            self._allele_ids = np.array(np.concatenate(allele_ids_list),dtype='str') #cmk0 check that main api doesn't return bytes
+            self._allele_ids = np.array(
+                np.concatenate(allele_ids_list), dtype="str"
+            )  # cmk0 check that main api doesn't return bytes
 
-            for i,vaddr0 in enumerate(self._vaddr):
-                if i%1000==0:
-                    updater('step 3: part {0:,} of {1:,}'.format(i,self.nvariants))
+            for i, vaddr0 in enumerate(self._vaddr):
+                if i % 1000 == 0:
+                    updater("step 3: part {0:,} of {1:,}".format(i, self.nvariants))
                 genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
                 ncombinations_list.append(lib.bgen_genotype_ncombs(genotype))
                 phased_list.append(lib.bgen_genotype_phased(genotype))
                 lib.bgen_genotype_close(genotype)
 
-            self._ncombinations = np.array(ncombinations_list,dtype='int')
-            self._phased = np.array(phased_list,dtype='bool')
+            self._ncombinations = np.array(ncombinations_list, dtype="int")
+            self._phased = np.array(phased_list, dtype="bool")
 
-    def __str__(self): 
-        return "{0}('{1}')".format(self.__class__.__name__,self._filepath.name)
+    def __str__(self):
+        return "{0}('{1}')".format(self.__class__.__name__, self._filepath.name)
 
     def close(self):
         """Close a :class:`open_bgen` object that was opened for reading.
@@ -822,52 +901,69 @@ class open_bgen(object):
 
             """
         self.__exit__()
-    
+
     def __enter__(self):
         return self
 
     def __exit__(self, *_):
-        if hasattr(self,'_bgen_context_manager') and self._bgen_context_manager is not None:  # we need to test this because Python doesn't guarantee that __init__ was fully run
-            self._bgen_context_manager.__exit__(None,None,None)
-            del self._bgen_context_manager # This allows __del__ and __exit__ to be called twice on the same object with no bad effect.
+        if (
+            hasattr(self, "_bgen_context_manager")
+            and self._bgen_context_manager is not None
+        ):  # we need to test this because Python doesn't guarantee that __init__ was
+            # fully run
+            self._bgen_context_manager.__exit__(None, None, None)
+            del (
+                self._bgen_context_manager
+            )  # This allows __del__ and __exit__ to be called twice on the same object with
+            # no bad effect.
 
     def __del__(self):
         self.__exit__()
 
-#!!!cmk check how this works (if at all) with the other parts of the API (Dosage, Expectation, ...)   
 
+#!!!cmk check how this works (if at all) with the other parts of the API
+# (Dosage, Expectation, ...)
 
 
 if __name__ == "__main__":
     if False:
         from bgen_reader.test.test_bgen2 import test_bigfile
+
         test_bigfile(verbose=True)
     if False:
-        filepath = r'm:\deldir\400x500x3.bgen'
+        filepath = r"m:\deldir\400x500x3.bgen"
         _write_random(filepath, 400, 500, chrom_count=5, cleanup_temp_files=False)
     if False:
-        #filepath = r'm:\deldir\1000x500000.bgen'
-        #filepath = r'D:\OneDrive\Shares\bgenraaderpy\1x1000000.bgen'
-        filepath = r'M:\del35\temp1024x16384-8.bgen'
-        with open_bgen(filepath,verbose=True) as bgen2:
-            print(bgen2.ids[:5]) #other property arrays include risd,chromosomes,positions,nallels, and allele_ids
-            geno = bgen2.read(-1) # read the 200,000th variate's data
-            #geno = bgen2.read() # read all, uses the ncombinations from the first variant
-            geno = bgen2.read(slice(5)) # read first 5, uses the ncombinations from the first variant
-            geno = bgen2.read(bgen2.chromosomes=='5',max_combinations=4) # read chrom1, set max_combs explicitly
-            geno, missing = bgen2.read(0,return_missings=True)
+        # filepath = r'm:\deldir\1000x500000.bgen'
+        # filepath = r'D:\OneDrive\Shares\bgenraaderpy\1x1000000.bgen'
+        filepath = r"M:\del35\temp1024x16384-8.bgen"
+        with open_bgen(filepath, verbose=True) as bgen2:
+            print(
+                bgen2.ids[:5]
+            )  # other property arrays include risd,chromosomes,positions,nallels, and
+            # allele_ids
+            geno = bgen2.read(-1)  # read the 200,000th variate's data
+            # geno = bgen2.read() # read all, uses the ncombinations from the
+            # first variant
+            geno = bgen2.read(
+                slice(5)
+            )  # read first 5, uses the ncombinations from the first variant
+            geno = bgen2.read(
+                bgen2.chromosomes == "5", max_combinations=4
+            )  # read chrom1, set max_combs explicitly
+            geno, missing = bgen2.read(0, return_missings=True)
         bgen2 = open_bgen(filepath)
-        geno, missing = bgen2.read(0,return_missings=True)
+        geno, missing = bgen2.read(0, return_missings=True)
     if True:
-        filepath = r'm:\deldir\2500x500000.bgen'
-        #filepath = r'D:\OneDrive\Shares\bgenreaderpy\1x1000000.bgen'
-        with open_bgen(filepath,verbose=True) as bgen2:
-            val = bgen2.read((0,None))
-            #print(bgen2.read(0)[0,0,:])
-            #print(bgen2.read(-1)[0,0,:])
+        filepath = r"m:\deldir\2500x500000.bgen"
+        # filepath = r'D:\OneDrive\Shares\bgenreaderpy\1x1000000.bgen'
+        with open_bgen(filepath, verbose=True) as bgen2:
+            val = bgen2.read((0, None))
+            # print(bgen2.read(0)[0,0,:])
+            # print(bgen2.read(-1)[0,0,:])
 
     if True:
         import pytest
 
         pytest.main([__file__])
-    print('!!!cmk')
+    print("!!!cmk")
