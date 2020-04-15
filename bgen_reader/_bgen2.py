@@ -398,7 +398,7 @@ class open_bgen(object):
         if not hasattr(self, "_bgen_context_manager"):
             raise ValueError("I/O operation on a closed file")
 
-        max_combinations = max_combinations or self.max_combinations
+        max_combinations = max_combinations if max_combinations is not None else self.max_combinations #Can't use 'or' because it treats 0 as False
 
         if not isinstance(index, tuple):
             index = (None, index)

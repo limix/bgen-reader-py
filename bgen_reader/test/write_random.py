@@ -1,11 +1,12 @@
+import math
 import os
-import numpy as np
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Optional, Union
+
+import numpy as np
 from numpy import empty, uint16, uint32, uint64, zeros
-import math
-import subprocess
 
 from bgen_reader._helper import _log_in_place
 

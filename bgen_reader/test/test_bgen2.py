@@ -14,7 +14,7 @@ from bgen_reader import open_bgen  # !!!cmk switch to relative
 from bgen_reader import example_filepath
 from bgen_reader._environment import BGEN_READER_CACHE_HOME
 from bgen_reader.test.write_random import _write_random
-
+from bgen_reader.test.test_bgen_reader import nowrite_permission, noread_permission
 
 def example_filepath2(filename):
     filepath = example_filepath(filename)
@@ -92,25 +92,6 @@ def test_metafile_not_provided_no_permission_to_create(tmp_path):
         with pytest.warns(UserWarning):
             open_bgen(dst, verbose=False)
 
-
-@contextmanager
-def nowrite_permission(path):
-    perm = os.stat(path).st_mode
-    os.chmod(path, 0o555)
-    try:
-        yield
-    finally:
-        os.chmod(path, perm)
-
-
-@contextmanager
-def noread_permission(path):
-    perm = os.stat(path).st_mode
-    os.chmod(path, 0o333)
-    try:
-        yield
-    finally:
-        os.chmod(path, perm)
 
 
 def test_open_bgen_phased_genotype():
@@ -234,16 +215,16 @@ def test_bigfile(verbose=False):
 
 def test_small_random_file(verbose=False):
     random_file_tests(
-        nsamples=25, nvariants=1000, bits=8, verbose=True
+        nsamples=25, nvariants=1000, bits=8, verbose=True, overwrite=True
     )  #!!!cmk verbose
 
 
-def random_file_tests(nsamples, nvariants, bits, verbose=False):
+def random_file_tests(nsamples, nvariants, bits, verbose=False,overwrite=False):
     test_data_folder = BGEN_READER_CACHE_HOME / "test_data"
     filepath = test_data_folder / "{0}x{1}.{2}bits.bgen".format(
         nsamples, nvariants, bits
     )
-    if not filepath.exists():
+    if overwrite or not filepath.exists():
         _write_random(
             filepath,
             nsamples,
@@ -368,18 +349,18 @@ def test_close_del_with():
     filepath = example_filepath2("example.32bits.bgen")
     with open_bgen(filepath, verbose=False) as bgen2:
         pass
-    with pytest.raises(ValueError) as e_info:
+    with pytest.raises(ValueError):
         bgen2.read()
 
     bgen2 = open_bgen(filepath, verbose=False)
     del bgen2
-    with pytest.raises(Exception) as e_info:
+    with pytest.raises(Exception):
         bgen2.samples
 
     bgen2 = open_bgen(filepath, verbose=False)
     bgen2.close()
     bgen2.samples
-    with pytest.raises(ValueError) as e_info:
+    with pytest.raises(ValueError):
         bgen2.read()
 
 
@@ -394,12 +375,12 @@ def test_read_max_combinations():
             np.mean(np.isnan(val[:, :, :3])) < 2.1e-05
         )  # main data as only a few missing
         assert np.all(np.isnan(val[:, :, 3:]))  # all the extra are NaN
-    with pytest.raises(ValueError) as e_info:
-        bgen2.read(max_combinations=2)
-    with pytest.raises(ValueError) as e_info:
-        bgen2.read(max_combinations=1)
-    with pytest.raises(ValueError) as e_info:
-        bgen2.read(max_combinations=0)
+        with pytest.raises(ValueError):
+            bgen2.read(max_combinations=2)
+        with pytest.raises(ValueError):
+            bgen2.read(max_combinations=1)
+        with pytest.raises(ValueError):
+            bgen2.read(max_combinations=0)
 
 
 def test_read_dtype_and_order():
