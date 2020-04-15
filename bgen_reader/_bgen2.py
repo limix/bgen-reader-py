@@ -12,24 +12,21 @@ from typing import Any, List, Optional, Tuple, Union
 import numpy as np
 from numpy import empty, uint16, uint32, uint64, zeros
 
-#!!!cmk change 'from bgen_reader.' to 'from .'
-from bgen_reader._bgen_file import bgen_file
-from bgen_reader._bgen_metafile import bgen_metafile
-from bgen_reader._ffi import ffi, lib
-from bgen_reader._file import (
+from ._bgen_file import bgen_file
+from ._bgen_metafile import bgen_metafile
+from ._ffi import ffi, lib
+from ._file import (
     assert_file_exist,
     assert_file_readable,
     is_file_writable,
     path_to_filename,
 )
-from bgen_reader._helper import _log_in_place
-from bgen_reader._samples import generate_samples, read_samples_file
-from bgen_reader.test.write_random import _write_random
+from ._helper import _log_in_place
+from ._samples import generate_samples, read_samples_file
+from .test.write_random import _write_random
 
 
-#!!!cmk add type info
 #!!!cmk write doc
-#!!!cmk test doc
 #!!!cmk improve formatting
 # https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 class open_bgen(object):
@@ -713,7 +710,6 @@ class open_bgen(object):
         """
         return self._allele_ids
 
-    #!!!cmk these need typed
     @property
     def ncombinations(self) -> List[int]:
         """
@@ -861,7 +857,7 @@ class open_bgen(object):
             self._nalleles = np.concatenate(nalleles_list)
             self._allele_ids = np.array(
                 np.concatenate(allele_ids_list), dtype="str"
-            )  # cmk0 check that main api doesn't return bytes
+            )  # cmk check that main api doesn't return bytes
 
             for i, vaddr0 in enumerate(self._vaddr):
                 if i % 1000 == 0:
@@ -925,45 +921,3 @@ class open_bgen(object):
 # (Dosage, Expectation, ...)
 
 
-if __name__ == "__main__":
-    if False:
-        from bgen_reader.test.test_bgen2 import test_bigfile
-
-        test_bigfile(verbose=True)
-    if False:
-        filepath = r"m:\deldir\400x500x3.bgen"
-        _write_random(filepath, 400, 500, chrom_count=5, cleanup_temp_files=False)
-    if False:
-        # filepath = r'm:\deldir\1000x500000.bgen'
-        # filepath = r'D:\OneDrive\Shares\bgenraaderpy\1x1000000.bgen'
-        filepath = r"M:\del35\temp1024x16384-8.bgen"
-        with open_bgen(filepath, verbose=True) as bgen2:
-            print(
-                bgen2.ids[:5]
-            )  # other property arrays include risd,chromosomes,positions,nallels, and
-            # allele_ids
-            geno = bgen2.read(-1)  # read the 200,000th variate's data
-            # geno = bgen2.read() # read all, uses the ncombinations from the
-            # first variant
-            geno = bgen2.read(
-                slice(5)
-            )  # read first 5, uses the ncombinations from the first variant
-            geno = bgen2.read(
-                bgen2.chromosomes == "5", max_combinations=4
-            )  # read chrom1, set max_combs explicitly
-            geno, missing = bgen2.read(0, return_missings=True)
-        bgen2 = open_bgen(filepath)
-        geno, missing = bgen2.read(0, return_missings=True)
-    if True:
-        filepath = r"m:\deldir\2500x500000.bgen"
-        # filepath = r'D:\OneDrive\Shares\bgenreaderpy\1x1000000.bgen'
-        with open_bgen(filepath, verbose=True) as bgen2:
-            val = bgen2.read((0, None))
-            # print(bgen2.read(0)[0,0,:])
-            # print(bgen2.read(-1)[0,0,:])
-
-    if True:
-        import pytest
-
-        pytest.main([__file__])
-    print("!!!cmk")

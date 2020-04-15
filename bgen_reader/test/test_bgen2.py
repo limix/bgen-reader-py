@@ -10,7 +10,7 @@ from numpy import array, array_equal, isnan
 from numpy.testing import assert_allclose, assert_equal
 from pandas import Series
 
-from bgen_reader import open_bgen  # !!!cmk switch to relative
+from bgen_reader import open_bgen
 from bgen_reader import example_filepath
 from bgen_reader._environment import BGEN_READER_CACHE_HOME
 from bgen_reader.test.write_random import _write_random
@@ -216,7 +216,7 @@ def test_bigfile(verbose=False):
 def test_small_random_file(verbose=False):
     random_file_tests(
         nsamples=25, nvariants=1000, bits=8, verbose=True, overwrite=True
-    )  #!!!cmk verbose
+    )  #!!!cmk99 verbose
 
 
 def random_file_tests(nsamples, nvariants, bits, verbose=False,overwrite=False):
@@ -232,7 +232,7 @@ def random_file_tests(nsamples, nvariants, bits, verbose=False,overwrite=False):
             bits=bits,
             verbose=verbose,
             cleanup_temp_files=False,
-        )  #!!!cmk change to cleanup_temp_files=True (the default)
+        )  #!!!cmk99 change to cleanup_temp_files=True (the default)
     metadata2_path = open_bgen._metadatapath_from_filename(filepath)
     if metadata2_path.exists():
         metadata2_path.unlink()
@@ -481,5 +481,5 @@ def test_read_multiple_returns():
     assert np.allclose(full_ploidy[10:30:2, :][:, [11, 9]], ploidy, equal_nan=False)
 
 
-if __name__ == "__main__":  #!!!cmk remove?
+if __name__ == "__main__":  #!!!cmk99 remove?
     pytest.main([__file__])
