@@ -128,7 +128,7 @@ Please, refer to |bgen specification| for a detailed description.
 Complex file
 ============
 
-The bgen file format allows the storage of very heterogenous genetic data.
+The bgen file format allows the storage of very heterogeneous genetic data.
 In the ``complex.bgen`` file we have variants with different ploidy and number of
 alleles, as well as phased\ *ness*.
 

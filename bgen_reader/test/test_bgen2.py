@@ -480,6 +480,11 @@ def test_read_multiple_returns():
     )
     assert np.allclose(full_ploidy[10:30:2, :][:, [11, 9]], ploidy, equal_nan=False)
 
+def test_rst_examples(): #!!!cmk are all *.rst examples being tested?
+    import doctest
+    doctest.testfile('../../docs/quickstart2.rst')
 
 if __name__ == "__main__":  #!!!cmk99 remove?
+    import doctest
+    doctest.testfile('../../docs/quickstart2.rst')
     pytest.main([__file__])

@@ -26,12 +26,15 @@ from ._samples import generate_samples, read_samples_file
 from .test.write_random import _write_random
 
 
-#!!!cmk write doc
-#!!!cmk improve formatting
 # https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 class open_bgen(object):
     """
     A NumPy-inspired class for fast opening and reading of BGEN files.
+
+    After opening, access genotype data with :meth:`.read`. Access metadata via properties
+    :attr:`.nsamples`, :attr:`.nvariants`, :attr:`.max_combinations`, :attr:`.shape`,
+    :attr:`.samples`, :attr:`.ids`, :attr:`.rsids`, :attr:`.chromosomes`, :attr:`.positions`,
+    :attr:`.nalleles`, :attr:`.allele_ids`, :attr:`.ncombinations`, and :attr:`.phased`.
 
     Parameters
     ----------
@@ -50,7 +53,12 @@ class open_bgen(object):
     See Also
     --------
 
-    read : read genotype information from a `open_bgen` object. (cmk dhebi references in the docs aren't working) (cmk dhebi any way to see a list of the list of methods and properties in the docs?)
+    read : read genotype information from a :class:`open_bgen` object.
+
+    Notes
+    -----
+
+    cmk
 
     Examples
     --------
@@ -194,21 +202,18 @@ class open_bgen(object):
         Tuple[np.ndarray, np.ndarray],
         Tuple[np.ndarray, np.ndarray, np.ndarray],
     ]:
-        #!!!cmkwrite doc
-        #!!!cmk tell probs will be 3D array
-        #!!!cmk if both missing and ploidy are returned, missing will be
-        # first.  and both will be 2-D arrays
         """
             Read genotype information from an :class:`open_bgen` object.
 
             Parameters
             ----------
             index
-                An expression specifying the samples and variants to read (see `Notes`, below). 
+                An expression specifying the samples and variants to read. (See `Notes`, below). 
                 Defaults to ``None``, meaning read all.
             dtype : data-type
-                The desired data-type for the returned probability array. #cmk somewhere tell about bits and this
-                Defaults to :class:`numpy.float64`.
+                The desired data-type for the returned probability array. 
+                Defaults to :class:`numpy.float64`. Use :class:`numpy.float32` or :class:`numpy.float16`, when appropriate,
+                to save 50% or 75% of memory. (See `Notes`, below). 
             order : {'F','C'}
                 The desired memory layout for the returned probability array.
                 Defaults to ``F`` (Fortran order, which is variant-major)
@@ -229,7 +234,7 @@ class open_bgen(object):
 
             Returns
             -------
-            zero to three :class:`numpy.ndarray`
+            zero to three :class:`numpy.ndarray`, always in this order:
 
                 * a :class:`numpy.array` of probabilities with `dtype` and shape `(nsamples_out,nvariants_out,max_combinations)`,
                   if `return_probabilities` is ``True`` (the default)
@@ -239,7 +244,7 @@ class open_bgen(object):
             Notes
             ------
 
-            About `index`
+            **About index**
            
             (Also, see `Examples`, below)
 
@@ -271,6 +276,16 @@ class open_bgen(object):
                 `index` = (**sample_index**, **variant_index** )
 
                 Read samples and variants specified.
+
+            **About dtype**
+
+            If you know the compression level of your BGEN file, you can sometimes save 50% or 75% on memory with `dtype`.
+            Test with your data to confirm you are not losing any precision. The approximate relationship is:
+
+                * BGEN compression 1 to 10 bits: `dtype` ='float16'
+                * BGEN compression 11 to 23 bits: `dtype` ='float32'
+                * BGEN compression 24 to 32 bits: `dtype` ='float64' (default)
+            
 
             Examples
             --------
@@ -747,6 +762,7 @@ class open_bgen(object):
 
         """
         return self._phased
+
     def _get_samples(self, sample_file):  #!!!cmk similar code in _reader.py
         if sample_file is None:
             if self._bgen.contain_samples:

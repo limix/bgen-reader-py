@@ -20,6 +20,7 @@ as well as their optional compressed formats.
    :caption: Contents:
 
    install
+   quickstart2
    quickstart
    open
    read
@@ -27,6 +28,7 @@ as well as their optional compressed formats.
    expectation
    frequency
    metafile
+   env_variables
 
 Comments and bugs
 =================
