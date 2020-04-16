@@ -931,10 +931,10 @@ class open_bgen(object):
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
 
-    def allele_expectation(self, index: Optional[Any] = None) -> np.ndarray: #!!!cmk reformat
-        r""" Allele expectation.
+    def allele_expectation(self, index: Optional[Any] = None, return_frequencies:bool=False) -> Union[np.ndarray,Tuple[np.ndarray,np.ndarray]]: #!!!cmk reformat
+        r""" Allele expectation, frequency, and dosage.
 
-        Compute the expectation of each allele from the genotype probabilities.
+        Compute the expectation of each allele. Also find frequency and dosage.
 
         Parameters
         ----------
@@ -953,10 +953,10 @@ class open_bgen(object):
 
         Examples
         --------
+
         .. doctest::
 
             >>> from bgen_reader import allele_expectation, example_filepath, read_bgen
-            >>>
             >>> from texttable import Texttable
             >>>
             >>> filepath = example_filepath("example.32bits.bgen")
@@ -991,11 +991,122 @@ class open_bgen(object):
             +----+-------+-------+-------+-------+
             | #G | 0     | 1     | 2     | 0.989 |
             +----+-------+-------+-------+-------+
+
+    If 'return_frequencies' is true, this method will also return the allele frequency.
+
+    .. doctest::
+
+        >>> from bgen_reader import open_bgen, example_filepath
+        >>>
+        >>> filepath = example_filepath("example.32bits.bgen")
+        >>> bgen = open_bgen(filepath, verbose=False)
+        >>>
+        >>> variant_index = (bgen.rsids=="RSID_6")      # will be only 1 variant
+        >>> e,f = bgen.allele_expectation(variant_index, return_frequencies=True)
+        >>> alleles_per_variant = [allele_ids.split(',') for allele_ids in bgen.allele_ids[variant_index]]
+        >>> print(alleles_per_variant[0][0] + ": {}".format(f[0,0]))
+        A: 229.23103218810434
+        >>> print(alleles_per_variant[0][1] + ": {}".format(f[0,1]))
+        G: 270.7689678118956
+        >>> print(bgen.ids[variant_index][0],bgen.rsids[variant_index][0])
+        SNPID_6  RSID_6
+
+    To find dosage, just select the column of interest from the expectation.
+
+    .. doctest::
+
+        >>> from bgen_reader import example_filepath, open_bgen
+        >>>
+        >>> filepath = example_filepath("example.32bits.bgen")
+        >>>
+        >>> # Read the example.
+        >>> bgen = open_bgen(filepath, verbose=False)
+        >>>
+        >>> # Extract the allele expectations of the fourth variant.
+        >>> variant_index = 3
+        >>> e = bgen.allele_expectation(variant_index)
+        >>>
+        >>> # Compute the dosage when considering the allele
+        >>> # in position 1 as the reference/alternative one.
+        >>> alt_allele_index = 1
+        >>> dosage = e[...,1]
+        >>>
+        >>> # Print the dosage for only the first five samples 
+        >>> # and the one (and only) variant
+        >>> print(dosage[:5,0])
+        [1.96185308 0.00982666 0.01745552 1.00347899 1.01153563]
+        >>> del bgen
+        >>>
+        >>> import pandas as pd
+        >>> from bgen_reader import open_bgen
+        >>> filepath = example_filepath("example.32bits.bgen")
+        >>> bgen = open_bgen(filepath, verbose=False)
+        >>>
+        >>> variant_index = [3]
+        >>> # Print the metadata of the fourth variant.
+        >>> print(bgen.ids[variant_index],bgen.rsids[variant_index])
+        ['SNPID_5'] ['RSID_5']
+        >>> probs, missing, ploidy = bgen.read(variant_index,return_missings=True,return_ploidies=True)
+        >>> print(np.unique(missing),np.unique(ploidy))
+        [False] [2]
+        >>> df1 = pd.DataFrame({'sample':bgen.samples,'0':probs[:,0,0],'1':probs[:,0,1],'2':probs[:,0,2]})
+        >>> print(df1) # doctest: +NORMALIZE_WHITESPACE
+                    sample        0        1        2
+        0    sample_001  0.00488  0.02838  0.96674
+        1    sample_002  0.99045  0.00928  0.00027
+        2    sample_003  0.98932  0.00391  0.00677
+        3    sample_004  0.00662  0.98328  0.01010
+        ..          ...      ...      ...      ...
+        496  sample_497  0.00137  0.01312  0.98550
+        497  sample_498  0.00552  0.99423  0.00024
+        498  sample_499  0.01266  0.01154  0.97580
+        499  sample_500  0.00021  0.98431  0.01547
+        <BLANKLINE>
+        [500 rows x 4 columns] 
+        >>> alleles_per_variant = [allele_ids.split(',') for allele_ids in bgen.allele_ids[variant_index]]
+        >>> e,f = bgen.allele_expectation(variant_index,return_frequencies=True)
+        >>> df2 = pd.DataFrame({'sample':bgen.samples,alleles_per_variant[0][0]:e[:,0,0],alleles_per_variant[0][1]:e[:,0,1]})
+        >>> print(df2)  # doctest: +NORMALIZE_WHITESPACE
+                    sample        A        G
+        0    sample_001  0.03815  1.96185
+        1    sample_002  1.99017  0.00983
+        2    sample_003  1.98254  0.01746
+        3    sample_004  0.99652  1.00348
+        ..          ...      ...      ...
+        496  sample_497  0.01587  1.98413
+        497  sample_498  1.00528  0.99472
+        498  sample_499  0.03687  1.96313
+        499  sample_500  0.98474  1.01526
+        <BLANKLINE>
+        [500 rows x 3 columns]
+        >>> df3 = pd.DataFrame({'allele':alleles_per_variant[0],bgen.rsids[variant_index][0]:f[0,:]})
+        >>> print(df3)
+        allele    RSID_5
+        0      A 305.97218
+        1      G 194.02782
+        >>> alt_index = f[0,:].argmin()
+        >>> alt = alleles_per_variant[0][alt_index]
+        >>> dosage = e[:,0,alt_index]
+        >>> df4 = pd.DataFrame({'sample':bgen.samples,f"alt={alt}":dosage})
+        >>> # Dosages when considering G as the alternative allele.
+        >>> print(df4) # doctest: +NORMALIZE_WHITESPACE
+                 sample    alt=G
+        0    sample_001  1.96185
+        1    sample_002  0.00983
+        2    sample_003  0.01746
+        3    sample_004  1.00348
+        ..          ...      ...
+        496  sample_497  1.98413
+        497  sample_498  0.99472
+        498  sample_499  1.96313
+        499  sample_500  1.01526
+        <BLANKLINE>
+        [500 rows x 2 columns]
         """
         samples_index, variants_index = self._split_index(index)
         phased_list = self.phased[variants_index]
         if any(phased_list):
-            raise ValueError("Allele expectation is define for unphased genotypes only.")
+            raise ValueError("Allele expectation is define for unphased genotypes only.") #!!!cmk add error for variable ploidy
 
         probs, ploidy = self.read(index,return_ploidies=True)
         nalleles = self.nalleles[variants_index]
@@ -1009,8 +1120,15 @@ class open_bgen(object):
                 n = count.shape[0]
                 expec.append((count.T * probsvi[i, :n]).sum(1))
             outer_expec.append(stack(expec, axis=0))
-        result = stack(outer_expec,axis=1)
-        return result
+        expec = stack(outer_expec,axis=1)
+
+        if return_frequencies:
+            ploidy = expec.shape[-1]
+            freq = expec.sum(0) / ploidy
+            return expec, freq
+        else:
+            return expec
+
 
     def __del__(self):
         self.__exit__()
