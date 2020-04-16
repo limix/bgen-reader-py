@@ -161,7 +161,7 @@ alleles, as well as phased\ *ness*.
    >>> # from allele expectation.
    >>> # If we select the third allele as being the alternative one, we have
    >>> from bgen_reader import allele_expectation, compute_dosage
-   >>> e = allele_expectation(bgen, 8)
+   >>> e = bgen.allele_expectation(8)
    >>> print(compute_dosage(e, 2))#!!!cmk
    [0. 0. 0. 1.]
 

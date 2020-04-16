@@ -11,6 +11,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 from numpy import empty, uint16, uint32, uint64, zeros
+from numpy import asarray, stack
 
 from ._bgen_file import bgen_file
 from ._bgen_metafile import bgen_metafile
@@ -24,6 +25,7 @@ from ._file import (
 from ._helper import _log_in_place
 from ._samples import generate_samples, read_samples_file
 from .test.write_random import _write_random
+from ._helper import genotypes_to_allele_counts, get_genotypes
 
 
 # https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
@@ -35,6 +37,7 @@ class open_bgen(object):
     :attr:`.nsamples`, :attr:`.nvariants`, :attr:`.max_combinations`, :attr:`.shape`,
     :attr:`.samples`, :attr:`.ids`, :attr:`.rsids`, :attr:`.chromosomes`, :attr:`.positions`,
     :attr:`.nalleles`, :attr:`.allele_ids`, :attr:`.ncombinations`, and :attr:`.phased`.
+    cmk mention allele_expectation
 
     Parameters
     ----------
@@ -412,22 +415,12 @@ class open_bgen(object):
 
         max_combinations = max_combinations if max_combinations is not None else self.max_combinations #Can't use 'or' because it treats 0 as False
 
-        if not isinstance(index, tuple):
-            index = (None, index)
-        samples_index = self._fix_up_index(index[0])
-        variants_index = self._fix_up_index(index[1])
+        samples_index, variants_index = self._split_index(index)
 
-        if samples_index is None:
-            samples_index = self._sample_range
-        else:
-            samples_index = self._sample_range[samples_index]
+        samples_index = self._sample_range[samples_index] #converts slice(), etc to a list of  numbers
+        vaddr = self._vaddr[variants_index]
+        ncombinations = self._ncombinations[variants_index]
 
-        if variants_index is None:
-            vaddr = self._vaddr
-            ncombinations = self._ncombinations
-        else:
-            vaddr = self._vaddr[variants_index]
-            ncombinations = self._ncombinations[variants_index]
         if len(ncombinations) > 0 and max(ncombinations) > max_combinations:
             raise ValueError(
                 "Need at least {0} max_combinations, but only {1} given".format(
@@ -776,9 +769,18 @@ class open_bgen(object):
             return read_samples_file(samples_filepath, self._verbose)
 
     @staticmethod
+    def _split_index(index):
+        if not isinstance(index, tuple):
+            index = (None, index)
+        samples_index = open_bgen._fix_up_index(index[0])
+        variants_index = open_bgen._fix_up_index(index[1])
+        return samples_index, variants_index
+
+
+    @staticmethod
     def _fix_up_index(index):
         if index is None:  # make a shortcut for None
-            return index
+            return slice(None)
         try:  # If index is an int, return it in an array
             index = index.__index__()  # (see
             # https://stackoverflow.com/questions/3501382/checking-whether-a-variable-is-an-integer-or-not)
@@ -928,6 +930,87 @@ class open_bgen(object):
                 self._bgen_context_manager
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
+
+    def allele_expectation(self, index: Optional[Any] = None) -> np.ndarray: #!!!cmk reformat
+        r""" Allele expectation.
+
+        Compute the expectation of each allele from the genotype probabilities.
+
+        Parameters
+        ----------
+            index
+                An expression specifying the samples and variants of interest. (See `Notes` in :meth:`.read` for details.). 
+                Defaults to ``None``, meaning compute for samples and variants.
+
+        Returns
+        -------
+        :class:`numpy.ndarray`
+            Samples-by-variants-by-alleles matrix of allele expectations.
+
+        Note
+        ----
+        This method supports unphased genotypes only.
+
+        Examples
+        --------
+        .. doctest::
+
+            >>> from bgen_reader import allele_expectation, example_filepath, read_bgen
+            >>>
+            >>> from texttable import Texttable
+            >>>
+            >>> filepath = example_filepath("example.32bits.bgen")
+            >>>
+            >>> # Read the example.
+            >>> bgen = open_bgen(filepath, verbose=False)
+            >>> sample_index = bgen.samples=="sample_005" # will be only 1 sample
+            >>> variant_index = bgen.rsids=="RSID_6"      # will be only 1 variant
+            >>> p = bgen.read((sample_index,variant_index))
+            >>> # Allele expectation makes sense for unphased genotypes only,
+            >>> # which is the case here.
+            >>> e = bgen.allele_expectation((sample_index,variant_index))
+            >>> alleles_per_variant = [allele_ids.split(',') for allele_ids in bgen.allele_ids[variant_index]]
+            >>>
+            >>> # Print what we have got in a nice format.
+            >>> table = Texttable()
+            >>> table = table.add_rows(
+            ...     [
+            ...         ["", "AA", "AG", "GG", "E[.]"],
+            ...         ["p"] + list(p[0,0,:]) + ["na"],
+            ...         ["#" + alleles_per_variant[0][0], 2, 1, 0, e[0,0,0]],
+            ...         ["#" + alleles_per_variant[0][1], 0, 1, 2, e[0,0,1]],
+            ...     ]
+            ... )
+            >>> print(table.draw())
+            +----+-------+-------+-------+-------+
+            |    |  AA   |  AG   |  GG   | E[.]  |
+            +====+=======+=======+=======+=======+
+            | p  | 0.012 | 0.987 | 0.001 | na    |
+            +----+-------+-------+-------+-------+
+            | #A | 2     | 1     | 0     | 1.011 |
+            +----+-------+-------+-------+-------+
+            | #G | 0     | 1     | 2     | 0.989 |
+            +----+-------+-------+-------+-------+
+        """
+        samples_index, variants_index = self._split_index(index)
+        phased_list = self.phased[variants_index]
+        if any(phased_list):
+            raise ValueError("Allele expectation is define for unphased genotypes only.")
+
+        probs, ploidy = self.read(index,return_ploidies=True)
+        nalleles = self.nalleles[variants_index]
+        outer_expec = []
+        for vi in range(probs.shape[1]):
+            genotypes = get_genotypes(ploidy[:,vi], nalleles[vi])
+            probsvi = probs[:,vi,:]
+            expec = []
+            for i, genotype in enumerate(genotypes):
+                count = asarray(genotypes_to_allele_counts(genotype), float)
+                n = count.shape[0]
+                expec.append((count.T * probsvi[i, :n]).sum(1))
+            outer_expec.append(stack(expec, axis=0))
+        result = stack(outer_expec,axis=1)
+        return result
 
     def __del__(self):
         self.__exit__()
