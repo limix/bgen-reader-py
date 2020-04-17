@@ -1,5 +1,7 @@
+.. _quick_start2:
+
 ***********
-Quick-Start
+Quick Start
 ***********
 
  #cmk tell which one, etc
@@ -24,6 +26,8 @@ of alleles for each loci.
 The ``complex.bgen`` file, on the other hand, have different ploidy levels and number of
 alleles across different variant loci.
 
+
+.. _unphased_genotype2:
 
 Unphased genotype
 =================
@@ -83,6 +87,8 @@ The 3rd dimension of the probability matrix of a given variant depends on the
 number of alleles, the ploidy, and whether the locus is phased or unphased.
 Please refer to |bgen specification| for a detailed description.
 
+.. _phased_genotype2:
+
 Phased genotype
 ===============
 
@@ -122,6 +128,8 @@ Phased genotype
    A
 
 Please refer to |bgen specification| for a detailed description.
+
+.. _complex_file2:
 
 Complex file
 ============

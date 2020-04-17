@@ -33,12 +33,6 @@ class open_bgen(object):
     """
     A NumPy-inspired class for fast opening and reading of BGEN files.
 
-    After opening, access genotype data with :meth:`.read`. Access metadata via properties
-    :attr:`.nsamples`, :attr:`.nvariants`, :attr:`.max_combinations`, :attr:`.shape`,
-    :attr:`.samples`, :attr:`.ids`, :attr:`.rsids`, :attr:`.chromosomes`, :attr:`.positions`,
-    :attr:`.nalleles`, :attr:`.allele_ids`, :attr:`.ncombinations`, and :attr:`.phased`.
-    For expectations, frequencies, and dosage, see :meth:`allele_expectation`.
-
     Parameters
     ----------
     filepath
@@ -53,81 +47,73 @@ class open_bgen(object):
     -------
     an open_bgen object : :class:`open_bgen`
 
-    See Also
-    --------
 
-    read : read genotype information from a :class:`open_bgen` object.
-
-    Notes
-    -----
-
-    cmk
-
+    .. _open_examples:
+    
     Examples
     --------
+        With the `with <https://docs.python.org/3/reference/compound_stmts.html#grammar-token-with-stmt>`__ statement, list :attr:`samples` and variant :attr:`ids`, then :meth:`read` the whole file.
 
-    With the ``with`` statement, list :attr:`samples` and :py:attr:`variants`, then :meth:`read` the whole file.
+        .. doctest::
 
-    .. doctest::
+            >>> from bgen_reader import example_filepath, open_bgen
+            >>>
+            >>> file = example_filepath("haplotypes.bgen")
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     print(bgen.ids)
+            ...     print(bgen.samples)
+            ...     print(bgen.read())
+            ['SNP1' 'SNP2' 'SNP3' 'SNP4']
+            ['sample_0' 'sample_1' 'sample_2' 'sample_3']
+            [[[1. 0. 1. 0.]
+              [0. 1. 1. 0.]
+              [1. 0. 0. 1.]
+              [0. 1. 0. 1.]]
+            <BLANKLINE>
+             [[0. 1. 1. 0.]
+              [1. 0. 0. 1.]
+              [0. 1. 0. 1.]
+              [1. 0. 1. 0.]]
+            <BLANKLINE>
+             [[1. 0. 0. 1.]
+              [0. 1. 0. 1.]
+              [1. 0. 1. 0.]
+              [0. 1. 1. 0.]]
+            <BLANKLINE>
+             [[0. 1. 0. 1.]
+              [1. 0. 1. 0.]
+              [0. 1. 1. 0.]
+              [1. 0. 0. 1.]]]
 
-        >>> from bgen_reader import example_filepath, open_bgen
-        >>>
-        >>> file = example_filepath("haplotypes.bgen")
-        >>> with open_bgen(file, verbose=False) as bgen:
-        ...     print(bgen.ids)
-        ...     print(bgen.samples)
-        ...     print(bgen.read())
-        ['SNP1' 'SNP2' 'SNP3' 'SNP4']
-        ['sample_0' 'sample_1' 'sample_2' 'sample_3']
-        [[[1. 0. 1. 0.]
-          [0. 1. 1. 0.]
-          [1. 0. 0. 1.]
-          [0. 1. 0. 1.]]
-        <BLANKLINE>
-         [[0. 1. 1. 0.]
-          [1. 0. 0. 1.]
-          [0. 1. 0. 1.]
-          [1. 0. 1. 0.]]
-        <BLANKLINE>
-         [[1. 0. 0. 1.]
-          [0. 1. 0. 1.]
-          [1. 0. 1. 0.]
-          [0. 1. 1. 0.]]
-        <BLANKLINE>
-         [[0. 1. 0. 1.]
-          [1. 0. 1. 0.]
-          [0. 1. 1. 0.]
-          [1. 0. 0. 1.]]]
+        Open the file (without `with`) and read probabilities for one variant.
 
-    Open the file (without ``with``) read probabilities for one variant.
+        .. doctest::
 
-    .. doctest::
+            >>> bgen = open_bgen(file, verbose=False)
+            >>> print(bgen.read(2))
+            [[[1. 0. 0. 1.]]
+             [[0. 1. 0. 1.]]
+             [[1. 0. 1. 0.]]
+             [[0. 1. 1. 0.]]]
+            >>> del bgen                 # close and delete object
 
-        >>> bgen = open_bgen(file, verbose=False)
-        >>> print(bgen.read(2))
-        [[[1. 0. 0. 1.]]
-         [[0. 1. 0. 1.]]
-         [[1. 0. 1. 0.]]
-         [[0. 1. 1. 0.]]]
-        >>> del bgen                 # close and delete object
+        Open the file and then first read for a :class:`slice` of samples and variants, and then for a single sample and variant.
 
-    Open the file and then first read a ``slice`` of samples and variants, and then send read a single sample and variant.
+        .. doctest::
 
-    .. doctest::
+            >>> bgen = open_bgen(file, verbose=False)
+            >>> print(bgen.read((slice(1,3),slice(2,4))))
+            [[[0. 1. 0. 1.]
+              [1. 0. 1. 0.]]
+            <BLANKLINE>
+             [[1. 0. 1. 0.]
+              [0. 1. 1. 0.]]]
+            <BLANKLINE>
+            >>> print(bgen.read((0,1)))
+            [[[0. 1. 1. 0.]]]
+            >>> del bgen                 # close and delete object
 
-        >>> bgen = open_bgen(file, verbose=False)
-        >>> print(bgen.read((slice(1,3),slice(2,4))))
-        [[[0. 1. 0. 1.]
-          [1. 0. 1. 0.]]
-        <BLANKLINE>
-         [[1. 0. 1. 0.]
-          [0. 1. 1. 0.]]]
-        <BLANKLINE>
-        >>> print(bgen.read((0,1)))
-        [[[0. 1. 1. 0.]]]
-        >>> del bgen                 # close and delete object
-
-    .. _sample format: https://www.well.ox.ac.uk/~gav/qctool/documentation/sample_file_formats.html
+        .. _sample format: https://www.well.ox.ac.uk/~gav/qctool/documentation/sample_file_formats.html
     """
 
     def __init__(
@@ -211,202 +197,208 @@ class open_bgen(object):
         Parameters
         ----------
         index
-            An expression specifying the samples and variants to read. (See `Notes`, below). 
+            An expression specifying the samples and variants to read. (See :ref:`read_notes`, below). 
             Defaults to ``None``, meaning read all.
         dtype : data-type
             The desired data-type for the returned probability array. 
             Defaults to :class:`numpy.float64`. Use :class:`numpy.float32` or :class:`numpy.float16`, when appropriate,
-            to save 50% or 75% of memory. (See `Notes`, below). 
+            to save 50% or 75% of memory. (See :ref:`read_notes`, below). 
         order : {'F','C'}
             The desired memory layout for the returned probability array.
             Defaults to ``F`` (Fortran order, which is variant-major)
         max_combinations : int or ``None``. 
             The number of values to allocate for each probability distribution.
             Defaults to a number just large enough for any data in the file.
-            For unphased diploid data, it will default to 3. For phased diploid data, it will
-            default to 4. Any overallocated space is filled with :class:`numpy.nan`.                
+            For unphased, diploid, biallelic data, it will default to 3. For phased, diploid, biallelic data, it will
+            default to 4. Any overallocated space is filled with :const:`numpy.nan`.
         return_probabilities: bool
             Read and return the probabilities for samples and variants specified.
-            Defaults to ``True``
+            Defaults to ``True``.
         return_missings: bool
             Return a boolean array telling which probabilities are missing.
-            Defaults to ``False``
+            Defaults to ``False``.
         return_ploidies: bool
             Read and return the ploidy for the samples and variants specified.
-            Defaults to ``False``
+            Defaults to ``False``.
 
         Returns
         -------
-        zero to three :class:`numpy.ndarray`, always in this order:
+        zero to three :class:`numpy.ndarray`
+            always in this order:
 
-            * a :class:`numpy.array` of probabilities with `dtype` and shape `(nsamples_out,nvariants_out,max_combinations)`,
-                if `return_probabilities` is ``True`` (the default)
-            * a :class:`numpy.array` of `bool` of shape `(nsamples_out,nvariants_out)`, if `return_missings` is ``True``
-            * a :class:`numpy.array` of `int` of shape `(nsamples_out,nvariants_out)`, if `return_ploidies` is ``True``
+            * a :class:`numpy.ndarray` of probabilities with ``dtype`` and shape `(nsamples_out,nvariants_out,max_combinations)`,
+              if ``return_probabilities`` is ``True`` (the default). Missing data is filled with :const:`numpy.nan`.
+            * a :class:`numpy.ndarray` of ``bool`` of shape `(nsamples_out,nvariants_out)`, if ``return_missings`` is ``True``
+            * a :class:`numpy.ndarray` of ``int`` of shape `(nsamples_out,nvariants_out)`, if ``return_ploidies`` is ``True``
+
+
+        .. _read_notes:
 
         Notes
         ------
 
-        **About index**
-           
-        (Also, see `Examples`, below)
+        * About index
 
-        * To read all genotype data:
+            (Also, see :ref:`read_examples`, below)
 
-            `index` = ``None``
+            * To read all genotype data:
+
+                `index` = ``None``
                
-            Read all samples and variants
+                Read all samples and variants
 
-        * To read selected variants:
+            * To read selected variants:
 
-            `index` = **variant_index**
+                `index` = **variant_index**
                
-            Read all the samples from the variant specified where **variant_index** is of the form:
+                Read all the samples from the variant specified where **variant_index** is of the form:
 
-            * **ivariant** (an ``int``) : Read all samples from the **ivariant** variant. Negative numbers count from the end.
-            * [**ivariant0**, ..., **ivariant_y**] (a ``list of ints``) : Read all samples from the **ivariants** given.
-            * ``slice(`` **variant_start**, **variant_stop**, **variant_step** ``)`` : Read all samples from the slice of variants given.
-            * [**bool0**, ..., **bool_n**] (a ``list of bools``) : Read all samples from the variants where the **bools** are ``True``.
+                * **ivariant** (an ``int``) : Read all samples from the **ivariant** variant. Negative numbers count from the end.
+                * [**ivariant0**, ..., **ivariant_y**] (a ``list of ints``) : Read all samples from the **ivariants** given.
+                * ``slice(`` **variant_start**, **variant_stop**, **variant_step** ``)`` : Read all samples from the slice of variants given.
+                * [**bool0**, ..., **bool_n**] (a ``list of bools``) : Read all samples from the variants where the **bools** are ``True``.
 
-        * Read selected samples:
+            * Read selected samples:
 
-            `index` = (**sample_index**, ``None``)
+                `index` = (**sample_index**, ``None``)
                
-            Read all the variants for the sample's specified, where **sample_index** follows the form of **variant_index**.
+                Read all the variants for the sample's specified, where **sample_index** follows the form of **variant_index**.
 
-        * Read selected samples and variants:
+            * Read selected samples and variants:
 
-            `index` = (**sample_index**, **variant_index** )
+                `index` = (**sample_index**, **variant_index** )
 
-            Read samples and variants specified.
+                Read samples and variants specified.
 
-        **About dtype**
+        * About dtype
 
-        If you know the compression level of your BGEN file, you can sometimes save 50% or 75% on memory with `dtype`.
-        Test with your data to confirm you are not losing any precision. The approximate relationship is:
+            If you know the compression level of your BGEN file, you can sometimes save 50% or 75% on memory with `dtype`.
+            Test with your data to confirm you are not losing any precision. The approximate relationship is:
 
-            * BGEN compression 1 to 10 bits: `dtype` ='float16'
-            * BGEN compression 11 to 23 bits: `dtype` ='float32'
-            * BGEN compression 24 to 32 bits: `dtype` ='float64' (default)
-            
+                * BGEN compression 1 to 10 bits: `dtype` ='float16'
+                * BGEN compression 11 to 23 bits: `dtype` ='float32'
+                * BGEN compression 24 to 32 bits: `dtype` ='float64' (default)
+
+
+        .. _read_examples:
 
         Examples
         --------
 
-        Open the file with ``with`` and read all the genotype data.
+            Open the file with ``with`` and read all the genotype data.
 
-        .. doctest::
+            .. doctest::
 
-            >>> from bgen_reader import example_filepath, open_bgen
-            >>>
-            >>> with open_bgen(example_filepath("haplotypes.bgen"), verbose=False) as bgen_h:
-            ...     print(bgen_h.read()) #real all
-            [[[1. 0. 1. 0.]
-                [0. 1. 1. 0.]
-                [1. 0. 0. 1.]
-                [0. 1. 0. 1.]]
-            <BLANKLINE>
-                [[0. 1. 1. 0.]
-                [1. 0. 0. 1.]
-                [0. 1. 0. 1.]
-                [1. 0. 1. 0.]]
-            <BLANKLINE>
-                [[1. 0. 0. 1.]
-                [0. 1. 0. 1.]
-                [1. 0. 1. 0.]
-                [0. 1. 1. 0.]]
-            <BLANKLINE>
-                [[0. 1. 0. 1.]
-                [1. 0. 1. 0.]
-                [0. 1. 1. 0.]
-                [1. 0. 0. 1.]]]
+                >>> from bgen_reader import example_filepath, open_bgen
+                >>>
+                >>> with open_bgen(example_filepath("haplotypes.bgen"), verbose=False) as bgen_h:
+                ...     print(bgen_h.read()) #real all
+                [[[1. 0. 1. 0.]
+                  [0. 1. 1. 0.]
+                  [1. 0. 0. 1.]
+                  [0. 1. 0. 1.]]
+                <BLANKLINE>
+                 [[0. 1. 1. 0.]
+                  [1. 0. 0. 1.]
+                  [0. 1. 0. 1.]
+                  [1. 0. 1. 0.]]
+                <BLANKLINE>
+                 [[1. 0. 0. 1.]
+                  [0. 1. 0. 1.]
+                  [1. 0. 1. 0.]
+                  [0. 1. 1. 0.]]
+                <BLANKLINE>
+                 [[0. 1. 0. 1.]
+                  [1. 0. 1. 0.]
+                  [0. 1. 1. 0.]
+                  [1. 0. 0. 1.]]]
 
-        **Index Examples**
+        * Index Examples
 
-        Read genotype data for the variant at position 5. Print the shape of the resulting :class:`numpy.array`.
+            Read genotype data for the variant at position 5. Print the shape of the resulting :class:`numpy.ndarray`.
 
-        .. doctest::
+            .. doctest::
 
-            >>> bgen_e = open_bgen(example_filepath("example.bgen"), verbose=False)
-            >>> probs = bgen_e.read(5)
-            >>> print(probs.shape)
-            (500, 1, 3)
+                >>> bgen_e = open_bgen(example_filepath("example.bgen"), verbose=False)
+                >>> probs = bgen_e.read(5)
+                >>> print(probs.shape)
+                (500, 1, 3)
 
-        Read genotype data for the first 5 variants.
+            Read genotype data for the first 5 variants.
 
-        .. doctest::
+            .. doctest::
 
-            >>> probs = bgen_e.read(slice(5))
-            >>> print(probs.shape)
-            (500, 5, 3)
+                >>> probs = bgen_e.read(slice(5))
+                >>> print(probs.shape)
+                (500, 5, 3)
 
-        Read genotype data for variants from position 2 (inclusive) to 5 (exclusive).
+            Read genotype data for variants from position 2 (inclusive) to 5 (exclusive).
 
-        .. doctest::
+            .. doctest::
 
-            >>> probs = bgen_e.read(slice(2,5))
-            >>> print(probs.shape)
-            (500, 3, 3)
+                >>> probs = bgen_e.read(slice(2,5))
+                >>> print(probs.shape)
+                (500, 3, 3)
 
-        Read genotype data for variants starting at position 2.
+            Read genotype data for variants starting at position 2.
 
-        .. doctest::
+            .. doctest::
 
-            >>> probs = bgen_e.read(slice(2,None))
-            >>> print(probs.shape)
-            (500, 197, 3)
+                >>> probs = bgen_e.read(slice(2,None))
+                >>> print(probs.shape)
+                (500, 197, 3)
 
-        Read genotype data for every 10th variant.
+            Read genotype data for every 10th variant.
 
-        .. doctest::
+            .. doctest::
 
-            >>> probs = bgen_e.read(slice(None,None,10))
-            >>> print(probs.shape)
-            (500, 20, 3)
+                >>> probs = bgen_e.read(slice(None,None,10))
+                >>> print(probs.shape)
+                (500, 20, 3)
 
-        Print all chromosomes in the data and then read genotype data all variants in chromosome 1.
+            Print all chromosomes in the data and then read genotype data all variants in chromosome 1.
 
-        .. doctest::
+            .. doctest::
 
-            >>> print(set(bgen_e.chromosomes))
-            {'01'}
-            >>> probs = bgen_e.read(bgen_e.chromosomes=='01')
-            >>> print(probs.shape)
-            (500, 199, 3)
+                >>> print(set(bgen_e.chromosomes))
+                {'01'}
+                >>> probs = bgen_e.read(bgen_e.chromosomes=='01')
+                >>> print(probs.shape)
+                (500, 199, 3)
 
-        Read genotype data for the first sample (across all variants).
+            Read genotype data for the first sample (across all variants).
 
-        .. doctest::
+            .. doctest::
 
-            >>> probs = bgen_e.read((0,None))
-            >>> print(probs.shape)
-            (1, 199, 3)
+                >>> probs = bgen_e.read((0,None))
+                >>> print(probs.shape)
+                (1, 199, 3)
 
-        Read genotype data for samples 10 (inclusive) to 20 (exclusive) and the first 15 variants.
+            Read genotype data for samples 10 (inclusive) to 20 (exclusive) and the first 15 variants.
 
-        .. doctest::
+            .. doctest::
 
-            >>> probs = bgen_e.read((slice(10,20),slice(15)))
-            >>> print(probs.shape)
-            (10, 15, 3)
+                >>> probs = bgen_e.read((slice(10,20),slice(15)))
+                >>> print(probs.shape)
+                (10, 15, 3)
 
-        Read genotype data for the last sample and last variant.
+            Read genotype data for the last sample and last variant.
 
-        .. doctest::
+            .. doctest::
 
-            >>> probs = bgen_e.read((-1,-1))
-            >>> print(probs.shape)
-            (1, 1, 3)
+                >>> probs = bgen_e.read((-1,-1))
+                >>> print(probs.shape)
+                (1, 1, 3)
 
-        **Multiple Return Examples**
+        * Multiple Return Examples
 
-        Read probabilities, missingness, and ploidy. Print all unique ploidies values.
+            Read probabilities, missingness, and ploidy. Print all unique ploidies values.
 
-        .. doctest::
+            .. doctest::
 
-            >>> probs,missing,ploidy = bgen_e.read(return_missings=True,return_ploidies=True)
-            >>> print(np.unique(ploidy))
-            [2]
+                >>> probs,missing,ploidy = bgen_e.read(return_missings=True,return_ploidies=True)
+                >>> print(np.unique(ploidy))
+                [2]
 
             """
         # LATER could allow strings (variant names) and lists of strings
@@ -549,7 +541,10 @@ class open_bgen(object):
     @property
     def max_combinations(self) -> int:
         """
-        The maximum number of values needed for any variant's probability distribution (``int``)
+        The maximum number of values in any variant's probability distribution (``int``).
+
+        For unphased, diploidy, biallelic data, it will be 3. For phased, diploidy, biallelic data it will be 4. In general,
+        it is the maximum value in :attr:`~bgen_reader.open_bgen.ncombinations`.
 
         Example
         --------
@@ -592,7 +587,7 @@ class open_bgen(object):
     @property
     def samples(self) -> List[str]:
         """
-        The sample identifiers (an :class:`numpy.array` of strings)
+        The sample identifiers (a :class:`numpy.ndarray` of ``str``)
 
         Example
         --------
@@ -611,7 +606,7 @@ class open_bgen(object):
     @property
     def ids(self) -> List[str]:
         """
-        The variant identifiers (an :class:`numpy.array` of strings)
+        The variant identifiers (a :class:`numpy.ndarray` of ``str``)
 
         Example
         --------
@@ -630,7 +625,7 @@ class open_bgen(object):
     @property
     def rsids(self) -> List[str]:
         """
-        The variant RS numbers (an :class:`numpy.array` of strings)
+        The variant RS numbers (a :class:`numpy.ndarray` of ``str``)
 
         Example
         --------
@@ -649,7 +644,7 @@ class open_bgen(object):
     @property
     def chromosomes(self) -> List[str]:
         """
-        The chromosome of each variant (an :class:`numpy.array` of strings)
+        The chromosome of each variant (a :class:`numpy.ndarray` of ``str``)
 
         Example
         --------
@@ -668,7 +663,7 @@ class open_bgen(object):
     @property
     def positions(self) -> List[int]:
         """
-        The genetic position of each variant (an :class:`numpy.array` of int)
+        The genetic position of each variant (a :class:`numpy.ndarray` of ``int``)
 
         Example
         --------
@@ -687,7 +682,7 @@ class open_bgen(object):
     @property
     def nalleles(self) -> List[int]:
         """
-        The number of alleles for each variant (an :class:`numpy.array` of int)
+        The number of alleles for each variant (a :class:`numpy.ndarray` of ``int``)
 
         Example
         --------
@@ -706,7 +701,7 @@ class open_bgen(object):
     @property
     def allele_ids(self) -> List[str]:
         """
-        The comma-delimited list of alleles for each variant (an :class:`numpy.array` of strings)
+        The comma-delimited list of alleles for each variant (a :class:`numpy.ndarray` of ``str``)
 
         Example
         --------
@@ -725,7 +720,7 @@ class open_bgen(object):
     @property
     def ncombinations(self) -> List[int]:
         """
-        The number of values needed for each variant's probability distribution (an :class:`numpy.array` of int)
+        The number of values needed for each variant's probability distribution (a :class:`numpy.ndarray` of ``int``)
 
         Example
         --------
@@ -744,7 +739,7 @@ class open_bgen(object):
     @property
     def phased(self) -> List[bool]:
         """
-        ``True`` if and only if this variant is phased (an :class:`numpy.array` of bool)
+        For each variant, ``True`` if and only the variant is phased (a :class:`numpy.ndarray` of bool)
 
         Example
         --------
@@ -900,9 +895,12 @@ class open_bgen(object):
         Notes
         -----
 
-        Better alternatives to :meth:`close` include the ``with`` statement (closes file automatically) and
-        the ``del`` statement (which closes the file and *deletes* the object).
-        (Doing nothing, while not better, is usually fine.)
+        Better alternatives to :meth:`close` include the
+        `with <https://docs.python.org/3/reference/compound_stmts.html#grammar-token-with-stmt>`__
+        statement (closes the file automatically) and the `del
+        <https://docs.python.org/3/reference/simple_stmts.html#grammar-token-del-stmt>`__
+        statement (which closes the file and *deletes* the object).
+        Doing nothing, while not better, is usually fine.
 
         .. doctest::
 
@@ -936,25 +934,33 @@ class open_bgen(object):
 
     def allele_expectation(
         self, index: Optional[Any] = None, return_frequencies: bool = False
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:  #!!!cmk reformat
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """ Allele expectation, frequency, and dosage.
-
-        Compute the expectation of each allele. Also find frequency and dosage.
 
         Parameters
         ----------
             index
-                An expression specifying the samples and variants of interest. (See `Notes` in :meth:`.read` for details.). 
+                An expression specifying the samples and variants of interest. (See :ref:`read_notes` in :meth:`.read` for details.) 
                 Defaults to ``None``, meaning compute for all samples and variants.
+            return_frequencies: bool
+                Return an array telling the allele frequencies.
+                Defaults to ``False``
+
 
         Returns
         -------
-        :class:`numpy.ndarray`
-            Samples-by-variants-by-alleles matrix of allele expectations.
+        one or two :class:`numpy.ndarray`:
+            always in this order
+
+            * Samples-by-variants-by-alleles matrix of allele expectations,
+            * Samples-by-variants-by-alleles matrix of frequencies, if ``return_frequencies`` is ``True``
 
         Note
         ----
         This method supports unphased genotypes only.
+
+
+        .. _allele_expectation_examples:
 
         Examples
         --------
@@ -999,7 +1005,7 @@ class open_bgen(object):
             +----+-------+-------+-------+-------+
 
 
-        If 'return_frequencies' is true, this method will also return the allele frequency.
+        If ``return_frequencies`` is true, this method will also return the allele frequency.
 
         .. doctest::
 
