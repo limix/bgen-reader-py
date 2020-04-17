@@ -1,6 +1,8 @@
 ***********
-Quick-start #cmk tell which one, etc
+Quick-Start
 ***********
+
+ #cmk tell which one, etc
 
 We first download the ``example.bgen``, ``haplotypes.bgen``, and ``complex.bgen`` files:
 
@@ -144,7 +146,7 @@ alleles, as well as phased\ *ness*.
    >>> print(probs)
    [[[1. 0. 0.]]]
    >>> # The 4th individual and 9th variant has ploidy ...
-   >>> probs, ploidy = bgen.read((3,8),return_ploidies=True)
+   >>> probs, ploidy = bgen.read((3,8),max_combinations=bgen.ncombinations[8],return_ploidies=True)
    >>> print(ploidy)
    [[2]]
    >>> # and number of alleles equal to ...
@@ -160,12 +162,12 @@ alleles, as well as phased\ *ness*.
    >>> # we can pick an alternative allele and compute the dosage
    >>> # from allele expectation.
    >>> # If we select the third allele as being the alternative one, we have
-   >>> from bgen_reader import allele_expectation, compute_dosage
    >>> e = bgen.allele_expectation(8)
-   >>> print(compute_dosage(e, 2))#!!!cmk
-   [0. 0. 0. 1.]
+   >>> dosage = e[:,0,2]
+   >>> print(dosage)
+   [0. 0. 0. 1.]cmk
 
-Please, refer to :ref:`Dosage` section for further details.
+Please, refer to :ref:`Dosage` section cmk for further details.
 
 .. |bgen specification| raw:: html
 

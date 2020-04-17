@@ -10,7 +10,7 @@ It supports both unphased genotypes and phased haplotype data with variable
 ploidy and number of alleles. It was designed to provide a compact data
 representation without sacrificing variant access performance.
 
-This python package is a wrapper around the |bgen library|,
+This Python package is a wrapper around the |bgen library|,
 a low-memory footprint reader that efficiently reads bgen files.
 It fully supports the bgen format specifications: 1.2 and 1.3;
 as well as their optional compressed formats.
@@ -20,14 +20,8 @@ as well as their optional compressed formats.
    :caption: Contents:
 
    install
-   quickstart2
-   quickstart
-   open
-   read
-   dosage
-   expectation
-   frequency
-   metafile
+   daskapi
+   numpyapi
    env_variables
 
 Comments and bugs

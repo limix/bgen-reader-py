@@ -16,6 +16,7 @@ from bgen_reader._environment import BGEN_READER_CACHE_HOME
 from bgen_reader.test.write_random import _write_random
 from bgen_reader.test.test_bgen_reader import nowrite_permission, noread_permission
 
+
 def example_filepath2(filename):
     filepath = example_filepath(filename)
     metadata2_path = open_bgen._metadatapath_from_filename(filepath)
@@ -91,7 +92,6 @@ def test_metafile_not_provided_no_permission_to_create(tmp_path):
     with nowrite_permission(path):
         with pytest.warns(UserWarning):
             open_bgen(dst, verbose=False)
-
 
 
 def test_open_bgen_phased_genotype():
@@ -219,7 +219,7 @@ def test_small_random_file(verbose=False):
     )  #!!!cmk99 verbose
 
 
-def random_file_tests(nsamples, nvariants, bits, verbose=False,overwrite=False):
+def random_file_tests(nsamples, nvariants, bits, verbose=False, overwrite=False):
     test_data_folder = BGEN_READER_CACHE_HOME / "test_data"
     filepath = test_data_folder / "{0}x{1}.{2}bits.bgen".format(
         nsamples, nvariants, bits
@@ -480,11 +480,6 @@ def test_read_multiple_returns():
     )
     assert np.allclose(full_ploidy[10:30:2, :][:, [11, 9]], ploidy, equal_nan=False)
 
-def test_rst_examples(): #!!!cmk are all *.rst examples being tested?
-    import doctest
-    doctest.testfile('../../docs/quickstart2.rst')
 
 if __name__ == "__main__":  #!!!cmk99 remove?
-    import doctest
-    doctest.testfile('../../docs/quickstart2.rst')
     pytest.main([__file__])

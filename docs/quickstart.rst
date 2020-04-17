@@ -1,5 +1,5 @@
 ***********
-Quick-start
+Quick-Start
 ***********
 
 We first download the ``example.bgen``, ``haplotypes.bgen``, and ``complex.bgen`` files:
