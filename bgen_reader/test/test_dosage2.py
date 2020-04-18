@@ -36,8 +36,18 @@ def test_dosage1():
         # print(dosage[:5])
         assert_allclose(dosage[:2, 0], [1.9618530841455453, 0.009826655967586362])
 
+def test_error():
+    filepath = example_filepath("complex.bgen")
+    with open_bgen(filepath, verbose=False) as bgen:
+        with pytest.raises(ValueError):
+            e,f = bgen.allele_expectation(return_frequencies=True) #some phased
+        with pytest.raises(ValueError):
+            e,f = bgen.allele_expectation(bgen.phased==False,return_frequencies=True) #different #'s of alleles
+        e,f = bgen.allele_expectation((bgen.phased==False)*(bgen.nalleles==2),return_frequencies=True)
+        assert_allclose(e[-1,-1,:], [1., 3.])
+        assert_allclose(f[-1,:], [5., 3.])
 
-def cmktest_dosage2():
+def test_dosage2():
     import pandas as pd
     import numpy as np
 
@@ -76,7 +86,7 @@ def cmktest_dosage2():
         assert_allclose(df2.iloc[-1, -1], 1.0152583189809832)
         alt_index = f[0, :].argmin()
         alt = alleles_per_variant[0][alt_index]
-        dosage = f[:, 0, alt_index]
+        dosage = e[:,0,alt_index]
         df4 = pd.DataFrame({"sample": bgen.samples, f"alt={alt}": dosage})
         assert_allclose(df4.iloc[-1, -1], 1.0152583189809832)
 

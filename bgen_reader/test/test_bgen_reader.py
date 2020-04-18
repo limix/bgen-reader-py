@@ -219,11 +219,15 @@ def test_bgen_reader_without_metadata():
 
 
 def test_bgen_reader_with_wrong_metadata_file():
+    filepath = example_filepath("example.32bits.bgen")
+    filepath.touch()
+    metafile_filepath = example_filepath("wrong.metadata")
+    metafile_filepath.touch() #make sure that the metafile has a later timestamp (otherwise, it might be re-created)
     with pytest.raises(RuntimeError):
         read_bgen(
-            example_filepath("example.32bits.bgen"),
+            filepath,
             verbose=False,
-            metafile_filepath=example_filepath("wrong.metadata"),
+            metafile_filepath=metafile_filepath
         )
 
 
@@ -351,3 +355,6 @@ def test_bgen_reader_complex_sample_file():
     assert_allclose(ploidy, [1, 2, 2, 2])
     assert_allclose(missing, [0, 0, 0, 0])
     assert_allclose(phased, [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])
+
+if __name__ == "__main__":  #!!!cmk99 remove?
+    pytest.main([__file__])

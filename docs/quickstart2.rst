@@ -178,7 +178,7 @@ alleles, as well as phased\ *ness*.
    >>> e = bgen.allele_expectation(8)
    >>> dosage = e[:,0,2]
    >>> print(dosage)
-   [0. 0. 0. 1.]cmk this should fail a test
+   [0. 0. 0. 1.]
 
 Please, refer to :meth:`bgen_reader.open_bgen.allele_expectation` for further details.
 

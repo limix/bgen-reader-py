@@ -294,7 +294,7 @@ class open_bgen(object):
                 (500, 1, 3)
                 >>> probs = bgen_e.read([5,6,1])  # read the variant indexed by 5, 6, and 1
                 >>> print(probs.shape)
-                (500, 2, 3)
+                (500, 3, 3)
                 >>> probs = bgen_e.read(slice(5)) #read the first 5 variants
                 >>> print(probs.shape)
                 (500, 5, 3)
@@ -708,7 +708,7 @@ class open_bgen(object):
         """
         return self._phased
 
-    def _get_samples(self, sample_file):  #!!!cmk similar code in _reader.py
+    def _get_samples(self, sample_file):  #!!!cmk1 similar code in _reader.py
         if sample_file is None:
             if self._bgen.contain_samples:
                 return self._bgen.read_samples()
@@ -758,17 +758,17 @@ class open_bgen(object):
 
                 #!!!If verbose, should tell how it is going
                 for ipart2 in range(nparts):  # LATER multithread?
-                    #!!!cmk in notebook this message doesn't appear on one line
+                    #LATER in notebook this message doesn't appear on one line
                     updater("step 2: part {0:,} of {1:,}".format(ipart2, nparts))
 
-                    #!!!cmk this code is very similar to other code
+                    #!!!cmk1 this code is very similar to other code
                     partition = lib.bgen_metafile_read_partition(
                         mf._bgen_metafile, ipart2
                     )
                     if partition == ffi.NULL:
                         raise RuntimeError(f"Could not read partition {partition}.")
 
-                    # cmk similar code in _bgen_metafile.py
+                    # cmk1 similar code in _bgen_metafile.py
                     nvariants = lib.bgen_partition_nvariants(partition)
 
                     position = empty(nvariants, dtype=uint32)
@@ -826,7 +826,7 @@ class open_bgen(object):
             self._nalleles = np.concatenate(nalleles_list)
             self._allele_ids = np.array(
                 np.concatenate(allele_ids_list), dtype="str"
-            )  # cmk check that main api doesn't return bytes
+            )  # cmk1 check that main api doesn't return bytes
 
             for i, vaddr0 in enumerate(self._vaddr):
                 if i % 1000 == 0:
@@ -893,7 +893,7 @@ class open_bgen(object):
         Parameters
         ----------
             index
-                An expression specifying the samples and variants of interest. (See :ref:`read_examples` in :meth:`.read` for details.) 
+                An expression specifying the samples and variants of interest. (See :ref:`read_examples` in :meth:`.read` for details.)
                 Defaults to ``None``, meaning compute for all samples and variants.
             return_frequencies: bool
                 Return an array telling the allele frequencies.
@@ -1072,13 +1072,19 @@ class open_bgen(object):
         """
         samples_index, variants_index = self._split_index(index)
         phased_list = self.phased[variants_index]
+        nalleles = self.nalleles[variants_index]
         if any(phased_list):
             raise ValueError(
                 "Allele expectation is define for unphased genotypes only."
-            )  #!!!cmk add error for variable ploidy
+            )
+
+        if len(np.unique(nalleles))!=1:
+            raise ValueError(
+                "Current code requires that all selected variants have the same number of alleles"
+            )
 
         probs, ploidy = self.read(index, return_ploidies=True)
-        nalleles = self.nalleles[variants_index]
+
         outer_expec = []
         for vi in range(probs.shape[1]):
             genotypes = get_genotypes(ploidy[:, vi], nalleles[vi])
@@ -1092,15 +1098,11 @@ class open_bgen(object):
         expec = stack(outer_expec, axis=1)
 
         if return_frequencies:
-            ploidy = expec.shape[-1]
-            freq = expec.sum(0) / ploidy
+            ploidy0 = expec.shape[-1]
+            freq = expec.sum(0) / ploidy0
             return expec, freq
         else:
             return expec
 
     def __del__(self):
         self.__exit__()
-
-
-#!!!cmk check how this works (if at all) with the other parts of the API
-# (Dosage, Expectation, ...)

@@ -2,9 +2,8 @@ import pytest
 from pathlib import Path
 
 
-def test_rst_examples():  #!!!cmk are all *.rst examples being tested?
+def test_rst_examples():
     import doctest
-
     for path in (Path(__file__).parent / "../../docs").glob("*.rst"):
         doctest.testfile(str(path))
 
