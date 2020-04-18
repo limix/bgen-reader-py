@@ -15,8 +15,6 @@ from ._file import (
 from ._genotype import create_genotypes
 from ._metafile import create_metafile
 from ._samples import generate_samples, read_samples_file
-
-
 def read_bgen(
     filepath: Union[str, Path],
     metafile_filepath: Optional[Union[str, Path]] = None,
@@ -111,17 +109,7 @@ def read_bgen(
         create_metafile(filepath, metafile_filepath, verbose)
 
     with bgen_file(filepath) as bgen:
-
-        if samples_filepath is None:
-            if bgen.contain_samples:
-                samples = bgen.read_samples()
-            else:
-                samples = generate_samples(bgen.nsamples)
-        else:
-            samples_filepath = Path(samples_filepath)
-            assert_file_exist(samples_filepath)
-            assert_file_readable(samples_filepath)
-            samples = read_samples_file(samples_filepath, verbose)
+        samples = _get_samples(bgen, samples_filepath, verbose)
 
         with bgen_metafile(metafile_filepath) as metafile:
             variants = metafile.create_variants()
@@ -130,6 +118,17 @@ def read_bgen(
 
     return dict(variants=variants, samples=samples, genotype=genotype)
 
+def _get_samples(bgen, sample_file, verbose):
+    if sample_file is None:
+        if bgen.contain_samples:
+            return bgen.read_samples()
+        else:
+            return generate_samples(bgen.nsamples)
+    else:
+        samples_filepath = Path(sample_file)
+        assert_file_exist(samples_filepath)
+        assert_file_readable(samples_filepath)
+        return read_samples_file(samples_filepath, verbose)
 
 _metafile_nowrite_dir = """\
 You don't have permission to write `{filepath}`. This might prevent speeding-up the reading process

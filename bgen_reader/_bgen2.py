@@ -26,6 +26,7 @@ from ._helper import _log_in_place
 from ._samples import generate_samples, read_samples_file
 from .test.write_random import _write_random
 from ._helper import genotypes_to_allele_counts, get_genotypes
+from ._reader import _get_samples
 
 
 # https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
@@ -132,7 +133,7 @@ class open_bgen(object):
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
 
-        self._samples = np.array(self._get_samples(samples_filepath), dtype="str")
+        self._samples = np.array(_get_samples(self._bgen, samples_filepath, self._verbose), dtype="str")
         self._sample_range = np.arange(len(self._samples), dtype=np.int)
 
         metadata2 = self._metadatapath_from_filename(filepath)
@@ -707,18 +708,6 @@ class open_bgen(object):
 
         """
         return self._phased
-
-    def _get_samples(self, sample_file):  #!!!cmk1 similar code in _reader.py
-        if sample_file is None:
-            if self._bgen.contain_samples:
-                return self._bgen.read_samples()
-            else:
-                return generate_samples(self._bgen.nsamples)
-        else:
-            samples_filepath = Path(sample_file)
-            assert_file_exist(samples_filepath)
-            assert_file_readable(samples_filepath)
-            return read_samples_file(samples_filepath, self._verbose)
 
     @staticmethod
     def _split_index(index):
