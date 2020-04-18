@@ -197,7 +197,7 @@ class open_bgen(object):
         Parameters
         ----------
         index
-            An expression specifying the samples and variants to read. (See :ref:`read_notes`, below). 
+            An expression specifying the samples and variants to read. (See :ref:`read_examples`, below). 
             Defaults to ``None``, meaning read all.
         dtype : data-type
             The desired data-type for the returned probability array. 
@@ -237,47 +237,14 @@ class open_bgen(object):
         Notes
         ------
 
-        * About index
+        * About ``dtype``
 
-            (Also, see :ref:`read_examples`, below)
+            If you know the compression level of your BGEN file, you can sometimes save 50% or 75% on memory with ``dtype``.
+            T(est with your data to confirm you are not losing any precision.) The approximate relationship is:
 
-            * To read all genotype data:
-
-                `index` = ``None``
-               
-                Read all samples and variants
-
-            * To read selected variants:
-
-                `index` = **variant_index**
-               
-                Read all the samples from the variant specified where **variant_index** is of the form:
-
-                * **ivariant** (an ``int``) : Read all samples from the **ivariant** variant. Negative numbers count from the end.
-                * [**ivariant0**, ..., **ivariant_y**] (a ``list of ints``) : Read all samples from the **ivariants** given.
-                * ``slice(`` **variant_start**, **variant_stop**, **variant_step** ``)`` : Read all samples from the slice of variants given.
-                * [**bool0**, ..., **bool_n**] (a ``list of bools``) : Read all samples from the variants where the **bools** are ``True``.
-
-            * Read selected samples:
-
-                `index` = (**sample_index**, ``None``)
-               
-                Read all the variants for the sample's specified, where **sample_index** follows the form of **variant_index**.
-
-            * Read selected samples and variants:
-
-                `index` = (**sample_index**, **variant_index** )
-
-                Read samples and variants specified.
-
-        * About dtype
-
-            If you know the compression level of your BGEN file, you can sometimes save 50% or 75% on memory with `dtype`.
-            Test with your data to confirm you are not losing any precision. The approximate relationship is:
-
-                * BGEN compression 1 to 10 bits: `dtype` ='float16'
-                * BGEN compression 11 to 23 bits: `dtype` ='float32'
-                * BGEN compression 24 to 32 bits: `dtype` ='float64' (default)
+                * BGEN compression 1 to 10 bits: ``dtype`` ='float16'
+                * BGEN compression 11 to 23 bits: ``dtype`` ='float32'
+                * BGEN compression 24 to 32 bits: ``dtype`` ='float64' (default)
 
 
         .. _read_examples:
@@ -285,10 +252,13 @@ class open_bgen(object):
         Examples
         --------
 
-            Open the file with ``with`` and read all the genotype data.
+        * Index Examples
+
+            To read all data in a BGEN file, set ``index`` to ``None``. This is the default.
 
             .. doctest::
 
+                >>> import numpy as np
                 >>> from bgen_reader import example_filepath, open_bgen
                 >>>
                 >>> with open_bgen(example_filepath("haplotypes.bgen"), verbose=False) as bgen_h:
@@ -313,84 +283,66 @@ class open_bgen(object):
                   [0. 1. 1. 0.]
                   [1. 0. 0. 1.]]]
 
-        * Index Examples
-
-            Read genotype data for the variant at position 5. Print the shape of the resulting :class:`numpy.ndarray`.
+            To read selected variants, set ``index`` to an ``int``, a list of ``int``, a :class:`slice`, or a list of ``bool``.
+            Negative integers count from the end of the data.
 
             .. doctest::
 
                 >>> bgen_e = open_bgen(example_filepath("example.bgen"), verbose=False)
-                >>> probs = bgen_e.read(5)
+                >>> probs = bgen_e.read(5)  # read the variant indexed by 5.
+                >>> print(probs.shape)      # print the dimensions of the returned numpy array.
+                (500, 1, 3)
+                >>> probs = bgen_e.read([5,6,1])  # read the variant indexed by 5, 6, and 1
+                >>> print(probs.shape)
+                (500, 2, 3)
+                >>> probs = bgen_e.read(slice(5)) #read the first 5 variants
+                >>> print(probs.shape)
+                (500, 5, 3)
+                >>> probs = bgen_e.read(slice(2,5)) #read variants from 2 (inclusive) to 5 (exclusive)
+                >>> print(probs.shape)
+                (500, 3, 3)
+                >>> probs = bgen_e.read(slice(2,None)) # read variants starting at index 2.
+                >>> print(probs.shape)
+                (500, 197, 3)
+                >>> probs = bgen_e.read(slice(None,None,10)) #read every 10th variant
+                >>> print(probs.shape)
+                (500, 20, 3)
+                >>> print(np.unique(bgen_e.chromosomes)) # print unique chrom values
+                ['01']
+                >>> probs = bgen_e.read(bgen_e.chromosomes=='01') # read all variants in chrom 1
+                >>> print(probs.shape)
+                (500, 199, 3)
+                >>> probs = bgen_e.read(-1) # read the last variant
                 >>> print(probs.shape)
                 (500, 1, 3)
 
-            Read genotype data for the first 5 variants.
+            To read selected samples, set ``index`` to a tuple of the form ``(sample_index,None)``, where ``sample index`` follows the form
+            of ``variant index``, above.
 
             .. doctest::
 
-                >>> probs = bgen_e.read(slice(5))
-                >>> print(probs.shape)
-                (500, 5, 3)
-
-            Read genotype data for variants from position 2 (inclusive) to 5 (exclusive).
-
-            .. doctest::
-
-                >>> probs = bgen_e.read(slice(2,5))
-                >>> print(probs.shape)
-                (500, 3, 3)
-
-            Read genotype data for variants starting at position 2.
-
-            .. doctest::
-
-                >>> probs = bgen_e.read(slice(2,None))
-                >>> print(probs.shape)
-                (500, 197, 3)
-
-            Read genotype data for every 10th variant.
-
-            .. doctest::
-
-                >>> probs = bgen_e.read(slice(None,None,10))
-                >>> print(probs.shape)
-                (500, 20, 3)
-
-            Print all chromosomes in the data and then read genotype data all variants in chromosome 1.
-
-            .. doctest::
-
-                >>> print(set(bgen_e.chromosomes))
-                {'01'}
-                >>> probs = bgen_e.read(bgen_e.chromosomes=='01')
-                >>> print(probs.shape)
-                (500, 199, 3)
-
-            Read genotype data for the first sample (across all variants).
-
-            .. doctest::
-
-                >>> probs = bgen_e.read((0,None))
+                >>> probs = bgen_e.read((0,None)) # Read 1st sample (across all variants)
                 >>> print(probs.shape)
                 (1, 199, 3)
+                >>> probs = bgen_e.read((slice(None,None,10),None)) # Read every 10th sample
+                >>> print(probs.shape)
+                (50, 199, 3)
 
-            Read genotype data for samples 10 (inclusive) to 20 (exclusive) and the first 15 variants.
+            To read selected samples and selected variants, set ``index`` to a tuple of the form ``(sample_index,variant_index)``, 
+            where ``sample index`` and ``variant_index`` follow the forms above.
 
             .. doctest::
 
+                >>> # Read samples 10 (inclusive) to 20 (exclusive) and the first 15 variants.
                 >>> probs = bgen_e.read((slice(10,20),slice(15)))
                 >>> print(probs.shape)
                 (10, 15, 3)
-
-            Read genotype data for the last sample and last variant.
-
-            .. doctest::
-
-                >>> probs = bgen_e.read((-1,-1))
+                >>> #read last and 2nd-to-last sample and the last variant
+                >>> probs = bgen_e.read(([-1,-2],-1))
                 >>> print(probs.shape)
-                (1, 1, 3)
+                (2, 1, 3)
 
-        * Multiple Return Examples
+        * Multiple Return Example
 
             Read probabilities, missingness, and ploidy. Print all unique ploidies values.
 
@@ -563,7 +515,8 @@ class open_bgen(object):
     @property
     def shape(self) -> (int, int, int):
         """
-        The tuple (nsamples, nvariants, max_combinations)
+        The tuple (:attr:`~bgen_reader.open_bgen.nsamples`, :attr:`~bgen_reader.open_bgen.nvariants`,
+        :attr:`~bgen_reader.open_bgen.max_combinations`)
 
         Example
         --------
@@ -940,7 +893,7 @@ class open_bgen(object):
         Parameters
         ----------
             index
-                An expression specifying the samples and variants of interest. (See :ref:`read_notes` in :meth:`.read` for details.) 
+                An expression specifying the samples and variants of interest. (See :ref:`read_examples` in :meth:`.read` for details.) 
                 Defaults to ``None``, meaning compute for all samples and variants.
             return_frequencies: bool
                 Return an array telling the allele frequencies.

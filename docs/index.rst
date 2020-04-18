@@ -9,14 +9,21 @@ Bgen-reader's documentation
 It supports both unphased genotypes and phased haplotype data with variable
 ploidy and number of alleles. It was designed to provide a compact data
 representation without sacrificing variant access performance.
-
 This Python package is a wrapper around the |bgen library|,
 a low-memory footprint reader that efficiently reads bgen files.
 It fully supports the bgen format specifications: 1.2 and 1.3;
 as well as their optional compressed formats.
 
+We offer two APIs (interfaces to the library):
+
+    * The :ref:`daskapi` API offers compatibility with
+      previous version of this library, a dataframe-based interface,
+      and good sustained reading speeds (about 250,000 distributions per second).
+    * The :ref:`numpyapi` API offers an array-based interface and faster sustained reading speeds
+      (about 4 million distributions per second). Both versions are memory efficient.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    install

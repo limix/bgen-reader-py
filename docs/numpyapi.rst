@@ -1,11 +1,11 @@
-******************
-NumPy-Inspired API
-******************
+.. _numpyapi:
 
-About numpyapi cmk
+************************
+NumPy-Inspired API (new)
+************************
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     quickstart2
     open

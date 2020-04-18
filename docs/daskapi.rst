@@ -1,8 +1,8 @@
-******************
-Dask-Inspired API
-******************
+.. _daskapi:
 
-About daskyapi cmk
+****************************
+Dask-Inspired API (original)
+****************************
 
 .. toctree::
    :maxdepth: 2

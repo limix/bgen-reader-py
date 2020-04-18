@@ -4,8 +4,6 @@
 Quick Start
 ***********
 
- #cmk tell which one, etc
-
 We first download the ``example.bgen``, ``haplotypes.bgen``, and ``complex.bgen`` files:
 
 .. code-block:: python
@@ -18,13 +16,12 @@ We first download the ``example.bgen``, ``haplotypes.bgen``, and ``complex.bgen`
 
 This software reads the files the same way, but they present
 different levels of genotype complexity.
-The variant loci of the genotype stored in ``example.bgen`` have the same ploidy equal
-to two and are all unphased.
+The variant loci of the genotype stored in ``example.bgen`` have the ploidy two and are all unphased.
 The ``haplotypes.bgen`` file stores a phased, diploid genotype.
-Both genotypes stored in ``example.bgen`` and ``haplotypes.bgen`` have the same number
-of alleles for each loci.
-The ``complex.bgen`` file, on the other hand, have different ploidy levels and number of
-alleles across different variant loci.
+Both the genotypes stored in ``example.bgen`` and ``haplotypes.bgen`` are biallelic, that is with two alleles
+at each loci.
+The ``complex.bgen`` file, on the other hand, has varying ploidy levels and alleles numbers
+across the variant loci.
 
 
 .. _unphased_genotype2:
@@ -69,23 +66,28 @@ Let's read the ``example.bgen`` file and print out some information.
     [[0.91949463 0.05206298 0.02844239]]
    <BLANKLINE>
     [[0.00244141 0.98410029 0.0134583 ]]]
-   >>> # The above matrix is of size samples-by-variants-by-(combination-of-alleles).
+   >>> # The above matrix is of size samples-by-1-variants-by-(combination-of-alleles).
    >>> print(probs.shape)
    (500, 1, 3)
    >>>
    >>> # Read the probabilities of all the samples and all variants
    >>> probs = bgen.read()
+   >>> # The matrix is of size samples-by-variants-(combination-of-alleles).
    >>> print(probs.shape)
    (500, 199, 3)
    >>>
-   >>> # Read the probabilities of the first 5 samples and variants 15 to 25
+   >>> # Read the probabilities of the first 5 samples and
+   >>> #variants 15 (inclusive) to 25 (exclusive)
    >>> probs = bgen.read((slice(5),slice(15,25)))
    >>> print(probs.shape)
    (5, 10, 3)
+   >>>
+   >>> del bgen  #close the file and delete the open_bgen object
 
 The 3rd dimension of the probability matrix of a given variant depends on the
 number of alleles, the ploidy, and whether the locus is phased or unphased.
-Please refer to |bgen specification| for a detailed description.
+See :attr:`bgen_reader.open_bgen.ncombinations`. For details, see the
+|bgen specification|.
 
 .. _phased_genotype2:
 
@@ -126,6 +128,9 @@ Phased genotype
    >>> # the first allele
    >>> print(alleles[0])
    A
+   >>>
+   >>> del bgen  #close the file and delete the open_bgen object
+
 
 Please refer to |bgen specification| for a detailed description.
 
@@ -135,7 +140,7 @@ Complex file
 ============
 
 The bgen file format allows the storage of very heterogeneous genetic data.
-In the ``complex.bgen`` file we have variants with different ploidy and number of
+In the ``complex.bgen`` file we have variants with different ploidy and numbers of
 alleles, as well as phased\ *ness*.
 
 .. doctest::
@@ -173,9 +178,9 @@ alleles, as well as phased\ *ness*.
    >>> e = bgen.allele_expectation(8)
    >>> dosage = e[:,0,2]
    >>> print(dosage)
-   [0. 0. 0. 1.]cmk
+   [0. 0. 0. 1.]cmk this should fail a test
 
-Please, refer to :ref:`Dosage` section cmk for further details.
+Please, refer to :meth:`bgen_reader.open_bgen.allele_expectation` for further details.
 
 .. |bgen specification| raw:: html
 
