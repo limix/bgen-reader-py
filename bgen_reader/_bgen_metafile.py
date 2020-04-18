@@ -32,7 +32,7 @@ class bgen_metafile:
     def partition_size(self) -> int:
         return _ceildiv(self.nvariants, self.npartitions)
 
-    def read_partition(self, index: int):
+    def _inner_read_partition(self, index: int):
         # start = time()
         partition = lib.bgen_metafile_read_partition(self._bgen_metafile, index)
         # print(f"Elapsed: {time() - start} for bgen_metafile_read_partition")
@@ -87,7 +87,12 @@ class bgen_metafile:
             allele_ids_max_len[0],
         )
         # print(f"Elapsed: {time() - start} read_partition2")
+        lib.bgen_partition_destroy(partition)
 
+        return nvariants, vid, rsid, chrom, position, nalleles, allele_ids, offset
+
+    def read_partition(self, index: int):
+        nvariants, vid, rsid, chrom, position, nalleles, allele_ids, offset = self._inner_read_partition(index)
         # start = time()
         data = OrderedDict(
             [
@@ -110,9 +115,6 @@ class bgen_metafile:
         index_offset = self.partition_size * index
         df.index = range(index_offset, index_offset + nvariants)
         # print(f"Elapsed: {time() - start} for final arrangements")
-
-        lib.bgen_partition_destroy(partition)
-
         return df
 
     def create_variants(self):

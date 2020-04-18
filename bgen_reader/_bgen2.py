@@ -750,51 +750,7 @@ class open_bgen(object):
                     #LATER in notebook this message doesn't appear on one line
                     updater("step 2: part {0:,} of {1:,}".format(ipart2, nparts))
 
-                    #!!!cmk1 this code is very similar to other code
-                    partition = lib.bgen_metafile_read_partition(
-                        mf._bgen_metafile, ipart2
-                    )
-                    if partition == ffi.NULL:
-                        raise RuntimeError(f"Could not read partition {partition}.")
-
-                    # cmk1 similar code in _bgen_metafile.py
-                    nvariants = lib.bgen_partition_nvariants(partition)
-
-                    position = empty(nvariants, dtype=uint32)
-                    nalleles = empty(nvariants, dtype=uint16)
-                    offset = empty(nvariants, dtype=uint64)
-                    vid_max_len = ffi.new("uint32_t[]", 1)
-                    rsid_max_len = ffi.new("uint32_t[]", 1)
-                    chrom_max_len = ffi.new("uint32_t[]", 1)
-                    allele_ids_max_len = ffi.new("uint32_t[]", 1)
-                    position_ptr = ffi.cast("uint32_t *", ffi.from_buffer(position))
-                    nalleles_ptr = ffi.cast("uint16_t *", ffi.from_buffer(nalleles))
-                    offset_ptr = ffi.cast("uint64_t *", ffi.from_buffer(offset))
-                    lib.read_partition_part1(
-                        partition,
-                        position_ptr,
-                        nalleles_ptr,
-                        offset_ptr,
-                        vid_max_len,
-                        rsid_max_len,
-                        chrom_max_len,
-                        allele_ids_max_len,
-                    )
-                    vid = zeros(nvariants, dtype=f"S{vid_max_len[0]}")
-                    rsid = zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
-                    chrom = zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
-                    allele_ids = zeros(nvariants, dtype=f"S{allele_ids_max_len[0]}")
-                    lib.read_partition_part2(
-                        partition,
-                        ffi.from_buffer("char[]", vid),
-                        vid_max_len[0],
-                        ffi.from_buffer("char[]", rsid),
-                        rsid_max_len[0],
-                        ffi.from_buffer("char[]", chrom),
-                        chrom_max_len[0],
-                        ffi.from_buffer("char[]", allele_ids),
-                        allele_ids_max_len[0],
-                    )
+                    nvariants, vid, rsid, chrom, position, nalleles, allele_ids, offset = mf._inner_read_partition(ipart2)
 
                     id_list.append(vid)
                     rsid_list.append(rsid)
