@@ -215,8 +215,8 @@ def test_bigfile(verbose=False):
 
 def test_small_random_file(verbose=False):
     random_file_tests(
-        nsamples=25, nvariants=1000, bits=8, verbose=True, overwrite=True
-    )  #!!!cmk99 verbose
+        nsamples=25, nvariants=1000, bits=8, verbose=verbose, overwrite=True
+    )
 
 
 def random_file_tests(nsamples, nvariants, bits, verbose=False, overwrite=False):
@@ -231,8 +231,8 @@ def random_file_tests(nsamples, nvariants, bits, verbose=False, overwrite=False)
             nvariants,
             bits=bits,
             verbose=verbose,
-            cleanup_temp_files=False,
-        )  #!!!cmk99 change to cleanup_temp_files=True (the default)
+            cleanup_temp_files=True,
+        )
     metadata2_path = open_bgen._metadatapath_from_filename(filepath)
     if metadata2_path.exists():
         metadata2_path.unlink()
@@ -481,5 +481,5 @@ def test_read_multiple_returns():
     assert np.allclose(full_ploidy[10:30:2, :][:, [11, 9]], ploidy, equal_nan=False)
 
 
-if __name__ == "__main__":  #!!!cmk99 remove?
+if __name__ == "__main__":
     pytest.main([__file__])

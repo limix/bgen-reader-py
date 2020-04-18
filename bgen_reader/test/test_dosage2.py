@@ -91,5 +91,5 @@ def test_dosage2():
         assert_allclose(df4.iloc[-1, -1], 1.0152583189809832)
 
 
-if __name__ == "__main__":  #!!!cmk99 remove?
+if __name__ == "__main__":
     pytest.main([__file__])

@@ -8,5 +8,5 @@ def test_rst_examples():
         doctest.testfile(str(path))
 
 
-if __name__ == "__main__":  #!!!cmk99 remove?
+if __name__ == "__main__":
     pytest.main([__file__])

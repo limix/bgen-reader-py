@@ -771,7 +771,7 @@ class open_bgen(object):
             self._nalleles = np.concatenate(nalleles_list)
             self._allele_ids = np.array(
                 np.concatenate(allele_ids_list), dtype="str"
-            )  # cmk1 check that main api doesn't return bytes
+            )
 
             for i, vaddr0 in enumerate(self._vaddr):
                 if i % 1000 == 0:

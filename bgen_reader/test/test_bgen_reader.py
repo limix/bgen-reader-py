@@ -356,5 +356,5 @@ def test_bgen_reader_complex_sample_file():
     assert_allclose(missing, [0, 0, 0, 0])
     assert_allclose(phased, [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])
 
-if __name__ == "__main__":  #!!!cmk99 remove?
+if __name__ == "__main__":
     pytest.main([__file__])
