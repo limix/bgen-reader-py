@@ -84,8 +84,11 @@ class open_bgen(object):
             >>> bgen = open_bgen(file, verbose=False)
             >>> print(bgen.read(2))
             [[[1. 0. 0. 1.]]
+            <BLANKLINE>
              [[0. 1. 0. 1.]]
+            <BLANKLINE>
              [[1. 0. 1. 0.]]
+            <BLANKLINE>
              [[0. 1. 1. 0.]]]
             >>> del bgen                 # close and delete object
 
@@ -547,7 +550,7 @@ class open_bgen(object):
             >>> file = example_filepath("haplotypes.bgen")
             >>> with open_bgen(file, verbose=False) as bgen:
             ...     print(bgen.samples)
-             ['sample_0' 'sample_1' 'sample_2' 'sample_3']
+            ['sample_0' 'sample_1' 'sample_2' 'sample_3']
 
         """
         return self._samples
@@ -680,7 +683,7 @@ class open_bgen(object):
             >>> file = example_filepath("haplotypes.bgen")
             >>> with open_bgen(file, verbose=False) as bgen:
             ...     print(bgen.ncombinations)
-             [4 4 4 4]
+            [4 4 4 4]
 
         """
         return self._ncombinations
@@ -808,8 +811,11 @@ class open_bgen(object):
             >>> bgen = open_bgen(file, verbose=False)
             >>> print(bgen.read(2))
             [[[1. 0. 0. 1.]]
+            <BLANKLINE>
              [[0. 1. 0. 1.]]
+            <BLANKLINE>
              [[1. 0. 1. 0.]]
+            <BLANKLINE>
              [[0. 1. 1. 0.]]]
             >>> bgen.close()     #'del bgen' is better.
 
@@ -921,7 +927,7 @@ class open_bgen(object):
             >>> print(alleles_per_variant[0][1] + ": {}".format(f[0,1]))
             G: 270.7689678118956
             >>> print(bgen.ids[variant_index][0],bgen.rsids[variant_index][0])
-            SNPID_6  RSID_6
+            SNPID_6 RSID_6
 
         To find dosage, just select the column of interest from the expectation.
 
