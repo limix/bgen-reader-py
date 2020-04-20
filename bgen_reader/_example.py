@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from ._environment import BGEN_READER_CACHE_HOME
 from ._file import file_hash
 
