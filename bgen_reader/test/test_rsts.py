@@ -4,6 +4,7 @@ from pathlib import Path
 
 def test_rst_examples():
     import doctest
+
     for path in (Path(__file__).parent / "../../docs").glob("*.rst"):
         doctest.testfile(str(path))
 

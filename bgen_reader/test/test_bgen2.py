@@ -1,14 +1,11 @@
 import os
 import platform
-from contextlib import contextmanager
-from pathlib import Path
 from shutil import copyfile
 
 import numpy as np
 import pytest
 from numpy import array, array_equal, isnan
 from numpy.testing import assert_allclose, assert_equal
-from pandas import Series
 
 from bgen_reader import open_bgen
 from bgen_reader import example_filepath
@@ -351,11 +348,6 @@ def test_close_del_with():
         pass
     with pytest.raises(ValueError):
         bgen2.read()
-
-    bgen2 = open_bgen(filepath, verbose=False)
-    del bgen2
-    with pytest.raises(Exception):
-        bgen2.samples
 
     bgen2 = open_bgen(filepath, verbose=False)
     bgen2.close()

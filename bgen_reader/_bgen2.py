@@ -1,16 +1,11 @@
-import datetime
 import math
 import os
 import shutil
-import sys
-import time
-from contextlib import contextmanager
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
-from numpy import empty, uint16, uint32, uint64, zeros
 from numpy import asarray, stack
 
 from ._bgen_file import bgen_file
@@ -19,12 +14,8 @@ from ._ffi import ffi, lib
 from ._file import (
     assert_file_exist,
     assert_file_readable,
-    is_file_writable,
-    path_to_filename,
 )
 from ._helper import _log_in_place
-from ._samples import generate_samples, read_samples_file
-from .test.write_random import _write_random
 from ._helper import genotypes_to_allele_counts, get_genotypes
 from ._reader import _get_samples
 
@@ -50,7 +41,7 @@ class open_bgen(object):
 
 
     .. _open_examples:
-    
+
     Examples
     --------
         With the `with <https://docs.python.org/3/reference/compound_stmts.html#grammar-token-with-stmt>`__ statement, list :attr:`samples` and variant :attr:`ids`, then :meth:`read` the whole file.
@@ -133,10 +124,14 @@ class open_bgen(object):
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
 
-        self._samples = np.array(_get_samples(self._bgen, samples_filepath, self._verbose), dtype="str")
+        self._samples = np.array(
+            _get_samples(self._bgen, samples_filepath, self._verbose), dtype="str"
+        )
         self._sample_range = np.arange(len(self._samples), dtype=np.int)
 
-        metadata2 = self._metadatapath_from_filename(filepath)
+        metadata2 = self._metadatapath_from_filename(
+            filepath
+        )  # LATER could make a version of this method public
         if metadata2.exists() and os.path.getmtime(metadata2) < os.path.getmtime(
             filepath
         ):
@@ -198,16 +193,16 @@ class open_bgen(object):
         Parameters
         ----------
         index
-            An expression specifying the samples and variants to read. (See :ref:`read_examples`, below). 
+            An expression specifying the samples and variants to read. (See :ref:`read_examples`, below).
             Defaults to ``None``, meaning read all.
         dtype : data-type
-            The desired data-type for the returned probability array. 
+            The desired data-type for the returned probability array.
             Defaults to :class:`numpy.float64`. Use :class:`numpy.float32` or :class:`numpy.float16`, when appropriate,
-            to save 50% or 75% of memory. (See :ref:`read_notes`, below). 
+            to save 50% or 75% of memory. (See :ref:`read_notes`, below).
         order : {'F','C'}
             The desired memory layout for the returned probability array.
             Defaults to ``F`` (Fortran order, which is variant-major)
-        max_combinations : int or ``None``. 
+        max_combinations : int or ``None``.
             The number of values to allocate for each probability distribution.
             Defaults to a number just large enough for any data in the file.
             For unphased, diploid, biallelic data, it will default to 3. For phased, diploid, biallelic data, it will
@@ -329,7 +324,7 @@ class open_bgen(object):
                 >>> print(probs.shape)
                 (50, 199, 3)
 
-            To read selected samples and selected variants, set ``index`` to a tuple of the form ``(sample_index,variant_index)``, 
+            To read selected samples and selected variants, set ``index`` to a tuple of the form ``(sample_index,variant_index)``,
             where ``sample index`` and ``variant_index`` follow the forms above.
 
             .. doctest::
@@ -725,7 +720,7 @@ class open_bgen(object):
             index = index.__index__()  # (see
             # https://stackoverflow.com/questions/3501382/checking-whether-a-variable-is-an-integer-or-not)
             return [index]
-        except:
+        except AttributeError:
             pass
         return index
 
@@ -745,12 +740,20 @@ class open_bgen(object):
                     phased_list,
                 ) = ([], [], [], [], [], [], [], [], [])
 
-                #!!!If verbose, should tell how it is going
                 for ipart2 in range(nparts):  # LATER multithread?
-                    #LATER in notebook this message doesn't appear on one line
+                    # LATER in notebook this message doesn't appear on one line
                     updater("step 2: part {0:,} of {1:,}".format(ipart2, nparts))
 
-                    nvariants, vid, rsid, chrom, position, nalleles, allele_ids, offset = mf._inner_read_partition(ipart2)
+                    (
+                        nvariants,
+                        vid,
+                        rsid,
+                        chrom,
+                        position,
+                        nalleles,
+                        allele_ids,
+                        offset,
+                    ) = mf._inner_read_partition(ipart2)
 
                     id_list.append(vid)
                     rsid_list.append(rsid)
@@ -769,9 +772,7 @@ class open_bgen(object):
             self._chromosomes = np.array(np.concatenate(chrom_list), dtype="str")
             self._positions = np.concatenate(position_list)
             self._nalleles = np.concatenate(nalleles_list)
-            self._allele_ids = np.array(
-                np.concatenate(allele_ids_list), dtype="str"
-            )
+            self._allele_ids = np.array(np.concatenate(allele_ids_list), dtype="str")
 
             for i, vaddr0 in enumerate(self._vaddr):
                 if i % 1000 == 0:
@@ -942,7 +943,7 @@ class open_bgen(object):
             >>> alt_allele_index = 1
             >>> dosage = e[...,1]
             >>>
-            >>> # Print the dosage for only the first five samples 
+            >>> # Print the dosage for only the first five samples
             >>> # and the one (and only) variant
             >>> print(dosage[:5,0])
             [1.96185308 0.00982666 0.01745552 1.00347899 1.01153563]
@@ -973,7 +974,7 @@ class open_bgen(object):
             498  sample_499  0.01266  0.01154  0.97580
             499  sample_500  0.00021  0.98431  0.01547
             <BLANKLINE>
-            [500 rows x 4 columns] 
+            [500 rows x 4 columns]
             >>> alleles_per_variant = [allele_ids.split(',') for allele_ids in bgen.allele_ids[variant_index]]
             >>> e,f = bgen.allele_expectation(variant_index,return_frequencies=True)
             >>> df2 = pd.DataFrame({'sample':bgen.samples,alleles_per_variant[0][0]:e[:,0,0],alleles_per_variant[0][1]:e[:,0,1]})
@@ -1023,7 +1024,7 @@ class open_bgen(object):
                 "Allele expectation is define for unphased genotypes only."
             )
 
-        if len(np.unique(nalleles))!=1:
+        if len(np.unique(nalleles)) != 1:
             raise ValueError(
                 "Current code requires that all selected variants have the same number of alleles"
             )
