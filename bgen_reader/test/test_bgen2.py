@@ -210,6 +210,7 @@ def test_bigfile(verbose=False):
     random_file_tests(nsamples=2500, nvariants=500 * 1000, bits=16)
 
 
+@pytest.mark.slow  # Skipping this one by default because it requires the QCTOOL
 def test_small_random_file(verbose=False):
     random_file_tests(
         nsamples=25, nvariants=1000, bits=8, verbose=verbose, overwrite=True
