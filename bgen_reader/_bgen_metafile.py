@@ -92,7 +92,16 @@ class bgen_metafile:
         return nvariants, vid, rsid, chrom, position, nalleles, allele_ids, offset
 
     def read_partition(self, index: int):
-        nvariants, vid, rsid, chrom, position, nalleles, allele_ids, offset = self._inner_read_partition(index)
+        (
+            nvariants,
+            vid,
+            rsid,
+            chrom,
+            position,
+            nalleles,
+            allele_ids,
+            offset,
+        ) = self._inner_read_partition(index)
         # start = time()
         data = OrderedDict(
             [
