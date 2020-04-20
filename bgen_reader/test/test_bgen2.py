@@ -87,7 +87,7 @@ def test_metafile_not_provided_no_permission_to_create(tmp_path):
     copyfile(src, dst)
     path = os.path.dirname(dst)
     with nowrite_permission(path):
-        with pytest.warns(UserWarning):
+        with pytest.raises(PermissionError):
             open_bgen(dst, verbose=False)
 
 
