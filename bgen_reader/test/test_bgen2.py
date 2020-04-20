@@ -204,12 +204,18 @@ def test_to_improve_coverage():
     assert os.path.getmtime(metadata2) >= os.path.getmtime(filepath)
 
 
+@pytest.mark.skipif(
+    "QCTOOLPATH" not in os.environ, reason="This test requires external QCTOOL"
+)
 @pytest.mark.slow  # It takes hours to generate data locally.  After that, it takes a few minutes
 # to run.
 def test_bigfile(verbose=False):
     random_file_tests(nsamples=2500, nvariants=500 * 1000, bits=16)
 
 
+@pytest.mark.skipif(
+    "QCTOOLPATH" not in os.environ, reason="This test requires external QCTOOL"
+)
 @pytest.mark.slow  # Skipping this one by default because it requires the QCTOOL
 def test_small_random_file(verbose=False):
     random_file_tests(

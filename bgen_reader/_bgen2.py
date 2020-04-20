@@ -103,7 +103,6 @@ class open_bgen(object):
             <BLANKLINE>
              [[1. 0. 1. 0.]
               [0. 1. 1. 0.]]]
-            <BLANKLINE>
             >>> print(bgen.read((0,1)))
             [[[0. 1. 1. 0.]]]
             >>> del bgen                 # close and delete object
@@ -999,7 +998,7 @@ class open_bgen(object):
             [500 rows x 3 columns]
             >>> df3 = pd.DataFrame({'allele':alleles_per_variant[0],bgen.rsids[variant_index][0]:f[0,:]})
             >>> print(df3)
-            allele    RSID_5
+              allele    RSID_5
             0      A 305.97218
             1      G 194.02782
             >>> alt_index = f[0,:].argmin()
