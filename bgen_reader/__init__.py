@@ -14,7 +14,8 @@ allele_frequency    Compute allele frequency from its expectation.
 compute_dosage      Compute dosage from allele expectation.
 create_metafile     Create metafile.
 example_filepath    Get file path to a file example.
-read_bgen           Read a given BGEN file.
+read_bgen           Read a given BGEN file (original Dask-inspired API).
+open_bgen           Read a given BGEN file (new NumPy-inspired API).
 test                Verify this package's integrity.
 
 Documentation can be found at <https://github.com/limix/bgen-reader-py>.
@@ -48,5 +49,6 @@ __all__ = [
     "create_metafile",
     "example_filepath",
     "read_bgen",
+    "open_bgen",
     "test",
 ]

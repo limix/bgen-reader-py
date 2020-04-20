@@ -207,6 +207,7 @@ def test_bgen_reader_variants_info():
     g = bgen["genotype"][1].compute()["probs"]
     assert_allclose(g[2, :], b)
 
+
 def test_bgen_reader_without_metadata():
     filepath = example_filepath("example.32bits.bgen")
     bgen = read_bgen(filepath, verbose=False)
@@ -222,13 +223,9 @@ def test_bgen_reader_with_wrong_metadata_file():
     filepath = example_filepath("example.32bits.bgen")
     filepath.touch()
     metafile_filepath = example_filepath("wrong.metadata")
-    metafile_filepath.touch() #make sure that the metafile has a later timestamp (otherwise, it might be re-created)
+    metafile_filepath.touch()  # make sure that the metafile has a later timestamp (otherwise, it might be re-created)
     with pytest.raises(RuntimeError):
-        read_bgen(
-            filepath,
-            verbose=False,
-            metafile_filepath=metafile_filepath
-        )
+        read_bgen(filepath, verbose=False, metafile_filepath=metafile_filepath)
 
 
 def test_bgen_reader_with_nonexistent_metadata_file():
@@ -355,6 +352,7 @@ def test_bgen_reader_complex_sample_file():
     assert_allclose(ploidy, [1, 2, 2, 2])
     assert_allclose(missing, [0, 0, 0, 0])
     assert_allclose(phased, [0, 1, 1, 0, 1, 1, 1, 1, 0, 0])
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
