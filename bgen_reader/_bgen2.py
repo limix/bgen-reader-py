@@ -720,7 +720,7 @@ class open_bgen(object):
             index = index.__index__()  # (see
             # https://stackoverflow.com/questions/3501382/checking-whether-a-variable-is-an-integer-or-not)
             return [index]
-        except AttributeError:
+        except Exception:
             pass
         return index
 
