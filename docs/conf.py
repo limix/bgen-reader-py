@@ -42,7 +42,7 @@ autodoc_mock_imports = ["_tkinter"]
 autosummary_generate = True
 napoleon_numpy_docstring = True
 templates_path = ["_templates"]
-autosectionlabel_prefix_document = False
+autosectionlabel_prefix_document = True
 
 source_suffix = ".rst"
 

@@ -113,3 +113,4 @@ ENV/
 /bgen_reader/_example
 /.vscode
 /bgen_reader/_bgen2_main.py
+/bgen_reader/libzstd.dll
