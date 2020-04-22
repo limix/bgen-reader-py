@@ -50,10 +50,13 @@ def _log_in_place(name, verbose, time_lambda=time.time, show_log_diffs=False):
     every_printed = [False]  # Don't print the final newline if nothing is ever printed
 
     if not verbose:
+
         def do_nothing(message):
             pass
+
         yield do_nothing
     else:
+
         def writer(message):
             time_str = str(datetime.timedelta(seconds=time_lambda() - t_wait))
             if "." in time_str:
