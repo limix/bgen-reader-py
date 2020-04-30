@@ -105,15 +105,6 @@ deploy:
       repo: limix/bgen-reader-py
       branch: master
       condition: $TRAVIS_OS_NAME = linux
-  - provider: s3
-    skip_cleanup: true
-    access_key_id: AKIAIJGTUJPG2US6OIOQ
-    secret_access_key: $AWS_SECRET_KEY
-    bucket: "traviscibucket"
-    upload_dir: $TRAVIS_REPO_SLUG/$TRAVIS_BRANCH/$TRAVIS_BUILD_NUMBER.$TRAVIS_COMMIT/$TRAVIS_OS_NAME
-    local_dir: $TRAVIS_BUILD_DIR/dist
-    on:
-      branch: bgen2api
   - provider: script
     skip_cleanup: true
     script: bash -c "ls -las"
