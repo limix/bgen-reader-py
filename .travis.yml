@@ -86,7 +86,7 @@ after_success:
       python3 -m pip install twine -U
       python3 -m twine upload --skip-existing wheelhouse/*
     fi
-  - git clean -xdfq
+  #cmk git clean -xdfq
 notifications:
   email:
     recipients:
@@ -94,6 +94,18 @@ notifications:
     on_success: never
     on_failure: always
 deploy:
+  - provider: pypi
+    user: dhorta
+    skip_existing: true
+    skip_cleanup: true
+    distributions: sdist
+    password:
+      secure: FQibXjKOCq3lzPn9QLTZ0GMZXOkq3A35G8PSLrbFjOtd7BlkX0nJ9kuMg4NMP2OaAVirv3L4Kd8cceWifx1F/LAn1u+ABiVfMrM4xV3rA8xHL8Yr4zyesEPsDXoZBAymJPBd3RMeib3sCjtPQl2o9reUeycTyTAwDC010PnR29rTH6WLutpS8WcjKMxkfh2+h6Ks85o6DWLu+sVRnrxZq/y+xdbwHzZiSUwjGA8rF88Iw/EBfFNDR9DDiQyYY+dmvi7efoYPol07ZRVAmKdxK9TXPlye/x+M0mu9jeMyxhdUQc1x4YhK5CXJEI3R1bo8yEpKCskCOVpYOxkbOeDM1cu3rptROhbzQs+02j4Moqk5vC+4Gl6NwuB2fbnzijWpq17Kg5oQppMBMP8f7y85ws75owMFdYGdw49tR2pyL8BYsIqxBFq/SYhYwuZ7wnGNgKN4DKxwc+lRv/zICAipt04tMQsyPXq071wjZt44gZgoJ3rYbfbYNShDQOI+nbKhwHRV5/PmkBDT/KD3KVapjmT1q2wY7gGN8/2dIrPjmqveBgKho3QAmc0UV8SBVLw4rZxGJRGzRR6y58sCd0ynzB0tggUksrGO/gT1QnzgABPQ2Of137HfDEXXaSKdc4HCw9W0D0gltLaHV5b8iU4gQf1VsAt/I9mmp5Thrtvf9cc=
+    on:
+      tags: true
+      repo: limix/bgen-reader-py
+      branch: master
+      condition: $TRAVIS_OS_NAME = linux
   - provider: script
     skip_cleanup: true
     script: bash -c "ls -las"
@@ -105,7 +117,6 @@ deploy:
     secret_access_key: $AWS_SECRET_KEY
     bucket: "traviscibucket"
     upload_dir: $TRAVIS_REPO_SLUG/$TRAVIS_BRANCH/$TRAVIS_BUILD_NUMBER.$TRAVIS_COMMIT/$TRAVIS_OS_NAME
-    local_dir: $TRAVIS_BUILD_DIR/dist
+    local_dir: $TRAVIS_BUILD_DIR/wheelhouse
     on:
       branch: bgen2api
-
