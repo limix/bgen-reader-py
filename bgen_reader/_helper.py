@@ -21,7 +21,6 @@ def genotypes_to_allele_counts(genotypes):
         counts.append(count)
     return counts
 
-
 def _make_genotype(ploidy, start, end):
     tups = []
     if ploidy == 0:

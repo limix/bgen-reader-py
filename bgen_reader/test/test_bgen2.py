@@ -32,8 +32,6 @@ def test_typing():
     data = open_bgen(example_filepath2("haplotypes.bgen"), verbose=False)
     with pytest.raises(TypeError):
         data.read(dtype=3)
-    with pytest.raises(ValueError):
-        data.read(order=3)
 
 
 def test_bgen_samples_not_present():

@@ -45,7 +45,7 @@ def _write_random(
 
     block_size = block_size or max((100 * 1000) // max(1, nsamples), 1)
 
-    randoms_state = np.random.RandomState(seed)
+    random_state = np.random.RandomState(seed)
     missing_rate = 0.218
     chrom_size = np.array(
         [
@@ -88,7 +88,7 @@ def _write_random(
         chrom_size_so_far += chrom_size[chrom_index]
         chrom_stop = chrom_size_so_far * nvariants // chrom_total
         chromosomes[chrom_start:chrom_stop] = chrom_index + 1
-        random_increment = randoms_state.randint(chrom_step)
+        random_increment = random_state.randint(chrom_step)
         positions[chrom_start:chrom_stop] = (
             np.arange(0, chrom_stop - chrom_start) * chrom_step + random_increment + 1
         )
@@ -100,11 +100,11 @@ def _write_random(
     with _log_in_place("_write_random", verbose) as updater:
         with gen_temp_filepath.open("w", newline="\n") as genfp:
             while start < nvariants:
-                val = randoms_state.random(
+                val = random_state.random(
                     (nsamples, min(block_size, nvariants - start), 3)
                 )
                 val /= val.sum(axis=2, keepdims=True)  # make probabilities sum to 1
-                missing = randoms_state.rand(val.shape[0], val.shape[1]) < missing_rate
+                missing = random_state.rand(val.shape[0], val.shape[1]) < missing_rate
                 val[missing, :] = np.nan
 
                 for ivariants_in_block in range(val.shape[1]):

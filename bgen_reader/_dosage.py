@@ -51,8 +51,8 @@ def allele_frequency(expec):
     expec = asarray(expec, float)
     if expec.ndim != 2:
         raise ValueError("Expectation matrix must be bi-dimensional.")
-    ploidy = expec.shape[-1]
-    return expec.sum(-2) / ploidy
+    nallele0 = expec.shape[-1]
+    return expec.sum(-2) / nallele0
 
 
 def compute_dosage(expec, alt=None):
