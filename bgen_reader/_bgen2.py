@@ -837,7 +837,10 @@ class open_bgen(object):
             # no bad effect.
 
     def allele_expectation(
-        self, index: Optional[Any] = None, assume_constant_ploidy : bool = True, return_frequencies: bool = False
+        self,
+        index: Optional[Any] = None,
+        assume_constant_ploidy: bool = True,
+        return_frequencies: bool = False,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """ Allele expectation, frequency, and dosage.
 
@@ -1037,24 +1040,30 @@ class open_bgen(object):
                 "Current code requires that all selected variants have the same number of alleles"
             )
         if assume_constant_ploidy:
-            ploidy0 = self.read(return_probabilities=False,return_ploidies=True)[[0],0]
+            ploidy0 = self.read(return_probabilities=False, return_ploidies=True)[
+                [0], 0
+            ]
             genotype = get_genotypes(ploidy0, self.nalleles[0])[0]
             count = asarray(genotypes_to_allele_counts(genotype), float)
 
             probs = self.read(index)
-            if np.product(probs.shape[:2]) == 0: #handle the case where user asks for no samples or no variants
-                expecx = np.zeros((probs.shape[0],probs.shape[1],count.shape[-1]))
+            if (
+                np.product(probs.shape[:2]) == 0
+            ):  # handle the case where user asks for no samples or no variants
+                expecx = np.zeros((probs.shape[0], probs.shape[1], count.shape[-1]))
             else:
                 if probs.shape[-1] != count.shape[0]:
                     raise ValueError("Try 'assume_constant_ploidy=False'")
                 expecx = probs.dot(count)
         else:
             probs, ploidy = self.read(index, return_ploidies=True)
-            if np.product(probs.shape[:2]) == 0: #handle the case where user asks for no samples or no variants
-                expecx = np.zeros((probs.shape[0],probs.shape[1],self.nalleles[0]))
+            if (
+                np.product(probs.shape[:2]) == 0
+            ):  # handle the case where user asks for no samples or no variants
+                expecx = np.zeros((probs.shape[0], probs.shape[1], self.nalleles[0]))
             else:
                 outer_expec = []
-                for vi in range(probs.shape[1]): #for each variant ...
+                for vi in range(probs.shape[1]):  # for each variant ...
                     genotypes = get_genotypes(ploidy[:, vi], nalleles[vi])
                     probsvi = probs[:, vi, :]
                     expec = []

@@ -51,27 +51,45 @@ def test_error():
                 logical_not(bgen.phased) * (bgen.nalleles == 2), return_frequencies=True
             )  # nonconstant ploidy
         e, f = bgen.allele_expectation(
-            logical_not(bgen.phased) * (bgen.nalleles == 2), assume_constant_ploidy=False, return_frequencies=True
+            logical_not(bgen.phased) * (bgen.nalleles == 2),
+            assume_constant_ploidy=False,
+            return_frequencies=True,
         )
         assert_allclose(e[-1, -1, :], [1.0, 3.0])
         assert_allclose(f[-1, :], [5.0, 3.0])
 
+
 def test_zero_width():
     filepath = example_filepath("complex.bgen")
     with open_bgen(filepath, verbose=False) as bgen:
-        for assume_constant_ploidy in [False,True]:
-            e,f = bgen.allele_expectation([],assume_constant_ploidy=assume_constant_ploidy,return_frequencies=True)
-            assert e.shape==(bgen.nsamples,0,bgen.nalleles[0])
-            assert f.shape==(0,bgen.nalleles[0])
+        for assume_constant_ploidy in [False, True]:
+            e, f = bgen.allele_expectation(
+                [],
+                assume_constant_ploidy=assume_constant_ploidy,
+                return_frequencies=True,
+            )
+            assert e.shape == (bgen.nsamples, 0, bgen.nalleles[0])
+            assert f.shape == (0, bgen.nalleles[0])
 
             good_variants = logical_not(bgen.phased) * (bgen.nalleles == 2)
-            e,f = bgen.allele_expectation(([],good_variants),assume_constant_ploidy=assume_constant_ploidy,return_frequencies=True)
-            assert e.shape==(0,sum(good_variants),bgen.nalleles[0])
-            assert_equal(f,zeros((sum(good_variants),bgen.nalleles[0]))) #We define the freq of something with no samples as 0
+            e, f = bgen.allele_expectation(
+                ([], good_variants),
+                assume_constant_ploidy=assume_constant_ploidy,
+                return_frequencies=True,
+            )
+            assert e.shape == (0, sum(good_variants), bgen.nalleles[0])
+            assert_equal(
+                f, zeros((sum(good_variants), bgen.nalleles[0]))
+            )  # We define the freq of something with no samples as 0
 
-            e,f = bgen.allele_expectation(([],[]),assume_constant_ploidy=assume_constant_ploidy,return_frequencies=True)
-            assert e.shape==(0,0,bgen.nalleles[0])
-            assert f.shape==(0,bgen.nalleles[0])
+            e, f = bgen.allele_expectation(
+                ([], []),
+                assume_constant_ploidy=assume_constant_ploidy,
+                return_frequencies=True,
+            )
+            assert e.shape == (0, 0, bgen.nalleles[0])
+            assert f.shape == (0, bgen.nalleles[0])
+
 
 def test_dosage2():
     import pandas as pd
