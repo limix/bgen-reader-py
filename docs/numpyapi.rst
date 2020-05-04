@@ -8,4 +8,4 @@ NumPy-Inspired API (new)
     :maxdepth: 3
 
     quickstart2
-    open
+    numpyapi-api
