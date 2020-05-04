@@ -12,10 +12,7 @@ from ._bgen_file import bgen_file
 from ._bgen_metafile import bgen_metafile
 from ._metafile import infer_metafile_filepath
 from ._ffi import ffi, lib
-from ._file import (
-    assert_file_exist,
-    assert_file_readable,
-)
+from ._file import assert_file_exist, assert_file_readable, tmp_cwd
 from ._helper import _log_in_place
 from ._helper import genotypes_to_allele_counts, get_genotypes
 from ._reader import _get_samples
@@ -151,10 +148,8 @@ class open_bgen:
             self._ncombinations = d["ncombinations"]
             self._phased = d["phased"]
         else:
-            tempdir = None
-            try:
-                tempdir = Path(mkdtemp(prefix="pysnptools"))
-                metafile_filepath = tempdir / "bgen.metadata"
+            with tmp_cwd():
+                metafile_filepath = Path("bgen.metadata")
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
                 self._map_metadata(metafile_filepath)
                 np.savez(
@@ -169,9 +164,6 @@ class open_bgen:
                     ncombinations=self._ncombinations,
                     phased=self._phased,
                 )
-            finally:
-                if tempdir is not None:
-                    shutil.rmtree(tempdir)
 
         self._max_combinations = max(self._ncombinations)
 
