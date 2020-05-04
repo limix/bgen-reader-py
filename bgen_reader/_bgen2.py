@@ -1,6 +1,6 @@
 import math
 import os
-import shutil
+from os.path import getmtime
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any, List, Optional, Tuple, Union
@@ -129,13 +129,11 @@ class open_bgen:
         )
         self._sample_range = np.arange(len(self._samples), dtype=np.int)
 
-        metadata2 = self._metadatapath_from_filename(
-            filepath
-        )  # LATER could make a version of this method public
-        if metadata2.exists() and os.path.getmtime(metadata2) < os.path.getmtime(
-            filepath
-        ):
+        # LATER could make a version of this method public
+        metadata2 = self._metadatapath_from_filename(filepath)
+        if metadata2.exists() and getmtime(metadata2) < getmtime(filepath):
             metadata2.unlink()
+
         if metadata2.exists():
             d = np.load(str(metadata2))
             self._ids = d["ids"]
