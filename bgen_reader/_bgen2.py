@@ -203,7 +203,7 @@ class open_bgen(object):
             to save 50% or 75% of memory. (See :ref:`read_notes`, below).
         order : {'F','C'}
             The desired memory layout for the returned probability array.
-            Defaults to ``F`` (Fortran order, which is variant-major)
+            Defaults to ``F`` (Fortran order, which is variant-major).
         max_combinations : int or ``None``.
             The number of values to allocate for each probability distribution.
             Defaults to a number just large enough for any data in the file.
@@ -238,7 +238,7 @@ class open_bgen(object):
         * About ``dtype``
 
             If you know the compression level of your BGEN file, you can sometimes save 50% or 75% on memory with ``dtype``.
-            T(est with your data to confirm you are not losing any precision.) The approximate relationship is:
+            (Test with your data to confirm you are not losing any precision.) The approximate relationship is:
 
                 * BGEN compression 1 to 10 bits: ``dtype`` ='float16'
                 * BGEN compression 11 to 23 bits: ``dtype`` ='float32'
@@ -453,7 +453,7 @@ class open_bgen(object):
     @property
     def nsamples(self) -> int:
         """
-        The number of samples in the data (``int``)
+        The number of samples in the data (``int``).
 
         Example
         --------
@@ -472,7 +472,7 @@ class open_bgen(object):
     @property
     def nvariants(self) -> int:
         """
-        The number of variants in the data (``int``)
+        The number of variants in the data (``int``).
 
         Example
         --------
@@ -514,7 +514,7 @@ class open_bgen(object):
     def shape(self) -> (int, int, int):
         """
         The tuple (:attr:`~bgen_reader.open_bgen.nsamples`, :attr:`~bgen_reader.open_bgen.nvariants`,
-        :attr:`~bgen_reader.open_bgen.max_combinations`)
+        :attr:`~bgen_reader.open_bgen.max_combinations`).
 
         Example
         --------
@@ -538,7 +538,7 @@ class open_bgen(object):
     @property
     def samples(self) -> List[str]:
         """
-        The sample identifiers (a :class:`numpy.ndarray` of ``str``)
+        The sample identifiers (a :class:`numpy.ndarray` of ``str``).
 
         Example
         --------
@@ -557,7 +557,7 @@ class open_bgen(object):
     @property
     def ids(self) -> List[str]:
         """
-        The variant identifiers (a :class:`numpy.ndarray` of ``str``)
+        The variant identifiers (a :class:`numpy.ndarray` of ``str``).
 
         Example
         --------
@@ -576,7 +576,7 @@ class open_bgen(object):
     @property
     def rsids(self) -> List[str]:
         """
-        The variant RS numbers (a :class:`numpy.ndarray` of ``str``)
+        The variant RS numbers (a :class:`numpy.ndarray` of ``str``).
 
         Example
         --------
@@ -595,7 +595,7 @@ class open_bgen(object):
     @property
     def chromosomes(self) -> List[str]:
         """
-        The chromosome of each variant (a :class:`numpy.ndarray` of ``str``)
+        The chromosome of each variant (a :class:`numpy.ndarray` of ``str``).
 
         Example
         --------
@@ -614,7 +614,7 @@ class open_bgen(object):
     @property
     def positions(self) -> List[int]:
         """
-        The genetic position of each variant (a :class:`numpy.ndarray` of ``int``)
+        The genetic position of each variant (a :class:`numpy.ndarray` of ``int``).
 
         Example
         --------
@@ -633,7 +633,7 @@ class open_bgen(object):
     @property
     def nalleles(self) -> List[int]:
         """
-        The number of alleles for each variant (a :class:`numpy.ndarray` of ``int``)
+        The number of alleles for each variant (a :class:`numpy.ndarray` of ``int``).
 
         Example
         --------
@@ -652,7 +652,7 @@ class open_bgen(object):
     @property
     def allele_ids(self) -> List[str]:
         """
-        The comma-delimited list of alleles for each variant (a :class:`numpy.ndarray` of ``str``)
+        The comma-delimited list of alleles for each variant (a :class:`numpy.ndarray` of ``str``).
 
         Example
         --------
@@ -671,7 +671,8 @@ class open_bgen(object):
     @property
     def ncombinations(self) -> List[int]:
         """
-        The number of values needed for each variant's probability distribution (a :class:`numpy.ndarray` of ``int``)
+        The number of values needed for each variant's probability distribution (a
+        :class:`numpy.ndarray` of ``int``).
 
         Example
         --------
@@ -690,7 +691,8 @@ class open_bgen(object):
     @property
     def phased(self) -> List[bool]:
         """
-        For each variant, ``True`` if and only the variant is phased (a :class:`numpy.ndarray` of bool)
+        For each variant, ``True`` if and only the variant is phased (a :class:`numpy.ndarray` of
+        bool).
 
         Example
         --------
@@ -791,7 +793,8 @@ class open_bgen(object):
         return "{0}('{1}')".format(self.__class__.__name__, self._filepath.name)
 
     def close(self):
-        """Close a :class:`open_bgen` object that was opened for reading.
+        """
+        Close a :class:`open_bgen` object that was opened for reading.
 
         Notes
         -----
@@ -842,7 +845,8 @@ class open_bgen(object):
         assume_constant_ploidy: bool = True,
         return_frequencies: bool = False,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
-        """ Allele expectation, frequency, and dosage.
+        """
+        Allele expectation, frequency, and dosage.
 
         Parameters
         ----------
@@ -851,10 +855,10 @@ class open_bgen(object):
                 Defaults to ``None``, meaning compute for all samples and variants.
             assume_constant_ploidy: bool
                 When ploidy count can be assumed to be constant, calculations are much faster.
-                Defaults to ``True``
+                Defaults to ``True``.
             return_frequencies: bool
                 Return an array telling the allele frequencies.
-                Defaults to ``False``
+                Defaults to ``False``.
 
 
         Returns
