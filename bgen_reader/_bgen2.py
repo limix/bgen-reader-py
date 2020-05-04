@@ -499,7 +499,7 @@ class open_bgen:
         return self._max_combinations
 
     @property
-    def shape(self) -> (int, int, int):
+    def shape(self) -> Tuple[int, int, int]:
         """
         The tuple (:attr:`~bgen_reader.open_bgen.nsamples`, :attr:`~bgen_reader.open_bgen.nvariants`,
         :attr:`~bgen_reader.open_bgen.max_combinations`).
