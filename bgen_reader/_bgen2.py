@@ -10,6 +10,7 @@ from numpy import asarray, stack
 
 from ._bgen_file import bgen_file
 from ._bgen_metafile import bgen_metafile
+from ._metafile import infer_metafile_filepath
 from ._ffi import ffi, lib
 from ._file import (
     assert_file_exist,
@@ -533,7 +534,7 @@ class open_bgen:
     # This is static so that test code can use it easily.
     @staticmethod
     def _metadatapath_from_filename(filename):
-        return Path(filename).with_suffix(".metadata2.npz")
+        return infer_metafile_filepath(Path(filename), ".metadata2.npz")
 
     @property
     def samples(self) -> List[str]:

@@ -78,17 +78,6 @@ def test_metafile_not_provided():
     open_bgen(example_filepath2("haplotypes.bgen"), verbose=False)
 
 
-@pytest.mark.skipif(platform.system() != "Darwin", reason="only reliable on macos")
-def test_metafile_not_provided_no_permission_to_create(tmp_path):
-    src = example_filepath2("haplotypes.bgen")
-    dst = tmp_path / "haplotypes.bgen"
-    copyfile(src, dst)
-    path = os.path.dirname(dst)
-    with nowrite_permission(path):
-        with pytest.raises(PermissionError):
-            open_bgen(dst, verbose=False)
-
-
 def test_open_bgen_phased_genotype():
     filepath = example_filepath2("haplotypes.bgen")
     bgen2 = open_bgen(filepath, verbose=False)

@@ -1,8 +1,15 @@
+import warnings
 from pathlib import Path
 from typing import Union
 
+from ._environment import BGEN_READER_CACHE_HOME
 from ._bgen_file import bgen_file
-from ._file import assert_file_exist, assert_file_readable
+from ._file import (
+    assert_file_exist,
+    assert_file_readable,
+    path_to_filename,
+    is_file_writable,
+)
 
 
 def create_metafile(
@@ -51,3 +58,37 @@ def create_metafile(
 
     with bgen_file(bgen_filepath) as bgen:
         bgen.create_metafile(metafile_filepath, verbose)
+
+
+_metafile_nowrite_dir = """\
+You don't have permission to write `{filepath}`. This might prevent speeding-up the reading process
+in future runs.
+"""
+
+
+def infer_metafile_filepath(bgen_filepath: Path, suffix: str = ".metafile") -> Path:
+    """
+    Infer metafile filepath.
+
+    The resulting file name will the file name of ``bgen_filepath`` with the appended ``suffix``.
+    The root directory of the resulting filepath will be the directory of ``bgen_filepath`` if
+    the user has appropriate permissions. It falls back to the directory
+
+        BGEN_READER_CACHE_HOME / "metafile"
+
+    if necessary.
+    """
+    metafile = bgen_filepath.with_suffix(bgen_filepath.suffix + suffix)
+    if metafile.exists():
+        try:
+            assert_file_readable(metafile)
+            return metafile
+        except RuntimeError as e:
+            warnings.warn(str(e), UserWarning)
+            return BGEN_READER_CACHE_HOME / "metafile" / path_to_filename(metafile)
+    else:
+        if is_file_writable(metafile):
+            return metafile
+
+        warnings.warn(_metafile_nowrite_dir.format(filepath=metafile), UserWarning)
+        return BGEN_READER_CACHE_HOME / "metafile" / path_to_filename(metafile)

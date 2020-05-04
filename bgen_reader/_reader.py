@@ -1,19 +1,15 @@
 import os
-import warnings
 from pathlib import Path
 from typing import Optional, Union
 
 from ._bgen_file import bgen_file
 from ._bgen_metafile import bgen_metafile
-from ._environment import BGEN_READER_CACHE_HOME
 from ._file import (
     assert_file_exist,
     assert_file_readable,
-    is_file_writable,
-    path_to_filename,
 )
 from ._genotype import create_genotypes
-from ._metafile import create_metafile
+from ._metafile import create_metafile, infer_metafile_filepath
 from ._samples import generate_samples, read_samples_file
 
 
@@ -81,7 +77,7 @@ def read_bgen(
     assert_file_readable(filepath)
 
     if metafile_filepath is None:
-        metafile_filepath = _infer_metafile_filepath(filepath)
+        metafile_filepath = infer_metafile_filepath(filepath)
     else:
         metafile_filepath = Path(metafile_filepath)
         assert_file_exist(metafile_filepath)
@@ -132,26 +128,3 @@ def _get_samples(bgen, sample_file, verbose):
         assert_file_exist(samples_filepath)
         assert_file_readable(samples_filepath)
         return read_samples_file(samples_filepath, verbose)
-
-
-_metafile_nowrite_dir = """\
-You don't have permission to write `{filepath}`. This might prevent speeding-up the reading process
-in future runs.
-"""
-
-
-def _infer_metafile_filepath(bgen_filepath: Path) -> Path:
-    metafile = bgen_filepath.with_suffix(bgen_filepath.suffix + ".metafile")
-    if metafile.exists():
-        try:
-            assert_file_readable(metafile)
-            return metafile
-        except RuntimeError as e:
-            warnings.warn(str(e), UserWarning)
-            return BGEN_READER_CACHE_HOME / "metafile" / path_to_filename(metafile)
-    else:
-        if is_file_writable(metafile):
-            return metafile
-
-        warnings.warn(_metafile_nowrite_dir.format(filepath=metafile), UserWarning)
-        return BGEN_READER_CACHE_HOME / "metafile" / path_to_filename(metafile)
