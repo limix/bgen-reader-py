@@ -21,7 +21,7 @@ from ._reader import _get_samples
 
 
 # https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
-class open_bgen(object):
+class open_bgen:
     """
     A NumPy-inspired class for fast opening and reading of BGEN files.
 
