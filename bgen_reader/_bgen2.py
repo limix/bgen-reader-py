@@ -827,13 +827,10 @@ class open_bgen:
             # no bad effect.
 
     def allele_expectation(
-        self,
-        index: Optional[Any] = None,
-        assume_constant_ploidy: bool = True,
-        return_frequencies: bool = False,
+        self, index: Optional[Any] = None, assume_constant_ploidy: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
-        Allele expectation, frequency, and dosage.
+        Allele expectation.
 
         Parameters
         ----------
@@ -843,9 +840,6 @@ class open_bgen:
         assume_constant_ploidy: bool
             When ploidy count can be assumed to be constant, calculations are much faster.
             Defaults to ``True``.
-        return_frequencies: bool
-            Return an array telling the allele frequencies.
-            Defaults to ``False``.
 
 
         Returns
@@ -914,7 +908,8 @@ class open_bgen:
             >>> bgen = open_bgen(filepath, verbose=False)
             >>>
             >>> variant_index = (bgen.rsids=="RSID_6")      # will be only 1 variant
-            >>> e,f = bgen.allele_expectation(variant_index, return_frequencies=True)
+            >>> e = bgen.allele_expectation(variant_index)
+            >>> f = bgen.allele_frequency(e)
             >>> alleles_per_variant = [allele_ids.split(',') for allele_ids in bgen.allele_ids[variant_index]]
             >>> print(alleles_per_variant[0][0] + ": {}".format(f[0,0]))
             A: 229.23103218810434
@@ -976,7 +971,8 @@ class open_bgen:
             <BLANKLINE>
             [500 rows x 4 columns]
             >>> alleles_per_variant = [allele_ids.split(',') for allele_ids in bgen.allele_ids[variant_index]]
-            >>> e,f = bgen.allele_expectation(variant_index,return_frequencies=True)
+            >>> e = bgen.allele_expectation(variant_index)
+            >>> f = bgen.allele_frequency(e)
             >>> df2 = pd.DataFrame({'sample':bgen.samples,alleles_per_variant[0][0]:e[:,0,0],alleles_per_variant[0][1]:e[:,0,1]})
             >>> print(df2)  # doctest: +NORMALIZE_WHITESPACE
                         sample        A        G
@@ -1063,12 +1059,17 @@ class open_bgen:
                     outer_expec.append(stack(expec, axis=0))
                 expecx = stack(outer_expec, axis=1)
 
-        if return_frequencies:
-            nallele0 = expecx.shape[-1]
-            freq = expecx.sum(0) / nallele0
-            return expecx, freq
-        else:
-            return expecx
+        return expecx
+
+    @staticmethod
+    def allele_frequency(allele_expectation: np.ndarray) -> np.ndarray:
+        """
+        Allele expectation frequency.
+
+        You have to provide the allele expectations, :meth:`.allele_expectation`.
+        """
+        nallele0 = allele_expectation.shape[-1]
+        return allele_expectation.sum(0) / nallele0
 
     def __del__(self):
         self.__exit__()

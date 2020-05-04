@@ -18,7 +18,8 @@ def test_freq():
     filepath = example_filepath("example.32bits.bgen")
     with open_bgen(filepath, verbose=False) as bgen:
         variant_index = bgen.rsids == "RSID_6"
-        _, f = bgen.allele_expectation(variant_index, return_frequencies=True)
+        e = bgen.allele_expectation(variant_index)
+        f = bgen.allele_frequency(e)
         assert_allclose(f[0, 0], 229.23103218810434)
         assert_allclose(f[0, 1], 270.7689678118956)
 
@@ -41,20 +42,19 @@ def test_error():
     filepath = example_filepath("complex.bgen")
     with open_bgen(filepath, verbose=False) as bgen:
         with pytest.raises(ValueError):
-            e, f = bgen.allele_expectation(return_frequencies=True)  # some phased
+            bgen.allele_expectation()  # some phased
+
         with pytest.raises(ValueError):
-            e, f = bgen.allele_expectation(
-                logical_not(bgen.phased), return_frequencies=True
-            )  # different #'s of alleles
+            # different #'s of alleles
+            bgen.allele_expectation(logical_not(bgen.phased))
         with pytest.raises(ValueError):
-            e, f = bgen.allele_expectation(
-                logical_not(bgen.phased) * (bgen.nalleles == 2), return_frequencies=True
-            )  # nonconstant ploidy
-        e, f = bgen.allele_expectation(
+            # nonconstant ploidy
+            bgen.allele_expectation(logical_not(bgen.phased) * (bgen.nalleles == 2))
+        e = bgen.allele_expectation(
             logical_not(bgen.phased) * (bgen.nalleles == 2),
             assume_constant_ploidy=False,
-            return_frequencies=True,
         )
+        f = bgen.allele_frequency(e)
         assert_allclose(e[-1, -1, :], [1.0, 3.0])
         assert_allclose(f[-1, :], [5.0, 3.0])
 
@@ -63,30 +63,27 @@ def test_zero_width():
     filepath = example_filepath("complex.bgen")
     with open_bgen(filepath, verbose=False) as bgen:
         for assume_constant_ploidy in [False, True]:
-            e, f = bgen.allele_expectation(
-                [],
-                assume_constant_ploidy=assume_constant_ploidy,
-                return_frequencies=True,
+            e = bgen.allele_expectation(
+                [], assume_constant_ploidy=assume_constant_ploidy,
             )
+            f = bgen.allele_frequency(e)
             assert e.shape == (bgen.nsamples, 0, bgen.nalleles[0])
             assert f.shape == (0, bgen.nalleles[0])
 
             good_variants = logical_not(bgen.phased) * (bgen.nalleles == 2)
-            e, f = bgen.allele_expectation(
-                ([], good_variants),
-                assume_constant_ploidy=assume_constant_ploidy,
-                return_frequencies=True,
+            e = bgen.allele_expectation(
+                ([], good_variants), assume_constant_ploidy=assume_constant_ploidy,
             )
+            f = bgen.allele_frequency(e)
             assert e.shape == (0, sum(good_variants), bgen.nalleles[0])
             assert_equal(
                 f, zeros((sum(good_variants), bgen.nalleles[0]))
             )  # We define the freq of something with no samples as 0
 
-            e, f = bgen.allele_expectation(
-                ([], []),
-                assume_constant_ploidy=assume_constant_ploidy,
-                return_frequencies=True,
+            e = bgen.allele_expectation(
+                ([], []), assume_constant_ploidy=assume_constant_ploidy,
             )
+            f = bgen.allele_frequency(e)
             assert e.shape == (0, 0, bgen.nalleles[0])
             assert f.shape == (0, bgen.nalleles[0])
 
@@ -118,7 +115,8 @@ def test_dosage2():
         alleles_per_variant = [
             allele_ids.split(",") for allele_ids in bgen.allele_ids[variant_index]
         ]
-        e, f = bgen.allele_expectation(variant_index, return_frequencies=True)
+        e = bgen.allele_expectation(variant_index)
+        f = bgen.allele_frequency(e)
         df2 = pd.DataFrame(
             {
                 "sample": bgen.samples,

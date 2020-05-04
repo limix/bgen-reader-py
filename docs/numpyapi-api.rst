@@ -8,6 +8,7 @@ API
 
     open_bgen
     open_bgen.allele_expectation
+    open_bgen.allele_frequency
     open_bgen.allele_ids
     open_bgen.chromosomes
     open_bgen.ids
