@@ -17,7 +17,8 @@ def create_metafile(
     metafile_filepath: Union[str, Path],
     verbose: bool = True,
 ):
-    r"""Create variants metadata file.
+    """
+    Create variants metadata file.
 
     Variants metadata file helps speed up subsequent reads of the associated
     bgen file.

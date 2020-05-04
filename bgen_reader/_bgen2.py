@@ -45,70 +45,70 @@ class open_bgen:
 
     Examples
     --------
-        With the `with <https://docs.python.org/3/reference/compound_stmts.html#grammar-token-with-stmt>`__ statement, list :attr:`samples` and variant :attr:`ids`, then :meth:`read` the whole file.
+    With the `with <https://docs.python.org/3/reference/compound_stmts.html#grammar-token-with-stmt>`__ statement, list :attr:`samples` and variant :attr:`ids`, then :meth:`read` the whole file.
 
-        .. doctest::
+    .. doctest::
 
-            >>> from bgen_reader import example_filepath, open_bgen
-            >>>
-            >>> file = example_filepath("haplotypes.bgen")
-            >>> with open_bgen(file, verbose=False) as bgen:
-            ...     print(bgen.ids)
-            ...     print(bgen.samples)
-            ...     print(bgen.read())
-            ['SNP1' 'SNP2' 'SNP3' 'SNP4']
-            ['sample_0' 'sample_1' 'sample_2' 'sample_3']
-            [[[1. 0. 1. 0.]
-              [0. 1. 1. 0.]
-              [1. 0. 0. 1.]
-              [0. 1. 0. 1.]]
-            <BLANKLINE>
-             [[0. 1. 1. 0.]
-              [1. 0. 0. 1.]
-              [0. 1. 0. 1.]
-              [1. 0. 1. 0.]]
-            <BLANKLINE>
-             [[1. 0. 0. 1.]
-              [0. 1. 0. 1.]
-              [1. 0. 1. 0.]
-              [0. 1. 1. 0.]]
-            <BLANKLINE>
-             [[0. 1. 0. 1.]
-              [1. 0. 1. 0.]
-              [0. 1. 1. 0.]
-              [1. 0. 0. 1.]]]
+        >>> from bgen_reader import example_filepath, open_bgen
+        >>>
+        >>> file = example_filepath("haplotypes.bgen")
+        >>> with open_bgen(file, verbose=False) as bgen:
+        ...     print(bgen.ids)
+        ...     print(bgen.samples)
+        ...     print(bgen.read())
+        ['SNP1' 'SNP2' 'SNP3' 'SNP4']
+        ['sample_0' 'sample_1' 'sample_2' 'sample_3']
+        [[[1. 0. 1. 0.]
+          [0. 1. 1. 0.]
+          [1. 0. 0. 1.]
+          [0. 1. 0. 1.]]
+        <BLANKLINE>
+         [[0. 1. 1. 0.]
+          [1. 0. 0. 1.]
+          [0. 1. 0. 1.]
+          [1. 0. 1. 0.]]
+        <BLANKLINE>
+         [[1. 0. 0. 1.]
+          [0. 1. 0. 1.]
+          [1. 0. 1. 0.]
+          [0. 1. 1. 0.]]
+        <BLANKLINE>
+         [[0. 1. 0. 1.]
+          [1. 0. 1. 0.]
+          [0. 1. 1. 0.]
+          [1. 0. 0. 1.]]]
 
-        Open the file (without `with`) and read probabilities for one variant.
+    Open the file (without `with`) and read probabilities for one variant.
 
-        .. doctest::
+    .. doctest::
 
-            >>> bgen = open_bgen(file, verbose=False)
-            >>> print(bgen.read(2))
-            [[[1. 0. 0. 1.]]
-            <BLANKLINE>
-             [[0. 1. 0. 1.]]
-            <BLANKLINE>
-             [[1. 0. 1. 0.]]
-            <BLANKLINE>
-             [[0. 1. 1. 0.]]]
-            >>> del bgen                 # close and delete object
+        >>> bgen = open_bgen(file, verbose=False)
+        >>> print(bgen.read(2))
+        [[[1. 0. 0. 1.]]
+        <BLANKLINE>
+         [[0. 1. 0. 1.]]
+        <BLANKLINE>
+         [[1. 0. 1. 0.]]
+        <BLANKLINE>
+         [[0. 1. 1. 0.]]]
+        >>> del bgen                 # close and delete object
 
-        Open the file and then first read for a :class:`slice` of samples and variants, and then for a single sample and variant.
+    Open the file and then first read for a :class:`slice` of samples and variants, and then for a single sample and variant.
 
-        .. doctest::
+    .. doctest::
 
-            >>> bgen = open_bgen(file, verbose=False)
-            >>> print(bgen.read((slice(1,3),slice(2,4))))
-            [[[0. 1. 0. 1.]
-              [1. 0. 1. 0.]]
-            <BLANKLINE>
-             [[1. 0. 1. 0.]
-              [0. 1. 1. 0.]]]
-            >>> print(bgen.read((0,1)))
-            [[[0. 1. 1. 0.]]]
-            >>> del bgen                 # close and delete object
+        >>> bgen = open_bgen(file, verbose=False)
+        >>> print(bgen.read((slice(1,3),slice(2,4))))
+        [[[0. 1. 0. 1.]
+          [1. 0. 1. 0.]]
+        <BLANKLINE>
+         [[1. 0. 1. 0.]
+          [0. 1. 1. 0.]]]
+        >>> print(bgen.read((0,1)))
+        [[[0. 1. 1. 0.]]]
+        >>> del bgen                 # close and delete object
 
-        .. _sample format: https://www.well.ox.ac.uk/~gav/qctool/documentation/sample_file_formats.html
+    .. _sample format: https://www.well.ox.ac.uk/~gav/qctool/documentation/sample_file_formats.html
     """
 
     def __init__(
@@ -235,7 +235,6 @@ class open_bgen:
 
         Notes
         ------
-
         * About ``dtype``
 
             If you know the compression level of your BGEN file, you can sometimes save 50% or 75% on memory with ``dtype``.
@@ -250,7 +249,6 @@ class open_bgen:
 
         Examples
         --------
-
         * Index Examples
 
             To read all data in a BGEN file, set ``index`` to ``None``. This is the default.
@@ -350,8 +348,7 @@ class open_bgen:
                 >>> probs,missing,ploidy = bgen_e.read(return_missings=True,return_ploidies=True)
                 >>> print(np.unique(ploidy))
                 [2]
-
-            """
+        """
         # LATER could allow strings (variant names) and lists of strings
         if not hasattr(self, "_bgen_context_manager"):
             raise ValueError("I/O operation on a closed file")
@@ -457,7 +454,7 @@ class open_bgen:
         The number of samples in the data (``int``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -476,7 +473,7 @@ class open_bgen:
         The number of variants in the data (``int``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -498,7 +495,7 @@ class open_bgen:
         it is the maximum value in :attr:`~bgen_reader.open_bgen.ncombinations`.
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -542,7 +539,7 @@ class open_bgen:
         The sample identifiers (a :class:`numpy.ndarray` of ``str``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -561,7 +558,7 @@ class open_bgen:
         The variant identifiers (a :class:`numpy.ndarray` of ``str``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -580,7 +577,7 @@ class open_bgen:
         The variant RS numbers (a :class:`numpy.ndarray` of ``str``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -599,7 +596,7 @@ class open_bgen:
         The chromosome of each variant (a :class:`numpy.ndarray` of ``str``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -618,7 +615,7 @@ class open_bgen:
         The genetic position of each variant (a :class:`numpy.ndarray` of ``int``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -637,7 +634,7 @@ class open_bgen:
         The number of alleles for each variant (a :class:`numpy.ndarray` of ``int``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -656,7 +653,7 @@ class open_bgen:
         The comma-delimited list of alleles for each variant (a :class:`numpy.ndarray` of ``str``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -676,7 +673,7 @@ class open_bgen:
         :class:`numpy.ndarray` of ``int``).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -696,7 +693,7 @@ class open_bgen:
         bool).
 
         Example
-        --------
+        -------
         .. doctest::
 
             >>> from bgen_reader import example_filepath, open_bgen
@@ -799,7 +796,6 @@ class open_bgen:
 
         Notes
         -----
-
         Better alternatives to :meth:`close` include the
         `with <https://docs.python.org/3/reference/compound_stmts.html#grammar-token-with-stmt>`__
         statement (closes the file automatically) and the `del
@@ -851,15 +847,15 @@ class open_bgen:
 
         Parameters
         ----------
-            index
-                An expression specifying the samples and variants of interest. (See :ref:`read_examples` in :meth:`.read` for details.)
-                Defaults to ``None``, meaning compute for all samples and variants.
-            assume_constant_ploidy: bool
-                When ploidy count can be assumed to be constant, calculations are much faster.
-                Defaults to ``True``.
-            return_frequencies: bool
-                Return an array telling the allele frequencies.
-                Defaults to ``False``.
+        index
+            An expression specifying the samples and variants of interest. (See :ref:`read_examples` in :meth:`.read` for details.)
+            Defaults to ``None``, meaning compute for all samples and variants.
+        assume_constant_ploidy: bool
+            When ploidy count can be assumed to be constant, calculations are much faster.
+            Defaults to ``True``.
+        return_frequencies: bool
+            Return an array telling the allele frequencies.
+            Defaults to ``False``.
 
 
         Returns
@@ -879,8 +875,6 @@ class open_bgen:
 
         Examples
         --------
-
-
         .. doctest::
 
             >>> from bgen_reader import allele_expectation, example_filepath, read_bgen
