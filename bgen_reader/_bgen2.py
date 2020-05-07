@@ -130,7 +130,7 @@ class open_bgen:
         self._sample_range = np.arange(len(self._samples), dtype=np.int)
 
         # LATER could make a version of this method public
-        metadata2 = self._metadatapath_from_filename(filepath)
+        metadata2 = self._metadatapath_from_filename(filepath).resolve() #needed because of tmp_cwd below
         if metadata2.exists() and getmtime(metadata2) < getmtime(filepath):
             metadata2.unlink()
 
