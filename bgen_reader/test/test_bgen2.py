@@ -468,4 +468,45 @@ def test_read_multiple_returns():
 
 
 if __name__ == "__main__":
+
+    if True:
+
+        #filename = 'M:/deldir/genbgen/good/merged_487400x4840000.bgen'
+        #filename = 'M:/deldir/genbgen/good/merged_487400x220000.bgen'
+        filename = r'M:\deldir\fakeuk450000x1000.bgen'
+
+        import tracemalloc
+        import logging
+        import os
+        import time
+        logging.basicConfig(level=logging.INFO)
+        tracemalloc.start()
+        print(os.path.getsize(filename))
+
+        start = time.time()
+        with open_bgen(filename, verbose=True) as bgen:
+            print(bgen.nsamples)
+            print(bgen.nvariants)
+            print(bgen.read((5,5)))
+            current, peak = tracemalloc.get_traced_memory()
+            print(f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
+            print("Time = {0} seconds".format(time.time()-start))
+        tracemalloc.stop()
+
+    if False: #!!!cmk
+        filepath = r"M:\deldir\genbgen\good\merged_487400x2420000.bgen"
+        #filepath = r"M:\deldir\genbgen\good\merged_487400x220000.11.bgen"
+        with open_bgen(filepath, verbose=True) as bgen2:
+            print(bgen2.nvariants)
+
+    if False: #!!!cmk
+        from bgen_reader import read_bgen
+
+        filepath = r"M:\deldir\genbgen\good\merged_487400x2420000.bgen"
+        #filepath = r"M:\deldir\genbgen\good\merged_487400x22000.bgen"
+        bgen = read_bgen(filepath, verbose=True)
+        print(len(bgen["variants"]))
+
+
+
     pytest.main([__file__])

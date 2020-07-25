@@ -124,46 +124,117 @@ class open_bgen:
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
 
-        self._samples = np.array(
-            _get_samples(self._bgen, samples_filepath, self._verbose), dtype="str"
-        )
-        self._sample_range = np.arange(len(self._samples), dtype=np.int)
+        self._samples = self._sample_array(samples_filepath) #!!!cmk memory map and cover the other two cases
+        self._sample_range = np.arange(len(self._samples), dtype=np.int)#!!!cmk this takes less memory than the strings. It could be memory mapped or just remove and replaced with a function???
 
         # LATER could make a version of this method public
         metadata2 = self._metadatapath_from_filename(filepath).resolve() #needed because of tmp_cwd below
         if metadata2.exists() and getmtime(metadata2) < getmtime(filepath):
             metadata2.unlink()
 
+
+        #!!!cmk make this a class?
+        slot_dtype = 'int32'
+        slots_shape = (3)
+        metameta_dtype = '<U50'
+
+        name_to_memmap = {}
         if metadata2.exists():
-            d = np.load(str(metadata2))
-            self._ids = d["ids"]
-            self._rsids = d["rsids"]
-            self._vaddr = d["vaddr"]
-            self._chromosomes = d["chromosomes"]
-            self._positions = d["positions"]
-            self._nalleles = d["nalleles"]
-            self._allele_ids = d["allele_ids"]
-            self._ncombinations = d["ncombinations"]
-            self._phased = d["phased"]
+            offset = 0
+            slots = np.memmap(metadata2,dtype=slot_dtype,mode='r+',offset=offset,shape=slots_shape)
+            offset += slots.size * slots.itemsize
+            slot_used,slot_count,metameta_count = slots
+            assert slot_used<=slot_count
+
+            metameta = np.memmap(metadata2,dtype=metameta_dtype,mode='r+',offset=offset,shape=(slots[1],slots[2]))
+            offset += metameta.size * metameta.itemsize
+
+            names = metameta[:slot_used,0]
+            dtypes = metameta[:slot_used,1]
+            shapes = []
+            for shape_as_str in metameta[:slot_used,2]:
+                shapes.append(tuple([int(num_as_str) for num_as_str in shape_as_str.split(',')]))
+
+            for slot_index in range(slot_used):
+                memmap = np.memmap(metadata2,dtype=dtypes[slot_index],mode='r+',offset=offset,shape=shapes[slot_index])
+                offset += memmap.size * memmap.itemsize
+                name_to_memmap[names[slot_index]]=memmap
         else:
             with tmp_cwd():
                 metafile_filepath = Path("bgen.metadata")
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
                 self._map_metadata(metafile_filepath)
-                np.savez(
-                    metadata2,
-                    ids=self._ids,
-                    rsids=self._rsids,
-                    vaddr=self._vaddr,
-                    chromosomes=self._chromosomes,
-                    positions=self._positions,
-                    nalleles=self._nalleles,
-                    allele_ids=self._allele_ids,
-                    ncombinations=self._ncombinations,
-                    phased=self._phased,
-                )
+                self._max_combinations = max(self._ncombinations)
+                name_to_nparray = {
+                    'ids':self._ids,
+                    'rsids':self._rsids,
+                    'vaddr':self._vaddr,
+                    'chromosomes':self._chromosomes,
+                    'positions':self._positions,
+                    'nalleles':self._nalleles,
+                    'allele_ids':self._allele_ids,
+                    'ncombinations':self._ncombinations,
+                    'phased':self._phased,
+                    }
 
-        self._max_combinations = max(self._ncombinations)
+                offset = 0
+                slots = np.memmap(metadata2,dtype=slot_dtype,mode='w+',offset=offset,shape=slots_shape)
+                offset += slots.size * slots.itemsize
+                slots[0] = 0
+                slots[1] = 20
+                slots[2] = 3
+                slots.flush()
+
+                metameta = np.memmap(metadata2,dtype=metameta_dtype,mode='r+',offset=offset,shape=(slots[1],slots[2]))
+                offset += metameta.size * metameta.itemsize
+
+                for slot_index, (name, nparray) in enumerate(name_to_nparray.items()):
+                    metameta[slot_index,0] = name
+                    metameta[slot_index,1] = str(nparray.dtype) #cmk repr???
+                    metameta[slot_index,2] = ','.join([str(i) for i in nparray.shape])
+                    metameta.flush()
+                    memmap = np.memmap(metadata2,dtype=nparray.dtype,mode='r+',offset=offset,shape=nparray.shape)
+                    offset += memmap.size * memmap.itemsize
+                    np.copyto(memmap,nparray)
+                    memmap.flush()
+                    slots[0] = slot_index+1
+                    slots.flush()
+                    name_to_memmap[name] = memmap
+
+        self._ids = name_to_memmap["ids"]
+        self._rsids = name_to_memmap["rsids"]
+        self._vaddr = name_to_memmap["vaddr"]
+        self._chromosomes = name_to_memmap["chromosomes"]
+        self._positions = name_to_memmap["positions"]
+        self._nalleles = name_to_memmap["nalleles"]
+        self._allele_ids = name_to_memmap["allele_ids"]
+        self._ncombinations = name_to_memmap["ncombinations"]
+        self._phased = name_to_memmap["phased"]
+
+
+    def _sample_array(self, sample_file):
+        #cmk note np.array(     , dtype="str"  )
+
+        if sample_file is None:
+            if self._bgen.contain_samples:
+                #!!!cmk raise Exception("cmk need code")
+                return np.array(self._bgen.read_samples(),dtype='str') #!!!cmk note part1 of this gets the # of strings and the length of the largest string
+            else:
+                #[f"sample_{i}" for i in range(nsamples)]
+                prefix = "sample_"
+                nsamples = self._bgen.nsamples
+                max_length = len(prefix+str(nsamples-1))
+                result = np.empty((nsamples),dtype=f"<U{max_length}")
+                for i in range(nsamples):
+                    result[i]=prefix+str(i)
+                return result
+        else:
+            raise Exception("cmk need code")
+            samples_filepath = Path(sample_file)
+            assert_file_exist(samples_filepath)
+            assert_file_readable(samples_filepath)
+            return np.array(read_samples_file(samples_filepath, self.verbose),dtype='str')
+
 
     def read(
         self,
@@ -521,7 +592,7 @@ class open_bgen:
     # This is static so that test code can use it easily.
     @staticmethod
     def _metadatapath_from_filename(filename):
-        return infer_metafile_filepath(Path(filename), ".metadata2.npz")
+        return infer_metafile_filepath(Path(filename), ".metadata2.mm")
 
     @property
     def samples(self) -> List[str]:
@@ -720,18 +791,17 @@ class open_bgen:
         with _log_in_place("metadata", self._verbose) as updater:
             with bgen_metafile(Path(metafile_filepath)) as mf:
                 nparts = mf.npartitions
-                (
-                    id_list,
-                    rsid_list,
-                    chrom_list,
-                    position_list,
-                    vaddr_list,
-                    nalleles_list,
-                    allele_ids_list,
-                    ncombinations_list,
-                    phased_list,
-                ) = ([], [], [], [], [], [], [], [], [])
-
+                id_list = []
+                rsid_list = []
+                chrom_list = []
+                position_list = []
+                vaddr_list = []
+                nalleles_list = []
+                allele_ids_list = []
+                ncombinations_list = []
+                phased_list = []
+                #!!!cmk maybe don't worry about memory allocation on the first load, just afterwards.
+                #!!!cmk could look at one part (last one because it tends to have longer strings) and then allocate memmap files. Then if later a string (or whatever) is too large, reallocate.
                 for ipart2 in range(nparts):  # LATER multithread?
                     # LATER in notebook this message doesn't appear on one line
                     updater("step 2: part {0:,} of {1:,}".format(ipart2, nparts))
