@@ -16,7 +16,7 @@ from ._file import assert_file_exist, assert_file_readable, tmp_cwd
 from ._helper import _log_in_place
 from ._helper import genotypes_to_allele_counts, get_genotypes
 from ._reader import _get_samples
-
+from ._samples import read_samples_file
 
 # https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 class open_bgen:
@@ -164,7 +164,6 @@ class open_bgen:
                 metafile_filepath = Path("bgen.metadata")
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
                 self._map_metadata(metafile_filepath)
-                self._max_combinations = max(self._ncombinations)
                 name_to_nparray = {
                     'ids':self._ids,
                     'rsids':self._rsids,
@@ -210,6 +209,7 @@ class open_bgen:
         self._allele_ids = name_to_memmap["allele_ids"]
         self._ncombinations = name_to_memmap["ncombinations"]
         self._phased = name_to_memmap["phased"]
+        self._max_combinations = max(self._ncombinations)
 
 
     def _sample_array(self, sample_file):
@@ -229,11 +229,11 @@ class open_bgen:
                     result[i]=prefix+str(i)
                 return result
         else:
-            raise Exception("cmk need code")
+            #raise Exception("cmk need code")
             samples_filepath = Path(sample_file)
             assert_file_exist(samples_filepath)
             assert_file_readable(samples_filepath)
-            return np.array(read_samples_file(samples_filepath, self.verbose),dtype='str')
+            return np.array(read_samples_file(samples_filepath, self._verbose),dtype='str')
 
 
     def read(
