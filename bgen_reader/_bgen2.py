@@ -732,48 +732,91 @@ class open_bgen:
         with _log_in_place("metadata", self._verbose) as updater:
             with bgen_metafile(Path(metafile_filepath)) as mf:
                 nparts = mf.npartitions
+
+
                 id_list = []
                 rsid_list = []
                 chrom_list = []
-                position_list = []
-                vaddr_list = []
-                nalleles_list = []
                 allele_ids_list = []
+                vaddr_memmap = self._multimemap.append_empty('vaddr', (self.nvariants), 'uint64')
+                positions_memmap = self._multimemap.append_empty('positions', (self.nvariants), 'uint32')
+                nalleles_memmap = self._multimemap.append_empty('nalleles', (self.nvariants), 'uint16')
+
                 #!!!cmk maybe don't worry about memory allocation on the first load, just afterwards.
                 #!!!cmk could look at one part (last one because it tends to have longer strings) and then allocate memmap files. Then if later a string (or whatever) is too large, reallocate.
+                start = 0
                 for ipart2 in range(nparts):  # LATER multithread?
                     # LATER in notebook this message doesn't appear on one line
                     updater("step 2: part {0:,} of {1:,}".format(ipart2, nparts))
 
-                    (
-                        nvariants,
-                        vid,
-                        rsid,
-                        chrom,
-                        position,
-                        nalleles,
-                        allele_ids,
-                        offset,
-                    ) = mf._inner_read_partition(ipart2)
+                    # start = time()
+                    partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
+                    # print(f"Elapsed: {time() - start} for bgen_metafile_read_partition")
+                    if partition == ffi.NULL:
+                        raise RuntimeError(f"Could not read partition {partition}.")
+
+                    nvariants = lib.bgen_partition_nvariants(partition)
+
+                    # start = time()
+                    position = np.empty(nvariants, dtype=np.uint32)
+                    nalleles = np.empty(nvariants, dtype=np.uint16)
+                    offset = np.empty(nvariants, dtype=np.uint64)
+                    vid_max_len = ffi.new("uint32_t[]", 1)
+                    rsid_max_len = ffi.new("uint32_t[]", 1)
+                    chrom_max_len = ffi.new("uint32_t[]", 1)
+                    allele_ids_max_len = ffi.new("uint32_t[]", 1)
+                    # print(f"Elapsed: {time() - start} empty")
+
+                    # start = time()
+                    position_ptr = ffi.cast("uint32_t *", ffi.from_buffer(position))
+                    nalleles_ptr = ffi.cast("uint16_t *", ffi.from_buffer(nalleles))
+                    offset_ptr = ffi.cast("uint64_t *", ffi.from_buffer(offset))
+                    lib.read_partition_part1(
+                        partition,
+                        position_ptr,
+                        nalleles_ptr,
+                        offset_ptr,
+                        vid_max_len,
+                        rsid_max_len,
+                        chrom_max_len,
+                        allele_ids_max_len,
+                    )
+                    # print(f"Elapsed: {time() - start} read_partition")
+
+                    # start = time()
+                    vid = np.zeros(nvariants, dtype=f"S{vid_max_len[0]}")
+                    rsid = np.zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
+                    chrom = np.zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
+                    allele_ids = np.zeros(nvariants, dtype=f"S{allele_ids_max_len[0]}")
+                    # print(f"Elapsed: {time() - start} create_strings")
+
+                    # start = time()
+                    lib.read_partition_part2(
+                        partition,
+                        ffi.from_buffer("char[]", vid),
+                        vid_max_len[0],
+                        ffi.from_buffer("char[]", rsid),
+                        rsid_max_len[0],
+                        ffi.from_buffer("char[]", chrom),
+                        chrom_max_len[0],
+                        ffi.from_buffer("char[]", allele_ids),
+                        allele_ids_max_len[0],
+                    )
+                    # print(f"Elapsed: {time() - start} read_partition2")
+                    lib.bgen_partition_destroy(partition)
+
 
                     id_list.append(vid)
                     rsid_list.append(rsid)
                     chrom_list.append(chrom)
-                    position_list.append(position)
-                    nalleles_list.append(nalleles)
                     allele_ids_list.append(allele_ids)
-                    vaddr_list.append(offset)
 
-            ## LATER use concatenate(...out=) instead#cmk remove these comments
-            #self._ids = np.array(
-            #    np.concatenate(id_list), dtype="str"
-            #)  # dtype needed to make unicode
-            #self._rsids = np.array(np.concatenate(rsid_list), dtype="str")
-            #self._vaddr = np.concatenate(vaddr_list)
-            #self._chromosomes = np.array(np.concatenate(chrom_list), dtype="str")
-            #self._positions = np.concatenate(position_list)#dtype('uint32')
-            #self._nalleles = np.concatenate(nalleles_list)#dtype('uint16')
-            #self._allele_ids = np.array(np.concatenate(allele_ids_list), dtype="str")
+                    end = start + len(offset)
+                    vaddr_memmap[start:end] = offset
+                    positions_memmap[start:end] = position
+                    nalleles_memmap[start:end] = nalleles
+                    start = end
+
 
             def list_of_list_copier(dst,list_of_list): #!!!cmk move this
                 start = 0
@@ -795,17 +838,8 @@ class open_bgen:
             rsids_str_dtype, rsids_copier = str_dtype_copier(rsid_list)
             self._multimemap.append_copier('rsids', (self.nvariants), rsids_str_dtype, rsids_copier)
 
-            vaddr_copier = lambda dst: list_of_list_copier(dst, vaddr_list)
-            self._multimemap.append_copier('vaddr', (self.nvariants), 'uint64', vaddr_copier)
-
             chromosomes_str_dtype, chromosomes_copier = str_dtype_copier(chrom_list)
             self._multimemap.append_copier('chromosomes', (self.nvariants), chromosomes_str_dtype, chromosomes_copier)
-
-            positions_copier = lambda dst: list_of_list_copier(dst, position_list)
-            self._multimemap.append_copier('positions', (self.nvariants), 'uint32', positions_copier)
-
-            nalleles_copier = lambda dst: list_of_list_copier(dst, nalleles_list)
-            self._multimemap.append_copier('nalleles', (self.nvariants), 'uint16', nalleles_copier)
 
             allele_ids_str_dtype, allele_ids_copier = str_dtype_copier(allele_ids_list)
             self._multimemap.append_copier('allele_ids', (self.nvariants), allele_ids_str_dtype, allele_ids_copier)
