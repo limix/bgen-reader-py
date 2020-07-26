@@ -61,11 +61,6 @@ class MultiMemMap:
         self._slots.flush()
         self._name_to_memmap[name] = memmap
 
-    def append_copier(self, name, shape, dtype, copier):
-        memmap = self.append_empty(name, shape, dtype)
-        copier(memmap)
-        memmap.flush()
-
     def append_empty(self, name, shape, dtype):
         assert self._mode == 'w+', "Can only append with mode 'w+'"
         slot_index = len(self)

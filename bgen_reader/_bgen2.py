@@ -113,8 +113,13 @@ class open_bgen:
         self,
         filepath: Union[str, Path],
         samples_filepath: Optional[Union[str, Path]] = None,
+        assume_unphased_diallelic: bool = False,
+        assume_phased_diallelic: bool = False,
         verbose: bool = True,
-    ):
+    ): #!!!cmk maybe metadata2 file should be ".aud" and ".apd." if assumptions are made
+        assert not (assume_phased_diallelic and assume_unphased_diallelic), "Can't assume both 'phased diallelic' and 'unphased diallelic'"
+        #!!!cmk need to confirm can still read 4 millions distribtuions per unit
+
         filepath = Path(filepath)
         assert_file_exist(filepath)
         assert_file_readable(filepath)
@@ -125,9 +130,6 @@ class open_bgen:
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
         self._nvariants = self._bgen.nvariants
-
-        self._samples = self._sample_array(samples_filepath) #!!!cmk memory map and cover the other two cases
-        self._sample_range = np.arange(len(self._samples), dtype=np.int)#!!!cmk this takes less memory than the strings. It could be memory mapped or just remove and replaced with a function???
 
         # LATER could make a version of this method public
         metadata2 = self._metadatapath_from_filename(filepath).resolve() #needed because of tmp_cwd below
@@ -140,7 +142,34 @@ class open_bgen:
                 metafile_filepath = Path("bgen.metadata")
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
                 self._map_metadata(metafile_filepath) #!!!cmk how about killing self._ids, etc
+                #!!!cmk move to subfunction
+                ncombinations_memmap = self._multimemap.append_empty('ncombinations', (self.nvariants), 'int32')
+                phased_memmap = self._multimemap.append_empty('phased', (self.nvariants), 'bool')
+
+                if assume_unphased_diallelic:
+                    assert not assume_phased_diallelic, 'real assert'
+                    ncombinations_memmap[:] = 3
+                    phased_memmap[:] = False
+                elif assume_phased_diallelic:
+                    ncombinations_memmap[:] = 4
+                    phased_memmap[:] = True
+                else: #!!!cmk put a messgae here telling folks no assumptions
+                    for i, vaddr0 in enumerate(self._vaddr): #!!!cmk multithread???
+                        if i % 1000 == 0:
+                            updater("step 3: part {0:,} of {1:,}".format(i, self.nvariants))
+                        genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
+                        ncombinations_memmap[i] = lib.bgen_genotype_ncombs(genotype)
+                        phased_memmap[i] = lib.bgen_genotype_phased(genotype)
+                        lib.bgen_genotype_close(genotype)
+
+                ncombinations_memmap.flush()
+                phased_memmap.flush()
+
         self._max_combinations = max(self.ncombinations)
+
+        self._sample_array(samples_filepath) #!!!cmk memory map and cover the other two cases
+        self._sample_range = np.arange(self.nsamples, dtype=np.int)#!!!cmk this takes less memory than the strings. It could be memory mapped or just remove and replaced with a function???
+
 
 
 
@@ -149,8 +178,26 @@ class open_bgen:
 
         if sample_file is None:
             if self._bgen.contain_samples:
-                #!!!cmk raise Exception("cmk need code")
-                return np.array(self._bgen.read_samples(),dtype='str') #!!!cmk note part1 of this gets the # of strings and the length of the largest string
+                self._nsamples = self._bgen.nsamples
+                bgen_samples = lib.bgen_file_read_samples(self._bgen._bgen_file)
+                if bgen_samples == ffi.NULL:
+                    raise RuntimeError(f"Could not fetch samples from the bgen file.")
+
+                try:
+                    samples_max_len = ffi.new("uint32_t[]", 1)
+                    lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
+                    samples = np.zeros(self.nsamples, dtype=f"S{samples_max_len[0]}")
+                    samples_memmap = self._multimemap.append_empty('samples', self.nsamples, f"<U{samples_max_len[0]}")
+                    lib.read_samples_part2(
+                        bgen_samples,
+                        self.nsamples,
+                        ffi.from_buffer("char[]", samples),
+                        samples_max_len[0],
+                    )
+                finally: #!!!cmk do the other opens have a finally like this?
+                    lib.bgen_samples_destroy(bgen_samples)
+                samples_memmap[:]=samples
+                samples_memmap.flush()
             else:
                 #[f"sample_{i}" for i in range(nsamples)]
                 prefix = "sample_"
@@ -405,7 +452,7 @@ class open_bgen:
                         or ncombinations[out_index] != prob_buffer.shape[-1]
                     ):
                         prob_buffer = np.full(
-                            (len(self._samples), ncombinations[out_index]),
+                            (self.nsamples, ncombinations[out_index]),
                             np.nan,
                             order="C",
                             dtype="float64",
@@ -458,7 +505,7 @@ class open_bgen:
             4
 
         """
-        return len(self._samples)
+        return self._nsamples
 
     @property
     def nvariants(self) -> int:
@@ -543,7 +590,7 @@ class open_bgen:
             ['sample_0' 'sample_1' 'sample_2' 'sample_3']
 
         """
-        return self._samples
+        return self._multimemap["samples"]
 
     @property
     def ids(self) -> List[str]:
@@ -798,12 +845,14 @@ class open_bgen:
 
                     lib.bgen_partition_destroy(partition)
 
-                
+                vaddr_memmap.flush()
+                positions_memmap.flush()
+                nalleles_memmap.flush()
+
                 ids_memmap = self._multimemap.append_empty('ids', (self.nvariants), f'<U{max(vid_max_list)}')
                 rsids_memmap = self._multimemap.append_empty('rsids', (self.nvariants), f'<U{max(rsid_max_list)}')
                 chrom_memmap = self._multimemap.append_empty('chromosomes', (self.nvariants), f'<U{max(chrom_max_list)}')
                 allele_ids_memmap = self._multimemap.append_empty('allele_ids', (self.nvariants), f'<U{max(allele_ids_max_list)}')
-
                     
                 start = 0
                 for ipart2 in range(nparts):  # LATER multithread?
@@ -847,33 +896,10 @@ class open_bgen:
                     allele_ids_memmap[start:end] = allele_ids
                     start = end
 
-
-            def list_of_list_copier(dst,list_of_list): #!!!cmk move this
-                start = 0
-                for _list in list_of_list:
-                    end = start+len(_list)
-                    dst[start:end] = _list
-                    start=end
-
-            def str_dtype_copier(str_list_of_list): #!!!cmk move this
-                max_gen = (len(max(str_list, key=len)) for str_list in str_list_of_list)
-                max_len = max(max_gen)
-                str_dtype = f"<U{max_len}"
-                copier = lambda dst: list_of_list_copier(dst, str_list_of_list)
-                return str_dtype, copier
-
-            #!!!cmk allow user to specify this???
-            ncombinations_memmap = self._multimemap.append_empty('ncombinations', (self.nvariants), 'int32')
-            phased_memmap = self._multimemap.append_empty('phased', (self.nvariants), 'bool')
-
-            for i, vaddr0 in enumerate(self._vaddr): #!!!cmk multithread???
-                if i % 1000 == 0:
-                    updater("step 3: part {0:,} of {1:,}".format(i, self.nvariants))
-                genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
-                ncombinations_memmap[i] = lib.bgen_genotype_ncombs(genotype)
-                phased_memmap[i] = lib.bgen_genotype_phased(genotype)
-                lib.bgen_genotype_close(genotype)
-
+                ids_memmap.flush()
+                rsids_memmap.flush()
+                chrom_memmap.flush()
+                allele_ids_memmap.flush()
 
 
     def __str__(self):

@@ -472,6 +472,7 @@ if __name__ == "__main__":
     if True:
 
         #filename = 'M:/deldir/genbgen/good/merged_487400x4840000.bgen'
+        #filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
         #filename = 'M:/deldir/genbgen/good/merged_487400x220000.bgen'
         filename = r'M:\deldir\fakeuk450000x1000.bgen'
 
@@ -484,7 +485,7 @@ if __name__ == "__main__":
         print(os.path.getsize(filename))
 
         start = time.time()
-        with open_bgen(filename, verbose=True) as bgen:
+        with open_bgen(filename, assume_unphased_diallelic=True, verbose=True) as bgen:
             print(bgen.nsamples)
             print(bgen.nvariants)
             print(bgen.read((5,5)))
