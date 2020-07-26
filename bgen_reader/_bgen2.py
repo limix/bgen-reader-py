@@ -138,7 +138,6 @@ class open_bgen:
         if len(self._multimemap)==0:
             with tmp_cwd():
                 metafile_filepath = Path("bgen.metadata")
-
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
                 self._map_metadata(metafile_filepath) #!!!cmk how about killing self._ids, etc
         self._max_combinations = max(self.ncombinations)
@@ -734,20 +733,23 @@ class open_bgen:
                 nparts = mf.npartitions
 
 
-                id_list = []
-                rsid_list = []
-                chrom_list = []
-                allele_ids_list = []
                 vaddr_memmap = self._multimemap.append_empty('vaddr', (self.nvariants), 'uint64')
                 positions_memmap = self._multimemap.append_empty('positions', (self.nvariants), 'uint32')
                 nalleles_memmap = self._multimemap.append_empty('nalleles', (self.nvariants), 'uint16')
 
                 #!!!cmk maybe don't worry about memory allocation on the first load, just afterwards.
                 #!!!cmk could look at one part (last one because it tends to have longer strings) and then allocate memmap files. Then if later a string (or whatever) is too large, reallocate.
+
+                nvariants_list = []
+                vid_max_list = []
+                rsid_max_list = []
+                chrom_max_list = []
+                allele_ids_max_list = []
+
                 start = 0
                 for ipart2 in range(nparts):  # LATER multithread?
                     # LATER in notebook this message doesn't appear on one line
-                    updater("step 2: part {0:,} of {1:,}".format(ipart2, nparts))
+                    updater("step 2a: part {0:,} of {1:,}".format(ipart2, nparts))
 
                     # start = time()
                     partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
@@ -756,9 +758,10 @@ class open_bgen:
                         raise RuntimeError(f"Could not read partition {partition}.")
 
                     nvariants = lib.bgen_partition_nvariants(partition)
+                    nvariants_list.append(nvariants)
 
                     # start = time()
-                    position = np.empty(nvariants, dtype=np.uint32)
+                    position = np.empty(nvariants, dtype=np.uint32) #!!!cmk can we go right into memmap rather than into buffer first?
                     nalleles = np.empty(nvariants, dtype=np.uint16)
                     offset = np.empty(nvariants, dtype=np.uint64)
                     vid_max_len = ffi.new("uint32_t[]", 1)
@@ -781,10 +784,42 @@ class open_bgen:
                         chrom_max_len,
                         allele_ids_max_len,
                     )
-                    # print(f"Elapsed: {time() - start} read_partition")
+
+                    vid_max_list.append(vid_max_len[0])
+                    rsid_max_list.append(rsid_max_len[0])
+                    chrom_max_list.append(chrom_max_len[0])
+                    allele_ids_max_list.append(allele_ids_max_len[0])
+
+                    end = start + nvariants
+                    vaddr_memmap[start:end] = offset
+                    positions_memmap[start:end] = position
+                    nalleles_memmap[start:end] = nalleles
+                    start = end
+
+                    lib.bgen_partition_destroy(partition)
+
+                
+                ids_memmap = self._multimemap.append_empty('ids', (self.nvariants), f'<U{max(vid_max_list)}')
+                rsids_memmap = self._multimemap.append_empty('rsids', (self.nvariants), f'<U{max(rsid_max_list)}')
+                chrom_memmap = self._multimemap.append_empty('chromosomes', (self.nvariants), f'<U{max(chrom_max_list)}')
+                allele_ids_memmap = self._multimemap.append_empty('allele_ids', (self.nvariants), f'<U{max(allele_ids_max_list)}')
+
+                    
+                start = 0
+                for ipart2 in range(nparts):  # LATER multithread?
+                    # LATER in notebook this message doesn't appear on one line
+                    updater("step 2b: part {0:,} of {1:,}".format(ipart2, nparts))
 
                     # start = time()
-                    vid = np.zeros(nvariants, dtype=f"S{vid_max_len[0]}")
+                    partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
+                    # print(f"Elapsed: {time() - start} for bgen_metafile_read_partition")
+                    if partition == ffi.NULL:
+                        raise RuntimeError(f"Could not read partition {partition}.")
+
+                    nvariants = nvariants_list[ipart2]
+
+                    # start = time()
+                    vid = np.zeros(nvariants, dtype=f"S{vid_max_len[0]}") #!!!cmk possible to avoid buffer? But what about ascii vs Unicode and different lengths in different partitions? do they really vary?
                     rsid = np.zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
                     chrom = np.zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
                     allele_ids = np.zeros(nvariants, dtype=f"S{allele_ids_max_len[0]}")
@@ -794,27 +829,22 @@ class open_bgen:
                     lib.read_partition_part2(
                         partition,
                         ffi.from_buffer("char[]", vid),
-                        vid_max_len[0],
+                        vid_max_list[ipart2],
                         ffi.from_buffer("char[]", rsid),
-                        rsid_max_len[0],
+                        rsid_max_list[ipart2],
                         ffi.from_buffer("char[]", chrom),
-                        chrom_max_len[0],
+                        chrom_max_list[ipart2],
                         ffi.from_buffer("char[]", allele_ids),
-                        allele_ids_max_len[0],
+                        allele_ids_max_list[ipart2],
                     )
                     # print(f"Elapsed: {time() - start} read_partition2")
                     lib.bgen_partition_destroy(partition)
 
-
-                    id_list.append(vid)
-                    rsid_list.append(rsid)
-                    chrom_list.append(chrom)
-                    allele_ids_list.append(allele_ids)
-
-                    end = start + len(offset)
-                    vaddr_memmap[start:end] = offset
-                    positions_memmap[start:end] = position
-                    nalleles_memmap[start:end] = nalleles
+                    end = start + nvariants
+                    ids_memmap[start:end] = vid
+                    rsids_memmap[start:end] = rsid
+                    chrom_memmap[start:end] = chrom
+                    allele_ids_memmap[start:end] = allele_ids
                     start = end
 
 
@@ -832,18 +862,7 @@ class open_bgen:
                 copier = lambda dst: list_of_list_copier(dst, str_list_of_list)
                 return str_dtype, copier
 
-            ids_str_dtype, ids_copier = str_dtype_copier(id_list)
-            self._multimemap.append_copier('ids', (self.nvariants), ids_str_dtype, ids_copier)
-
-            rsids_str_dtype, rsids_copier = str_dtype_copier(rsid_list)
-            self._multimemap.append_copier('rsids', (self.nvariants), rsids_str_dtype, rsids_copier)
-
-            chromosomes_str_dtype, chromosomes_copier = str_dtype_copier(chrom_list)
-            self._multimemap.append_copier('chromosomes', (self.nvariants), chromosomes_str_dtype, chromosomes_copier)
-
-            allele_ids_str_dtype, allele_ids_copier = str_dtype_copier(allele_ids_list)
-            self._multimemap.append_copier('allele_ids', (self.nvariants), allele_ids_str_dtype, allele_ids_copier)
-
+            #!!!cmk allow user to specify this???
             ncombinations_memmap = self._multimemap.append_empty('ncombinations', (self.nvariants), 'int32')
             phased_memmap = self._multimemap.append_empty('phased', (self.nvariants), 'bool')
 
