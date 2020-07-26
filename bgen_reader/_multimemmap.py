@@ -60,3 +60,69 @@ class MultiMemMap:
         self._slots[0] = slot_index+1
         self._slots.flush()
         self._name_to_memmap[name] = memmap
+
+    def append_copier(self, name, shape, dtype, copier):
+        memmap = self.append_empty(name, shape, dtype)
+        copier(memmap)
+        memmap.flush()
+
+    def append_empty(self, name, shape, dtype):
+        assert self._mode == 'w+', "Can only append with mode 'w+'"
+        slot_index = len(self)
+        self._metameta[slot_index,0] = name
+        self._metameta[slot_index,1] = str(dtype) #cmk repr???
+        self._metameta[slot_index,2] = str(shape)
+        self._metameta.flush()
+        memmap = np.memmap(self._filename,dtype=dtype,mode='r+',offset=self._offset,shape=shape)
+        self._slots[0] = slot_index+1
+        self._slots.flush()
+        self._name_to_memmap[name] = memmap
+        self._offset += memmap.size * memmap.itemsize
+        memmap.flush()
+        return memmap
+
+
+    def close(self):
+        self.__exit__()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        if (
+            hasattr(self, "_name_to_memmap")
+            and self._name_to_memmap is not None
+        ):  # we need to test this because Python doesn't guarantee that __init__ was
+            # fully run
+            for name, memmap in self._name_to_memmap.items():
+                memmap.flush()
+            self._name_to_memmap.clear()
+            del (
+                self._name_to_memmap
+            )  # This allows __del__ and __exit__ to be called twice on the same object with
+            # no bad effect.
+        if (
+            hasattr(self, "_slots")
+            and self._slots is not None
+        ):  # we need to test this because Python doesn't guarantee that __init__ was
+            # fully run
+            self._slots.flush()
+            del (
+                self._slots
+            )  # This allows __del__ and __exit__ to be called twice on the same object with
+            # no bad effect.
+        if (
+            hasattr(self, "_metameta")
+            and self._metameta is not None
+        ):  # we need to test this because Python doesn't guarantee that __init__ was
+            # fully run
+            self._metameta.flush()
+            del (
+                self._metameta
+            )  # This allows __del__ and __exit__ to be called twice on the same object with
+            # no bad effect
+    def __del__(self):
+        self.__exit__()
+
+
+#!!!cmk needs tests

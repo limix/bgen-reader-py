@@ -124,6 +124,7 @@ class open_bgen:
 
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
+        self._nvariants = self._bgen.nvariants
 
         self._samples = self._sample_array(samples_filepath) #!!!cmk memory map and cover the other two cases
         self._sample_range = np.arange(len(self._samples), dtype=np.int)#!!!cmk this takes less memory than the strings. It could be memory mapped or just remove and replaced with a function???
@@ -137,29 +138,11 @@ class open_bgen:
         if len(self._multimemap)==0:
             with tmp_cwd():
                 metafile_filepath = Path("bgen.metadata")
+
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
                 self._map_metadata(metafile_filepath) #!!!cmk how about killing self._ids, etc
+        self._max_combinations = max(self.ncombinations)
 
-                self._multimemap.append('ids', self._ids)
-                self._multimemap.append('rsids', self._rsids)
-                self._multimemap.append('vaddr', self._vaddr)
-                self._multimemap.append('chromosomes', self._chromosomes)
-                self._multimemap.append('positions', self._positions)
-                self._multimemap.append('nalleles', self._nalleles)
-                self._multimemap.append('allele_ids', self._allele_ids)
-                self._multimemap.append('ncombinations', self._ncombinations)
-                self._multimemap.append('phased', self._phased)
-
-        self._ids = self._multimemap["ids"]
-        self._rsids = self._multimemap["rsids"]
-        self._vaddr = self._multimemap["vaddr"]
-        self._chromosomes = self._multimemap["chromosomes"]
-        self._positions = self._multimemap["positions"]
-        self._nalleles = self._multimemap["nalleles"]
-        self._allele_ids = self._multimemap["allele_ids"]
-        self._ncombinations = self._multimemap["ncombinations"]
-        self._phased = self._multimemap["phased"]
-        self._max_combinations = max(self._ncombinations)
 
 
     def _sample_array(self, sample_file):
@@ -495,7 +478,7 @@ class open_bgen:
             4
 
         """
-        return len(self.ids)
+        return self._nvariants
 
     @property
     def max_combinations(self) -> int:
@@ -542,7 +525,7 @@ class open_bgen:
     # This is static so that test code can use it easily.
     @staticmethod
     def _metadatapath_from_filename(filename):
-        return infer_metafile_filepath(Path(filename), ".metadata2.mm")
+        return infer_metafile_filepath(Path(filename), ".metadata2.mmm")
 
     @property
     def samples(self) -> List[str]:
@@ -580,7 +563,7 @@ class open_bgen:
             ['SNP1' 'SNP2' 'SNP3' 'SNP4']
 
         """
-        return self._ids
+        return self._multimemap["ids"]
 
     @property
     def rsids(self) -> List[str]:
@@ -599,7 +582,15 @@ class open_bgen:
             ['RS1' 'RS2' 'RS3' 'RS4']
 
         """
-        return self._rsids
+        return self._multimemap["rsids"]
+
+    @property
+    def _vaddr(self) -> List[int]:
+        return self._multimemap["vaddr"]
+
+    @property
+    def _ncombinations(self) -> List[int]:
+        return self._multimemap["ncombinations"]
 
     @property
     def chromosomes(self) -> List[str]:
@@ -618,7 +609,7 @@ class open_bgen:
             ['1' '1' '1' '1']
 
         """
-        return self._chromosomes
+        return self._multimemap["chromosomes"]
 
     @property
     def positions(self) -> List[int]:
@@ -637,7 +628,7 @@ class open_bgen:
             [1 2 3 4]
 
         """
-        return self._positions
+        return self._multimemap["positions"]
 
     @property
     def nalleles(self) -> List[int]:
@@ -656,7 +647,7 @@ class open_bgen:
             [2 2 2 2]
 
         """
-        return self._nalleles
+        return self._multimemap["nalleles"]
 
     @property
     def allele_ids(self) -> List[str]:
@@ -675,7 +666,7 @@ class open_bgen:
             ['A,G' 'A,G' 'A,G' 'A,G']
 
         """
-        return self._allele_ids
+        return self._multimemap["allele_ids"]
 
     @property
     def ncombinations(self) -> List[int]:
@@ -695,7 +686,7 @@ class open_bgen:
             [4 4 4 4]
 
         """
-        return self._ncombinations
+        return self._multimemap["ncombinations"]
 
     @property
     def phased(self) -> List[bool]:
@@ -715,7 +706,7 @@ class open_bgen:
             [ True  True  True  True]
 
         """
-        return self._phased
+        return self._multimemap["phased"]
 
     @staticmethod
     def _split_index(index):
@@ -748,8 +739,6 @@ class open_bgen:
                 vaddr_list = []
                 nalleles_list = []
                 allele_ids_list = []
-                ncombinations_list = []
-                phased_list = []
                 #!!!cmk maybe don't worry about memory allocation on the first load, just afterwards.
                 #!!!cmk could look at one part (last one because it tends to have longer strings) and then allocate memmap files. Then if later a string (or whatever) is too large, reallocate.
                 for ipart2 in range(nparts):  # LATER multithread?
@@ -775,27 +764,64 @@ class open_bgen:
                     allele_ids_list.append(allele_ids)
                     vaddr_list.append(offset)
 
-            # LATER use concatenate(...out=) instead
-            self._ids = np.array(
-                np.concatenate(id_list), dtype="str"
-            )  # dtype needed to make unicode
-            self._rsids = np.array(np.concatenate(rsid_list), dtype="str")
-            self._vaddr = np.concatenate(vaddr_list)
-            self._chromosomes = np.array(np.concatenate(chrom_list), dtype="str")
-            self._positions = np.concatenate(position_list)
-            self._nalleles = np.concatenate(nalleles_list)
-            self._allele_ids = np.array(np.concatenate(allele_ids_list), dtype="str")
+            ## LATER use concatenate(...out=) instead#cmk remove these comments
+            #self._ids = np.array(
+            #    np.concatenate(id_list), dtype="str"
+            #)  # dtype needed to make unicode
+            #self._rsids = np.array(np.concatenate(rsid_list), dtype="str")
+            #self._vaddr = np.concatenate(vaddr_list)
+            #self._chromosomes = np.array(np.concatenate(chrom_list), dtype="str")
+            #self._positions = np.concatenate(position_list)#dtype('uint32')
+            #self._nalleles = np.concatenate(nalleles_list)#dtype('uint16')
+            #self._allele_ids = np.array(np.concatenate(allele_ids_list), dtype="str")
 
-            for i, vaddr0 in enumerate(self._vaddr):
+            def list_of_list_copier(dst,list_of_list): #!!!cmk move this
+                start = 0
+                for _list in list_of_list:
+                    end = start+len(_list)
+                    dst[start:end] = _list
+                    start=end
+
+            def str_dtype_copier(str_list_of_list): #!!!cmk move this
+                max_gen = (len(max(str_list, key=len)) for str_list in str_list_of_list)
+                max_len = max(max_gen)
+                str_dtype = f"<U{max_len}"
+                copier = lambda dst: list_of_list_copier(dst, str_list_of_list)
+                return str_dtype, copier
+
+            ids_str_dtype, ids_copier = str_dtype_copier(id_list)
+            self._multimemap.append_copier('ids', (self.nvariants), ids_str_dtype, ids_copier)
+
+            rsids_str_dtype, rsids_copier = str_dtype_copier(rsid_list)
+            self._multimemap.append_copier('rsids', (self.nvariants), rsids_str_dtype, rsids_copier)
+
+            vaddr_copier = lambda dst: list_of_list_copier(dst, vaddr_list)
+            self._multimemap.append_copier('vaddr', (self.nvariants), 'uint64', vaddr_copier)
+
+            chromosomes_str_dtype, chromosomes_copier = str_dtype_copier(chrom_list)
+            self._multimemap.append_copier('chromosomes', (self.nvariants), chromosomes_str_dtype, chromosomes_copier)
+
+            positions_copier = lambda dst: list_of_list_copier(dst, position_list)
+            self._multimemap.append_copier('positions', (self.nvariants), 'uint32', positions_copier)
+
+            nalleles_copier = lambda dst: list_of_list_copier(dst, nalleles_list)
+            self._multimemap.append_copier('nalleles', (self.nvariants), 'uint16', nalleles_copier)
+
+            allele_ids_str_dtype, allele_ids_copier = str_dtype_copier(allele_ids_list)
+            self._multimemap.append_copier('allele_ids', (self.nvariants), allele_ids_str_dtype, allele_ids_copier)
+
+            ncombinations_memmap = self._multimemap.append_empty('ncombinations', (self.nvariants), 'int32')
+            phased_memmap = self._multimemap.append_empty('phased', (self.nvariants), 'bool')
+
+            for i, vaddr0 in enumerate(self._vaddr): #!!!cmk multithread???
                 if i % 1000 == 0:
                     updater("step 3: part {0:,} of {1:,}".format(i, self.nvariants))
                 genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
-                ncombinations_list.append(lib.bgen_genotype_ncombs(genotype))
-                phased_list.append(lib.bgen_genotype_phased(genotype))
+                ncombinations_memmap[i] = lib.bgen_genotype_ncombs(genotype)
+                phased_memmap[i] = lib.bgen_genotype_phased(genotype)
                 lib.bgen_genotype_close(genotype)
 
-            self._ncombinations = np.array(ncombinations_list, dtype="int")
-            self._phased = np.array(phased_list, dtype="bool")
+
 
     def __str__(self):
         return "{0}('{1}')".format(self.__class__.__name__, self._filepath.name)
@@ -843,6 +869,16 @@ class open_bgen:
             self._bgen_context_manager.__exit__(None, None, None)
             del (
                 self._bgen_context_manager
+            )  # This allows __del__ and __exit__ to be called twice on the same object with
+            # no bad effect.
+        if (
+            hasattr(self, "_multimemap")
+            and self._multimemap is not None
+        ):  # we need to test this because Python doesn't guarantee that __init__ was
+            # fully run
+            self._multimemap.__exit__(None, None, None)
+            del (
+                self._multimemap
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
 
