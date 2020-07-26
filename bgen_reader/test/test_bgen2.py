@@ -345,7 +345,6 @@ def test_close_del_with():
 
     bgen2 = open_bgen(filepath, verbose=False)
     bgen2.close()
-    bgen2.samples
     with pytest.raises(ValueError):
         bgen2.read()
 
@@ -468,13 +467,18 @@ def test_read_multiple_returns():
 
 
 if __name__ == "__main__":
+    if True:
+        from bgen_reader import example_filepath, open_bgen
+        file = example_filepath("haplotypes.bgen")
+        with open_bgen(file, verbose=False) as bgen:
+                print(bgen.samples)
 
     if True:
 
-        #filename = 'M:/deldir/genbgen/good/merged_487400x4840000.bgen'
-        #filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
+        #filename = r'M:\deldir\fakeuk450000x1000.bgen'
         #filename = 'M:/deldir/genbgen/good/merged_487400x220000.bgen'
-        filename = r'M:\deldir\fakeuk450000x1000.bgen'
+        #filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
+        filename = 'M:/deldir/genbgen/good/merged_487400x4840000.bgen'
 
         import tracemalloc
         import logging
@@ -492,6 +496,7 @@ if __name__ == "__main__":
             current, peak = tracemalloc.get_traced_memory()
             print(f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
             print("Time = {0} seconds".format(time.time()-start))
+            print("!!!cmk")
         tracemalloc.stop()
 
     if False: #!!!cmk

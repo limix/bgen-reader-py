@@ -61,7 +61,7 @@ class MultiMemMap:
         self._slots.flush()
         self._name_to_memmap[name] = memmap
 
-    def append_empty(self, name, shape, dtype):
+    def append_empty(self, name, shape, dtype): #!!!cmk say that all these dtypes must be strings, not types
         assert self._mode == 'w+', "Can only append with mode 'w+'"
         slot_index = len(self)
         self._metameta[slot_index,0] = name
@@ -69,12 +69,25 @@ class MultiMemMap:
         self._metameta[slot_index,2] = str(shape)
         self._metameta.flush()
         memmap = np.memmap(self._filename,dtype=dtype,mode='r+',offset=self._offset,shape=shape)
-        self._slots[0] = slot_index+1
+        self._slots[0] = slot_index+1 #!!!cmk raise an error if every go over slots[2] e.g., 20
         self._slots.flush()
         self._name_to_memmap[name] = memmap
         self._offset += memmap.size * memmap.itemsize
         memmap.flush()
         return memmap
+
+    def popitem(self): #As of Python 3.7 popitem remove the last item from a dictionary
+        assert self._mode == 'w+', "Can only append with mode 'w+'"
+        slot_index = len(self)-1
+        name = self._metameta[slot_index,0]
+        self._metameta[slot_index,:] = ''
+        self._metameta.flush()
+        self._slots[0] = slot_index
+        self._slots.flush()
+        memmap = self._name_to_memmap.pop(name)
+        self._offset -= memmap.size * memmap.itemsize
+        memmap.flush()
+        #!!!cmk change length of flie??
 
 
     def close(self):
