@@ -17,6 +17,7 @@ from ._helper import _log_in_place
 from ._helper import genotypes_to_allele_counts, get_genotypes
 from ._reader import _get_samples
 from ._samples import read_samples_file
+from ._multimemmap import MultiMemMap
 
 # https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 class open_bgen:
@@ -132,83 +133,32 @@ class open_bgen:
         if metadata2.exists() and getmtime(metadata2) < getmtime(filepath):
             metadata2.unlink()
 
-
-        #!!!cmk make this a class?
-        slot_dtype = 'int32'
-        slots_shape = (3)
-        metameta_dtype = '<U50'
-
-        name_to_memmap = {}
-        if metadata2.exists():
-            offset = 0
-            slots = np.memmap(metadata2,dtype=slot_dtype,mode='r+',offset=offset,shape=slots_shape)
-            offset += slots.size * slots.itemsize
-            slot_used,slot_count,metameta_count = slots
-            assert slot_used<=slot_count
-
-            metameta = np.memmap(metadata2,dtype=metameta_dtype,mode='r+',offset=offset,shape=(slots[1],slots[2]))
-            offset += metameta.size * metameta.itemsize
-
-            names = metameta[:slot_used,0]
-            dtypes = metameta[:slot_used,1]
-            shapes = []
-            for shape_as_str in metameta[:slot_used,2]:
-                shapes.append(tuple([int(num_as_str) for num_as_str in shape_as_str.split(',')]))
-
-            for slot_index in range(slot_used):
-                memmap = np.memmap(metadata2,dtype=dtypes[slot_index],mode='r+',offset=offset,shape=shapes[slot_index])
-                offset += memmap.size * memmap.itemsize
-                name_to_memmap[names[slot_index]]=memmap
-        else:
+        self._multimemap = MultiMemMap(metadata2,mode="w+") #!!!cmk really need to close this
+        if len(self._multimemap)==0:
             with tmp_cwd():
                 metafile_filepath = Path("bgen.metadata")
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
-                self._map_metadata(metafile_filepath)
-                name_to_nparray = {
-                    'ids':self._ids,
-                    'rsids':self._rsids,
-                    'vaddr':self._vaddr,
-                    'chromosomes':self._chromosomes,
-                    'positions':self._positions,
-                    'nalleles':self._nalleles,
-                    'allele_ids':self._allele_ids,
-                    'ncombinations':self._ncombinations,
-                    'phased':self._phased,
-                    }
+                self._map_metadata(metafile_filepath) #!!!cmk how about killing self._ids, etc
 
-                offset = 0
-                slots = np.memmap(metadata2,dtype=slot_dtype,mode='w+',offset=offset,shape=slots_shape)
-                offset += slots.size * slots.itemsize
-                slots[0] = 0
-                slots[1] = 20
-                slots[2] = 3
-                slots.flush()
+                self._multimemap.append('ids', self._ids)
+                self._multimemap.append('rsids', self._rsids)
+                self._multimemap.append('vaddr', self._vaddr)
+                self._multimemap.append('chromosomes', self._chromosomes)
+                self._multimemap.append('positions', self._positions)
+                self._multimemap.append('nalleles', self._nalleles)
+                self._multimemap.append('allele_ids', self._allele_ids)
+                self._multimemap.append('ncombinations', self._ncombinations)
+                self._multimemap.append('phased', self._phased)
 
-                metameta = np.memmap(metadata2,dtype=metameta_dtype,mode='r+',offset=offset,shape=(slots[1],slots[2]))
-                offset += metameta.size * metameta.itemsize
-
-                for slot_index, (name, nparray) in enumerate(name_to_nparray.items()):
-                    metameta[slot_index,0] = name
-                    metameta[slot_index,1] = str(nparray.dtype) #cmk repr???
-                    metameta[slot_index,2] = ','.join([str(i) for i in nparray.shape])
-                    metameta.flush()
-                    memmap = np.memmap(metadata2,dtype=nparray.dtype,mode='r+',offset=offset,shape=nparray.shape)
-                    offset += memmap.size * memmap.itemsize
-                    np.copyto(memmap,nparray)
-                    memmap.flush()
-                    slots[0] = slot_index+1
-                    slots.flush()
-                    name_to_memmap[name] = memmap
-
-        self._ids = name_to_memmap["ids"]
-        self._rsids = name_to_memmap["rsids"]
-        self._vaddr = name_to_memmap["vaddr"]
-        self._chromosomes = name_to_memmap["chromosomes"]
-        self._positions = name_to_memmap["positions"]
-        self._nalleles = name_to_memmap["nalleles"]
-        self._allele_ids = name_to_memmap["allele_ids"]
-        self._ncombinations = name_to_memmap["ncombinations"]
-        self._phased = name_to_memmap["phased"]
+        self._ids = self._multimemap["ids"]
+        self._rsids = self._multimemap["rsids"]
+        self._vaddr = self._multimemap["vaddr"]
+        self._chromosomes = self._multimemap["chromosomes"]
+        self._positions = self._multimemap["positions"]
+        self._nalleles = self._multimemap["nalleles"]
+        self._allele_ids = self._multimemap["allele_ids"]
+        self._ncombinations = self._multimemap["ncombinations"]
+        self._phased = self._multimemap["phased"]
         self._max_combinations = max(self._ncombinations)
 
 
