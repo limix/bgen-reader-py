@@ -116,8 +116,8 @@ class open_bgen:
         assume_unphased_diallelic: bool = False,
         assume_phased_diallelic: bool = False,
         verbose: bool = True,
-    ): #!!!cmk maybe metadata2 file should be ".aud" and ".apd." if assumptions are made
-        assert not (assume_phased_diallelic and assume_unphased_diallelic), "Can't assume both 'phased diallelic' and 'unphased diallelic'"
+    ): 
+        assert not (assume_unphased_diallelic and assume_phased_diallelic), "Can't assume both 'unphased diallelic' and 'phased diallelic'"
         #!!!cmk need to confirm can still read 4 millions distributions per unit
 
         filepath = Path(filepath)
@@ -133,7 +133,7 @@ class open_bgen:
         self._nsamples = self._bgen.nsamples
 
         # LATER could make a version of this method public
-        metadata2 = self._metadatapath_from_filename(filepath).resolve() #needed because of tmp_cwd below
+        metadata2 = self._metadatapath_from_filename(filepath,assume_unphased_diallelic,assume_phased_diallelic).resolve() #needed because of tmp_cwd below
         if metadata2.exists() and getmtime(metadata2) < getmtime(filepath):
             metadata2.unlink()
 
@@ -141,7 +141,7 @@ class open_bgen:
             metadata2_temp = metadata2.parent / (metadata2.name + '.temp')
             if metadata2_temp.exists():
                 metadata2_temp.unlink()
-            self._multimemmap = MultiMemMap(metadata2_temp,mode="w+") #!!!cmk really need to close this
+            self._multimemmap = MultiMemMap(metadata2_temp,mode="w+")
             with tmp_cwd():
                 metafile_filepath = Path("bgen.metadata")
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
@@ -174,7 +174,7 @@ class open_bgen:
                 max_combinations_memmap[0] = max(self.ncombinations)
                 max_combinations_memmap.flush()
 
-                self._sample_array(samples_filepath)#!!!cmk need better name
+                self._map_sample(samples_filepath)
                 sample_range_memmap = self._multimemmap.append_empty("sample_range", self.nsamples, 'int32')
                 for i in range(self.nsamples): #!!!cmk this uses very little memory, is there another low-mem method that would be faster?
                     sample_range_memmap[i] = i
@@ -194,26 +194,26 @@ class open_bgen:
         
 
 
-    def _sample_array(self, sample_file):
+    def _map_sample(self, sample_file):
 
         if self._bgen.contain_samples:
             bgen_samples = lib.bgen_file_read_samples(self._bgen._bgen_file)
             if bgen_samples == ffi.NULL:
                 raise RuntimeError(f"Could not fetch samples from the bgen file.")
 
-            #!!!cmktry:
-            samples_max_len = ffi.new("uint32_t[]", 1)
-            lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
-            samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{samples_max_len[0]}")
-            samples = self._multimemmap.append_empty('_samples', self.nsamples, f"S{samples_max_len[0]}") #This one second, so we can delete it afterwards.
-            lib.read_samples_part2(
-                bgen_samples,
-                self.nsamples,
-                ffi.from_buffer("char[]", samples),
-                samples_max_len[0],
-            )
-            #!!!cmkfinally: #!!!cmk do the other opens have a finally like this?
-            lib.bgen_samples_destroy(bgen_samples)
+            try:
+                samples_max_len = ffi.new("uint32_t[]", 1)
+                lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
+                samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{samples_max_len[0]}")
+                samples = self._multimemmap.append_empty('_samples', self.nsamples, f"S{samples_max_len[0]}") #This one second, so we can delete it afterwards.
+                lib.read_samples_part2(
+                    bgen_samples,
+                    self.nsamples,
+                    ffi.from_buffer("char[]", samples),
+                    samples_max_len[0],
+                )
+            finally: #!!!cmk do the other opens have a finally like this?
+                lib.bgen_samples_destroy(bgen_samples)
             samples_memmap[:]=samples
             self._multimemmap.popitem() #Remove _samples
             samples_memmap.flush()
@@ -582,8 +582,15 @@ class open_bgen:
 
     # This is static so that test code can use it easily.
     @staticmethod
-    def _metadatapath_from_filename(filename):
-        return infer_metafile_filepath(Path(filename), ".metadata2.mmm")
+    def _metadatapath_from_filename(filename, assume_unphased_diallelic=False, assume_phased_diallelic=False):
+        if assume_unphased_diallelic:
+            assert not assume_phased_diallelic, "Can't assume both 'unphased diallelic' and 'phased diallelic'"
+            a_string = ".aud"
+        elif assume_phased_diallelic:
+            a_string = ".apd"
+        else:
+            a_string = ""
+        return infer_metafile_filepath(Path(filename), f"{a_string}.metadata2.mmm")
 
     @property
     def samples(self) -> List[str]:
@@ -805,9 +812,6 @@ class open_bgen:
                 positions_memmap = self._multimemmap.append_empty('positions', (self.nvariants), 'uint32')
                 nalleles_memmap = self._multimemmap.append_empty('nalleles', (self.nvariants), 'uint16')
 
-                #!!!cmk maybe don't worry about memory allocation on the first load, just afterwards.
-                #!!!cmk could look at one part (last one because it tends to have longer strings) and then allocate memmap files. Then if later a string (or whatever) is too large, reallocate.
-
                 nvariants_list = []
                 vid_max_list = []
                 rsid_max_list = []
@@ -829,7 +833,7 @@ class open_bgen:
                     nvariants_list.append(nvariants)
 
                     # start = time()
-                    position = np.empty(nvariants, dtype=np.uint32) #!!!cmk can we go right into memmap rather than into buffer first?
+                    position = np.empty(nvariants, dtype=np.uint32)
                     nalleles = np.empty(nvariants, dtype=np.uint16)
                     offset = np.empty(nvariants, dtype=np.uint64)
                     vid_max_len = ffi.new("uint32_t[]", 1)
@@ -889,7 +893,7 @@ class open_bgen:
                     nvariants = nvariants_list[ipart2]
 
                     # start = time()
-                    vid = np.zeros(nvariants, dtype=f"S{vid_max_len[0]}") #!!!cmk possible to avoid buffer? But what about ascii vs Unicode and different lengths in different partitions? do they really vary?
+                    vid = np.zeros(nvariants, dtype=f"S{vid_max_len[0]}")
                     rsid = np.zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
                     chrom = np.zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
                     allele_ids = np.zeros(nvariants, dtype=f"S{allele_ids_max_len[0]}")
