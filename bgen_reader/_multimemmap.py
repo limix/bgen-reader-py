@@ -1,13 +1,13 @@
 import numpy as np
 
-class MultiMemMap:
+class MultiMemMap:#!!!should be record and offer order 'F' vs 'C'?
     def __init__(self, filename, mode, slot_dtype = 'int32', slots_shape =(3), metameta_dtype = '<U50'):
         #!!!cmk check all values of mode
         self._filename = filename
         self._mode = mode
         self._name_to_memmap = {}
         if filename.exists():
-            self._offset = 0
+            self._offset = 0#!!!cmk how come not using the inputted mode here?
             self._slots = np.memmap(filename,dtype=slot_dtype,mode='r+',offset=self._offset,shape=slots_shape)
             self._offset += self._slots.size * self._slots.itemsize
             slot_used,slot_count,self._metameta_count = self._slots

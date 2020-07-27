@@ -4,6 +4,7 @@ from os.path import getmtime
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any, List, Optional, Tuple, Union
+import hashlib
 
 import numpy as np
 from numpy import asarray, stack
@@ -113,16 +114,18 @@ class open_bgen:
         self,
         filepath: Union[str, Path],
         samples_filepath: Optional[Union[str, Path]] = None,
-        assume_unphased_diallelic: bool = False,
-        assume_phased_diallelic: bool = False,
+        assume_simple = False,
+        #!!!cmk0 instead of these, have something like "assume_consistent" or "assume_simple" or "consistent" or "simple" -- which means to read from the first variant and get from that
+        #!!!cmk0 simple could check 1,2,4,8,....end of file. In any case, when reading, should double check.
+        #!!!cmk0 If an external sample is given, add its name to the metadata file
         verbose: bool = True,
     ): 
-        assert not (assume_unphased_diallelic and assume_phased_diallelic), "Can't assume both 'unphased diallelic' and 'phased diallelic'"
         #!!!cmk need to confirm can still read 4 millions distributions per unit
 
         filepath = Path(filepath)
         assert_file_exist(filepath)
         assert_file_readable(filepath)
+        self._samples_filepath = Path(samples_filepath) if samples_filepath is not None else None
 
         self._verbose = verbose
         self._filepath = filepath
@@ -133,7 +136,7 @@ class open_bgen:
         self._nsamples = self._bgen.nsamples
 
         # LATER could make a version of this method public
-        metadata2 = self._metadatapath_from_filename(filepath,assume_unphased_diallelic,assume_phased_diallelic).resolve() #needed because of tmp_cwd below
+        metadata2 = self._metadatapath_from_filename(filepath,self._samples_filepath,assume_simple).resolve() #needed because of tmp_cwd below
         if metadata2.exists() and getmtime(metadata2) < getmtime(filepath):
             metadata2.unlink()
 
@@ -150,14 +153,25 @@ class open_bgen:
                 ncombinations_memmap = self._multimemmap.append_empty('ncombinations', (self.nvariants), 'int32')
                 phased_memmap = self._multimemmap.append_empty('phased', (self.nvariants), 'bool')
 
-                if assume_unphased_diallelic:
-                    assert not assume_phased_diallelic, 'real assert'
-                    ncombinations_memmap[:] = 3
-                    phased_memmap[:] = False
-                elif assume_phased_diallelic:
-                    ncombinations_memmap[:] = 4
-                    phased_memmap[:] = True
+                if assume_simple:
+                    assert self.nvariants > 0, "If assume_simple is True, there must be at least one variant"
+                    i = 0
+                    previous_i = None
+                    while i < self.nvariants:
+                        genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, self._vaddr[0])
+                        ncombinations_memmap[i] = lib.bgen_genotype_ncombs(genotype)
+                        phased_memmap[i] = lib.bgen_genotype_phased(genotype)
+                        lib.bgen_genotype_close(genotype)
+                        assert previous_i is None or (
+                            ncombinations_memmap[previous_i]==ncombinations_memmap[i] and phased_memmap[previous_i] == phased_memmap[i]
+                            ), "assume_simple is True but a spot check shows that file is not simple"
+                        previous_i = i
+                        i = (i+1)*2-1
+                    ncombinations_memmap[1:]=ncombinations_memmap[0]
+                    phased_memmap[1:]=phased_memmap[0]
                 else: #!!!cmk put a messgae here telling folks no assumptions
+                    if self._verbose:
+                        print("Parameter 'assume_simple' is False, so reading phase and distribution length of every variant")
                     with _log_in_place("metadata", self._verbose) as updater:
                         for i, vaddr0 in enumerate(self._vaddr): #!!!cmk multithread???
                             if i % 1000 == 0:
@@ -174,7 +188,7 @@ class open_bgen:
                 max_combinations_memmap[0] = max(self.ncombinations)
                 max_combinations_memmap.flush()
 
-                self._map_sample(samples_filepath)
+                self._map_sample()
                 sample_range_memmap = self._multimemmap.append_empty("sample_range", self.nsamples, 'int32')
                 for i in range(self.nsamples): #!!!cmk this uses very little memory, is there another low-mem method that would be faster?
                     sample_range_memmap[i] = i
@@ -184,46 +198,57 @@ class open_bgen:
 
         self._multimemmap = MultiMemMap(metadata2,mode="r")
 
-        self._samples_override = None
-        if samples_filepath is not None:#!!!cmk put out some verbose messages here
-            assert_file_exist(samples_filepath)
-            assert_file_readable(samples_filepath)
-            self._samples_override = np.array(read_samples_file(samples_filepath, self._verbose),dtype='str')
-            assert len(self._samples_override)==self.nsamples,"Expect length of new samples to match number of samples in BGEN file"
-
         
 
 
-    def _map_sample(self, sample_file):
+    def _map_sample(self):
 
-        if self._bgen.contain_samples:
-            bgen_samples = lib.bgen_file_read_samples(self._bgen._bgen_file)
-            if bgen_samples == ffi.NULL:
-                raise RuntimeError(f"Could not fetch samples from the bgen file.")
-
-            try:
-                samples_max_len = ffi.new("uint32_t[]", 1)
-                lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
-                samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{samples_max_len[0]}")
-                samples = self._multimemmap.append_empty('_samples', self.nsamples, f"S{samples_max_len[0]}") #This one second, so we can delete it afterwards.
-                lib.read_samples_part2(
-                    bgen_samples,
-                    self.nsamples,
-                    ffi.from_buffer("char[]", samples),
-                    samples_max_len[0],
-                )
-            finally: #!!!cmk do the other opens have a finally like this?
-                lib.bgen_samples_destroy(bgen_samples)
-            samples_memmap[:]=samples
-            self._multimemmap.popitem() #Remove _samples
-            samples_memmap.flush()
+        if self._samples_filepath is not None:#!!!cmk put out some verbose messages here
+            assert_file_exist(self._samples_filepath)
+            assert_file_readable(self._samples_filepath)
+            if self._verbose:
+                print(f"Sample IDs are read from {sample_filepath}.")
+            max_len = 0
+            with self._samples_filepath.open('r') as fp:
+                fp.readline()
+                fp.readline()
+                for index,line in enumerate(fp):
+                    max_len = max(max_len,len(line.strip()))
+                assert index+1 == self.nsamples, "Expect new of samples in file to match number of samples in BGEN file"
+            samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{max_len}")
+            with self._samples_filepath.open('r') as fp:
+                fp.readline()
+                fp.readline()
+                for index,line in enumerate(fp):
+                    samples_memmap[index]=line.strip()
         else:
-            prefix = "sample_"
-            max_length = len(prefix+str(self.nsamples-1))
-            samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{max_length}")
-            for i in range(self.nsamples): #!!!cmk any way to do this faster?
-                samples_memmap[i]=prefix+str(i)
-            samples_memmap.flush()
+            if self._bgen.contain_samples:
+                bgen_samples = lib.bgen_file_read_samples(self._bgen._bgen_file)
+                if bgen_samples == ffi.NULL:
+                    raise RuntimeError(f"Could not fetch samples from the bgen file.")
+
+                try:
+                    samples_max_len = ffi.new("uint32_t[]", 1)
+                    lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
+                    samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{samples_max_len[0]}")
+                    samples = self._multimemmap.append_empty('_samples', self.nsamples, f"S{samples_max_len[0]}") #This one second, so we can delete it afterwards.
+                    lib.read_samples_part2(
+                        bgen_samples,
+                        self.nsamples,
+                        ffi.from_buffer("char[]", samples),
+                        samples_max_len[0],
+                    )
+                finally: #!!!cmk do the other opens have a finally like this?
+                    lib.bgen_samples_destroy(bgen_samples)
+                samples_memmap[:]=samples
+                self._multimemmap.popitem() #Remove _samples
+            else:
+                prefix = "sample_"
+                max_length = len(prefix+str(self.nsamples-1))
+                samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{max_length}")
+                for i in range(self.nsamples): #!!!cmk any way to do this faster?
+                    samples_memmap[i]=prefix+str(i)
+        samples_memmap.flush()
 
 
 
@@ -582,15 +607,15 @@ class open_bgen:
 
     # This is static so that test code can use it easily.
     @staticmethod
-    def _metadatapath_from_filename(filename, assume_unphased_diallelic=False, assume_phased_diallelic=False):
-        if assume_unphased_diallelic:
-            assert not assume_phased_diallelic, "Can't assume both 'unphased diallelic' and 'phased diallelic'"
-            a_string = ".aud"
-        elif assume_phased_diallelic:
-            a_string = ".apd"
+    def _metadatapath_from_filename(filename, samples_filepath, assume_simple):
+        #If there is a sample file, put a hash its name is the name of the metadata file
+        if samples_filepath is None:
+            s_string = ""
         else:
-            a_string = ""
-        return infer_metafile_filepath(Path(filename), f"{a_string}.metadata2.mmm")
+            hash = hashlib.sha256(samples_filepath.name.encode('utf-8')).hexdigest()
+            s_string = '.S'+hash[:6]
+        a_string = "" if not assume_simple else ".simple"
+        return infer_metafile_filepath(Path(filename), f"{s_string}{a_string}.metadata2.mmm")
 
     @property
     def samples(self) -> List[str]:
@@ -609,10 +634,7 @@ class open_bgen:
             ['sample_0' 'sample_1' 'sample_2' 'sample_3']
 
         """
-        if self._samples_override is None:
-            return self._multimemmap["samples"]
-        else:
-            return self._samples_override
+        return self._multimemmap["samples"]
 
     @property
     def ids(self) -> List[str]:
