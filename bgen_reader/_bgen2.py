@@ -130,6 +130,7 @@ class open_bgen:
         self._bgen_context_manager = bgen_file(filepath)
         self._bgen = self._bgen_context_manager.__enter__()
         self._nvariants = self._bgen.nvariants
+        self._nsamples = self._bgen.nsamples
 
         # LATER could make a version of this method public
         metadata2 = self._metadatapath_from_filename(filepath).resolve() #needed because of tmp_cwd below
@@ -141,7 +142,7 @@ class open_bgen:
             with tmp_cwd():
                 metafile_filepath = Path("bgen.metadata")
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
-                self._map_metadata(metafile_filepath) #!!!cmk how about killing self._ids, etc
+                self._map_metadata(metafile_filepath)
                 #!!!cmk move to subfunction
                 ncombinations_memmap = self._multimemmap.append_empty('ncombinations', (self.nvariants), 'int32')
                 phased_memmap = self._multimemmap.append_empty('phased', (self.nvariants), 'bool')
@@ -165,21 +166,20 @@ class open_bgen:
 
                 ncombinations_memmap.flush()
                 phased_memmap.flush()
-
+                #!!!cmk put out some verbose messages here
                 max_combinations_memmap = self._multimemmap.append_empty('max_combinations', (1), 'int32')
                 max_combinations_memmap[0] = max(self.ncombinations)
                 max_combinations_memmap.flush()
 
                 self._sample_array(samples_filepath)#!!!cmk need better name
                 sample_range_memmap = self._multimemmap.append_empty("sample_range", self.nsamples, 'int32')
-                sample_range_memmap[:] = range(self.nsamples)
+                for i in range(self.nsamples): #!!!cmk this uses very little memory, is there another low-mem method that would be faster?
+                    sample_range_memmap[i] = i
                 sample_range_memmap.flush()
-        else:
-            self._nsamples = len(self._multimemmap["samples"])
             
 
         self._samples_override = None
-        if samples_filepath is not None:
+        if samples_filepath is not None:#!!!cmk put out some verbose messages here
             assert_file_exist(samples_filepath)
             assert_file_readable(samples_filepath)
             self._samples_override = np.array(read_samples_file(samples_filepath, self._verbose),dtype='str')
@@ -190,7 +190,6 @@ class open_bgen:
 
     def _sample_array(self, sample_file):
 
-        self._nsamples = self._bgen.nsamples
         if self._bgen.contain_samples:
             bgen_samples = lib.bgen_file_read_samples(self._bgen._bgen_file)
             if bgen_samples == ffi.NULL:
@@ -458,7 +457,7 @@ class open_bgen:
                         prob_buffer is None
                         or ncombinations[out_index] != prob_buffer.shape[-1]
                     ):
-                        prob_buffer = np.full(
+                        prob_buffer = np.full(#!!!cmk could offer an option to memmap this buffer?
                             (self.nsamples, ncombinations[out_index]),
                             np.nan,
                             order="C",

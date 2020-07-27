@@ -467,7 +467,7 @@ def test_read_multiple_returns():
 
 
 if __name__ == "__main__":
-    if True:
+    if False:
         from bgen_reader import example_filepath, open_bgen
         file = example_filepath("haplotypes.bgen")
         with open_bgen(file, verbose=False) as bgen:
