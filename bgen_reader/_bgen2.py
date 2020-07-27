@@ -137,8 +137,11 @@ class open_bgen:
         if metadata2.exists() and getmtime(metadata2) < getmtime(filepath):
             metadata2.unlink()
 
-        self._multimemmap = MultiMemMap(metadata2,mode="w+") #!!!cmk really need to close this
-        if len(self._multimemmap)==0:
+        if not metadata2.exists():
+            metadata2_temp = metadata2.parent / (metadata2.name + '.temp')
+            if metadata2_temp.exists():
+                metadata2_temp.unlink()
+            self._multimemmap = MultiMemMap(metadata2_temp,mode="w+") #!!!cmk really need to close this
             with tmp_cwd():
                 metafile_filepath = Path("bgen.metadata")
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
@@ -176,7 +179,10 @@ class open_bgen:
                 for i in range(self.nsamples): #!!!cmk this uses very little memory, is there another low-mem method that would be faster?
                     sample_range_memmap[i] = i
                 sample_range_memmap.flush()
-            
+                del self._multimemmap
+                os.rename(metadata2_temp,metadata2)
+
+        self._multimemmap = MultiMemMap(metadata2,mode="r")
 
         self._samples_override = None
         if samples_filepath is not None:#!!!cmk put out some verbose messages here
@@ -185,7 +191,7 @@ class open_bgen:
             self._samples_override = np.array(read_samples_file(samples_filepath, self._verbose),dtype='str')
             assert len(self._samples_override)==self.nsamples,"Expect length of new samples to match number of samples in BGEN file"
 
-
+        
 
 
     def _sample_array(self, sample_file):
