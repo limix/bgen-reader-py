@@ -118,7 +118,7 @@ class open_bgen:
         verbose: bool = True,
     ): #!!!cmk maybe metadata2 file should be ".aud" and ".apd." if assumptions are made
         assert not (assume_phased_diallelic and assume_unphased_diallelic), "Can't assume both 'phased diallelic' and 'unphased diallelic'"
-        #!!!cmk need to confirm can still read 4 millions distribtuions per unit
+        #!!!cmk need to confirm can still read 4 millions distributions per unit
 
         filepath = Path(filepath)
         assert_file_exist(filepath)

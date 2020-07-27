@@ -86,9 +86,7 @@ class MultiMemMap:
         self._slots.flush()
         memmap = self._name_to_memmap.pop(name)
         self._offset -= memmap.size * memmap.itemsize
-        memmap.flush()
-        #!!!cmk change length of flie??
-
+        memmap._mmap.close()
 
     def close(self):
         self.__exit__()
@@ -103,7 +101,7 @@ class MultiMemMap:
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
             for name, memmap in self._name_to_memmap.items():
-                memmap.flush()
+                memmap._mmap.close()
             self._name_to_memmap.clear()
             del (
                 self._name_to_memmap
@@ -114,7 +112,7 @@ class MultiMemMap:
             and self._slots is not None
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
-            self._slots.flush()
+            self._slots._mmap.close()
             del (
                 self._slots
             )  # This allows __del__ and __exit__ to be called twice on the same object with
@@ -124,11 +122,14 @@ class MultiMemMap:
             and self._metameta is not None
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
-            self._metameta.flush()
+            self._metameta._mmap.close()
             del (
                 self._metameta
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect
+        if self._filename.stat().st_size > self._offset:
+            with open(self._filename,"a") as fp:
+                fp.truncate(self._offset)
     def __del__(self):
         self.__exit__()
 
