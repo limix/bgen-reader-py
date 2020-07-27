@@ -175,7 +175,7 @@ class open_bgen:
                     with _log_in_place("metadata", self._verbose) as updater:
                         for i, vaddr0 in enumerate(self._vaddr): #!!!cmk multithread???
                             if i % 1000 == 0:
-                                updater("step 3: part {0:,} of {1:,}".format(i, self.nvariants))
+                                updater("'ncombinations': part {0:,} of {1:,}".format(i, self.nvariants))
                             genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
                             ncombinations_memmap[i] = lib.bgen_genotype_ncombs(genotype)
                             phased_memmap[i] = lib.bgen_genotype_phased(genotype)
@@ -183,15 +183,18 @@ class open_bgen:
 
                 ncombinations_memmap.flush()
                 phased_memmap.flush()
-                #!!!cmk put out some verbose messages here
+
                 max_combinations_memmap = self._multimemmap.append_empty('max_combinations', (1), 'int32')
                 max_combinations_memmap[0] = max(self.ncombinations)
                 max_combinations_memmap.flush()
 
                 self._map_sample()
                 sample_range_memmap = self._multimemmap.append_empty("sample_range", self.nsamples, 'int32')
-                for i in range(self.nsamples): #!!!cmk this uses very little memory, is there another low-mem method that would be faster?
-                    sample_range_memmap[i] = i
+                with _log_in_place("metadata", self._verbose) as updater:
+                    for i in range(self.nsamples): #!!!cmk this uses very little memory, is there another low-mem method that would be faster?
+                        if i % 1000 == 0:
+                            updater("'sample range': part {0:,} of {1:,}".format(i, self.nsamples))
+                        sample_range_memmap[i] = i
                 sample_range_memmap.flush()
                 del self._multimemmap
                 os.rename(metadata2_temp,metadata2)
@@ -203,51 +206,60 @@ class open_bgen:
 
     def _map_sample(self):
 
-        if self._samples_filepath is not None:#!!!cmk put out some verbose messages here
-            assert_file_exist(self._samples_filepath)
-            assert_file_readable(self._samples_filepath)
-            if self._verbose:
-                print(f"Sample IDs are read from {sample_filepath}.")
-            max_len = 0
-            with self._samples_filepath.open('r') as fp:
-                fp.readline()
-                fp.readline()
-                for index,line in enumerate(fp):
-                    max_len = max(max_len,len(line.strip()))
-                assert index+1 == self.nsamples, "Expect new of samples in file to match number of samples in BGEN file"
-            samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{max_len}")
-            with self._samples_filepath.open('r') as fp:
-                fp.readline()
-                fp.readline()
-                for index,line in enumerate(fp):
-                    samples_memmap[index]=line.strip()
-        else:
-            if self._bgen.contain_samples:
-                bgen_samples = lib.bgen_file_read_samples(self._bgen._bgen_file)
-                if bgen_samples == ffi.NULL:
-                    raise RuntimeError(f"Could not fetch samples from the bgen file.")
+        with _log_in_place("metadata", self._verbose) as updater:
+            if self._samples_filepath is not None:#!!!cmk put out some verbose messages here
+                assert_file_exist(self._samples_filepath)
+                assert_file_readable(self._samples_filepath)
+                if self._verbose:
+                    print(f"Sample IDs are read from {sample_filepath}.")
+                max_len = 0
 
-                try:
-                    samples_max_len = ffi.new("uint32_t[]", 1)
-                    lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
-                    samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{samples_max_len[0]}")
-                    samples = self._multimemmap.append_empty('_samples', self.nsamples, f"S{samples_max_len[0]}") #This one second, so we can delete it afterwards.
-                    lib.read_samples_part2(
-                        bgen_samples,
-                        self.nsamples,
-                        ffi.from_buffer("char[]", samples),
-                        samples_max_len[0],
-                    )
-                finally: #!!!cmk do the other opens have a finally like this?
-                    lib.bgen_samples_destroy(bgen_samples)
-                samples_memmap[:]=samples
-                self._multimemmap.popitem() #Remove _samples
+                with self._samples_filepath.open('r') as fp:
+                    fp.readline()
+                    fp.readline()
+                    for index,line in enumerate(fp):
+                        if index % 1000 == 0:
+                            updater("'samples_filepath max_len': part {0:,} of {1:,}".format(index, self.nsamples))
+                        max_len = max(max_len,len(line.strip()))
+                    assert index+1 == self.nsamples, "Expect new of samples in file to match number of samples in BGEN file"
+                    samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{max_len}")
+                    with self._samples_filepath.open('r') as fp:
+                        fp.readline()
+                        fp.readline()
+                        for index,line in enumerate(fp):
+                            if index % 1000 == 0:
+                                updater("'samples_filepath': part {0:,} of {1:,}".format(index, self.nsamples))
+                            samples_memmap[index]=line.strip()
             else:
-                prefix = "sample_"
-                max_length = len(prefix+str(self.nsamples-1))
-                samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{max_length}")
-                for i in range(self.nsamples): #!!!cmk any way to do this faster?
-                    samples_memmap[i]=prefix+str(i)
+                if self._bgen.contain_samples:
+                    bgen_samples = lib.bgen_file_read_samples(self._bgen._bgen_file)
+                    if bgen_samples == ffi.NULL:
+                        raise RuntimeError(f"Could not fetch samples from the bgen file.")
+
+                    try:
+                        samples_max_len = ffi.new("uint32_t[]", 1)
+                        lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
+                        updater("'samples from bgen'")
+                        samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{samples_max_len[0]}")
+                        samples = self._multimemmap.append_empty('_samples', self.nsamples, f"S{samples_max_len[0]}") #This one second, so we can delete it afterwards.
+                        lib.read_samples_part2(
+                            bgen_samples,
+                            self.nsamples,
+                            ffi.from_buffer("char[]", samples),
+                            samples_max_len[0],
+                        )
+                    finally: #!!!cmk do the other opens have a finally like this?
+                        lib.bgen_samples_destroy(bgen_samples)
+                    samples_memmap[:]=samples
+                    self._multimemmap.popitem() #Remove _samples
+                else:
+                    prefix = "sample_"
+                    max_length = len(prefix+str(self.nsamples-1))
+                    samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{max_length}")
+                    for i in range(self.nsamples): #!!!cmk any way to do this faster?
+                        if i % 1000 == 0:
+                            updater("'generate samples': part {0:,} of {1:,}".format(i, self.nsamples))
+                        samples_memmap[i]=prefix+str(i)
         samples_memmap.flush()
 
 
@@ -843,7 +855,7 @@ class open_bgen:
                 start = 0
                 for ipart2 in range(nparts):  # LATER multithread?
                     # LATER in notebook this message doesn't appear on one line
-                    updater("step 2a: part {0:,} of {1:,}".format(ipart2, nparts))
+                    updater("'nallele': part {0:,} of {1:,}".format(ipart2, nparts))
 
                     # start = time()
                     partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
@@ -904,7 +916,7 @@ class open_bgen:
                 start = 0
                 for ipart2 in range(nparts):  # LATER multithread?
                     # LATER in notebook this message doesn't appear on one line
-                    updater("step 2b: part {0:,} of {1:,}".format(ipart2, nparts))
+                    updater("'ids': part {0:,} of {1:,}".format(ipart2, nparts))
 
                     # start = time()
                     partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
