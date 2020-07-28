@@ -14,7 +14,7 @@ from numpy.testing import assert_allclose, assert_equal
 
 def example_filepath2(filename):
     filepath = example_filepath(filename)
-    metadata2_path = open_bgen._metadatapath_from_filename(
+    metadata2_path = open_bgen._metadata_path_from_filename(
         filepath, samples_filepath=None, assume_simple=False
     )
     if metadata2_path.exists():
@@ -153,10 +153,10 @@ def test_open_bgen_variants_info():
 
 def test_to_improve_coverage():
     filepath = example_filepath2("example.32bits.bgen")
-    bgen2 = open_bgen(filepath, verbose=False)  # Creates metadata2.npz file
+    bgen2 = open_bgen(filepath, verbose=False)  # Creates metadata2.mmm file
     assert_equal(bgen2.ncombinations[-1], 3)
     assert_equal(bgen2.phased[-1], False)
-    with open_bgen(filepath) as bgen2:  # Reuses metadata2.npz file
+    with open_bgen(filepath) as bgen2:  # Reuses metadata2.mmm file
         assert_equal(str(bgen2), "open_bgen('{0}')".format(filepath.name))
         assert_equal(bgen2.nsamples, 500)
         assert_equal(bgen2.nvariants, 199)
@@ -183,13 +183,13 @@ def test_to_improve_coverage():
         assert_allclose(g[2, 1, :], b)
 
     # confirm that out-of-date metadata2 file will be updated
-    metadata2 = open_bgen._metadatapath_from_filename(
-        filepath, samples_filepath=None, assume_simple=False
-    )
+    metadata2 = bgen2._metadata2_path
+    del bgen2
     assert os.path.getmtime(metadata2) >= os.path.getmtime(filepath)
     filepath.touch()
     assert os.path.getmtime(metadata2) <= os.path.getmtime(filepath)
-    bgen2 = open_bgen(filepath, verbose=False)  # Creates metadata2.npz file
+    bgen2 = open_bgen(filepath, verbose=False)  # Creates metadata2.mmm file
+    del bgen2
     assert os.path.getmtime(metadata2) >= os.path.getmtime(filepath)
 
 
@@ -226,7 +226,7 @@ def random_file_tests(nsamples, nvariants, bits, verbose=False, overwrite=False)
             verbose=verbose,
             cleanup_temp_files=True,
         )
-    metadata2_path = open_bgen._metadatapath_from_filename(
+    metadata2_path = open_bgen._metadata_path_from_filename(
         filepath, samples_filepath=None, assume_simple=False
     )
     if metadata2_path.exists():
