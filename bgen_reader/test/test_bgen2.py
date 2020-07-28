@@ -4,19 +4,19 @@ from shutil import copyfile
 
 import numpy as np
 import pytest
+from bgen_reader import example_filepath, open_bgen
+from bgen_reader._environment import BGEN_READER_CACHE_HOME
+from bgen_reader.test.test_bgen_reader import noread_permission
+from bgen_reader.test.write_random import _write_random
 from numpy import array, array_equal, isnan
 from numpy.testing import assert_allclose, assert_equal
-
-from bgen_reader import open_bgen
-from bgen_reader import example_filepath
-from bgen_reader._environment import BGEN_READER_CACHE_HOME
-from bgen_reader.test.write_random import _write_random
-from bgen_reader.test.test_bgen_reader import nowrite_permission, noread_permission
 
 
 def example_filepath2(filename):
     filepath = example_filepath(filename)
-    metadata2_path = open_bgen._metadatapath_from_filename(filepath,samples_filepath=None, assume_simple=False)
+    metadata2_path = open_bgen._metadatapath_from_filename(
+        filepath, samples_filepath=None, assume_simple=False
+    )
     if metadata2_path.exists():
         metadata2_path.unlink()
     return filepath
@@ -183,7 +183,9 @@ def test_to_improve_coverage():
         assert_allclose(g[2, 1, :], b)
 
     # confirm that out-of-date metadata2 file will be updated
-    metadata2 = open_bgen._metadatapath_from_filename(filepath, samples_filepath=None, assume_simple=False)
+    metadata2 = open_bgen._metadatapath_from_filename(
+        filepath, samples_filepath=None, assume_simple=False
+    )
     assert os.path.getmtime(metadata2) >= os.path.getmtime(filepath)
     filepath.touch()
     assert os.path.getmtime(metadata2) <= os.path.getmtime(filepath)
@@ -224,7 +226,9 @@ def random_file_tests(nsamples, nvariants, bits, verbose=False, overwrite=False)
             verbose=verbose,
             cleanup_temp_files=True,
         )
-    metadata2_path = open_bgen._metadatapath_from_filename(filepath, samples_filepath=None, assume_simple=False)
+    metadata2_path = open_bgen._metadatapath_from_filename(
+        filepath, samples_filepath=None, assume_simple=False
+    )
     if metadata2_path.exists():
         metadata2_path.unlink()
 
@@ -468,22 +472,22 @@ def test_read_multiple_returns():
 
 if __name__ == "__main__":
     if False:
-        from bgen_reader import example_filepath, open_bgen
         file = example_filepath("haplotypes.bgen")
         with open_bgen(file, verbose=False) as bgen:
-                print(bgen.samples)
+            print(bgen.samples)
 
     if True:
 
-        #filename = r'M:\deldir\fakeuk450000x1000.bgen'
-        filename = 'M:/deldir/genbgen/good/merged_487400x220000.bgen'
-        #filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
-        #filename = 'M:/deldir/genbgen/good/merged_487400x4840000.bgen'
+        # filename = r'M:\deldir\fakeuk450000x1000.bgen'
+        filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
+        # filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
+        # filename = 'M:/deldir/genbgen/good/merged_487400x4840000.bgen'
 
         import tracemalloc
         import logging
         import os
         import time
+
         logging.basicConfig(level=logging.INFO)
         tracemalloc.start()
         print(os.path.getsize(filename))
@@ -492,27 +496,27 @@ if __name__ == "__main__":
         with open_bgen(filename, assume_simple=True, verbose=True) as bgen:
             print(bgen.nsamples)
             print(bgen.nvariants)
-            print(bgen.read((5,5)))
+            print(bgen.read((5, 5)))
             current, peak = tracemalloc.get_traced_memory()
-            print(f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
-            print("Time = {0} seconds".format(time.time()-start))
+            print(
+                f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB"
+            )
+            print("Time = {0} seconds".format(time.time() - start))
             print("!!!cmk")
         tracemalloc.stop()
 
-    if False: #!!!cmk
+    if False:  # !!!cmk
         filepath = r"M:\deldir\genbgen\good\merged_487400x2420000.bgen"
-        #filepath = r"M:\deldir\genbgen\good\merged_487400x220000.11.bgen"
+        # filepath = r"M:\deldir\genbgen\good\merged_487400x220000.11.bgen"
         with open_bgen(filepath, verbose=True) as bgen2:
             print(bgen2.nvariants)
 
-    if False: #!!!cmk
+    if False:  # !!!cmk
         from bgen_reader import read_bgen
 
         filepath = r"M:\deldir\genbgen\good\merged_487400x2420000.bgen"
-        #filepath = r"M:\deldir\genbgen\good\merged_487400x22000.bgen"
+        # filepath = r"M:\deldir\genbgen\good\merged_487400x22000.bgen"
         bgen = read_bgen(filepath, verbose=True)
         print(len(bgen["variants"]))
-
-
 
     pytest.main([__file__])

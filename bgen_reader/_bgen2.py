@@ -1,24 +1,21 @@
+import hashlib
 import math
 import os
 from os.path import getmtime
 from pathlib import Path
-from tempfile import mkdtemp
 from typing import Any, List, Optional, Tuple, Union
-import hashlib
 
 import numpy as np
 from numpy import asarray, stack
 
 from ._bgen_file import bgen_file
 from ._bgen_metafile import bgen_metafile
-from ._metafile import infer_metafile_filepath
 from ._ffi import ffi, lib
 from ._file import assert_file_exist, assert_file_readable, tmp_cwd
-from ._helper import _log_in_place
-from ._helper import genotypes_to_allele_counts, get_genotypes
-from ._reader import _get_samples
-from ._samples import read_samples_file
+from ._helper import _log_in_place, genotypes_to_allele_counts, get_genotypes
+from ._metafile import infer_metafile_filepath
 from ._multimemmap import MultiMemMap
+
 
 # https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 class open_bgen:
@@ -114,18 +111,17 @@ class open_bgen:
         self,
         filepath: Union[str, Path],
         samples_filepath: Optional[Union[str, Path]] = None,
-        assume_simple = False,
-        #!!!cmk0 instead of these, have something like "assume_consistent" or "assume_simple" or "consistent" or "simple" -- which means to read from the first variant and get from that
-        #!!!cmk0 simple could check 1,2,4,8,....end of file. In any case, when reading, should double check.
-        #!!!cmk0 If an external sample is given, add its name to the metadata file
+        assume_simple=False,
         verbose: bool = True,
-    ): 
-        #!!!cmk need to confirm can still read 4 millions distributions per unit
+    ):
+        # !!!cmk need to confirm can still read 4 millions distributions per unit
 
         filepath = Path(filepath)
         assert_file_exist(filepath)
         assert_file_readable(filepath)
-        self._samples_filepath = Path(samples_filepath) if samples_filepath is not None else None
+        self._samples_filepath = (
+            Path(samples_filepath) if samples_filepath is not None else None
+        )
 
         self._verbose = verbose
         self._filepath = filepath
@@ -136,47 +132,66 @@ class open_bgen:
         self._nsamples = self._bgen.nsamples
 
         # LATER could make a version of this method public
-        metadata2 = self._metadatapath_from_filename(filepath,self._samples_filepath,assume_simple).resolve() #needed because of tmp_cwd below
+        metadata2 = self._metadatapath_from_filename(
+            filepath, self._samples_filepath, assume_simple
+        ).resolve()  # needed because of tmp_cwd below
         if metadata2.exists() and getmtime(metadata2) < getmtime(filepath):
             metadata2.unlink()
 
         if not metadata2.exists():
-            metadata2_temp = metadata2.parent / (metadata2.name + '.temp')
+            metadata2_temp = metadata2.parent / (metadata2.name + ".temp")
             if metadata2_temp.exists():
                 metadata2_temp.unlink()
-            self._multimemmap = MultiMemMap(metadata2_temp,mode="w+")
+            self._multimemmap = MultiMemMap(metadata2_temp, mode="w+")
             with tmp_cwd():
                 metafile_filepath = Path("bgen.metadata")
                 self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
                 self._map_metadata(metafile_filepath)
-                #!!!cmk move to subfunction
-                ncombinations_memmap = self._multimemmap.append_empty('ncombinations', (self.nvariants), 'int32')
-                phased_memmap = self._multimemmap.append_empty('phased', (self.nvariants), 'bool')
+                # !!!cmk move to subfunction
+                ncombinations_memmap = self._multimemmap.append_empty(
+                    "ncombinations", (self.nvariants), "int32"
+                )
+                phased_memmap = self._multimemmap.append_empty(
+                    "phased", (self.nvariants), "bool"
+                )
 
                 if assume_simple:
-                    assert self.nvariants > 0, "If assume_simple is True, there must be at least one variant"
+                    assert (
+                        self.nvariants > 0
+                    ), "If assume_simple is True, there must be at least one variant"
                     i = 0
                     previous_i = None
                     while i < self.nvariants:
-                        genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, self._vaddr[0])
+                        genotype = lib.bgen_file_open_genotype(
+                            self._bgen._bgen_file, self._vaddr[0]
+                        )
                         ncombinations_memmap[i] = lib.bgen_genotype_ncombs(genotype)
                         phased_memmap[i] = lib.bgen_genotype_phased(genotype)
                         lib.bgen_genotype_close(genotype)
                         assert previous_i is None or (
-                            ncombinations_memmap[previous_i]==ncombinations_memmap[i] and phased_memmap[previous_i] == phased_memmap[i]
-                            ), "assume_simple is True but a spot check shows that file is not simple"
+                            ncombinations_memmap[previous_i] == ncombinations_memmap[i]
+                            and phased_memmap[previous_i] == phased_memmap[i]
+                        ), "assume_simple is True but a spot check shows that file is not simple"
                         previous_i = i
-                        i = (i+1)*2-1
-                    ncombinations_memmap[1:]=ncombinations_memmap[0]
-                    phased_memmap[1:]=phased_memmap[0]
-                else: #!!!cmk put a messgae here telling folks no assumptions
+                        i = (i + 1) * 2 - 1
+                    ncombinations_memmap[1:] = ncombinations_memmap[0]
+                    phased_memmap[1:] = phased_memmap[0]
+                else:
                     if self._verbose:
-                        print("Parameter 'assume_simple' is False, so reading phase and distribution length of every variant")
+                        print(
+                            "Parameter 'assume_simple' is False, so reading phase and distribution length of every variant"
+                        )
                     with _log_in_place("metadata", self._verbose) as updater:
-                        for i, vaddr0 in enumerate(self._vaddr): #!!!cmk multithread???
+                        for i, vaddr0 in enumerate(self._vaddr):
                             if i % 1000 == 0:
-                                updater("'ncombinations': part {0:,} of {1:,}".format(i, self.nvariants))
-                            genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
+                                updater(
+                                    "'ncombinations': part {0:,} of {1:,}".format(
+                                        i, self.nvariants
+                                    )
+                                )
+                            genotype = lib.bgen_file_open_genotype(
+                                self._bgen._bgen_file, vaddr0
+                            )
                             ncombinations_memmap[i] = lib.bgen_genotype_ncombs(genotype)
                             phased_memmap[i] = lib.bgen_genotype_phased(genotype)
                             lib.bgen_genotype_close(genotype)
@@ -184,85 +199,118 @@ class open_bgen:
                 ncombinations_memmap.flush()
                 phased_memmap.flush()
 
-                max_combinations_memmap = self._multimemmap.append_empty('max_combinations', (1), 'int32')
+                max_combinations_memmap = self._multimemmap.append_empty(
+                    "max_combinations", (1), "int32"
+                )
                 max_combinations_memmap[0] = max(self.ncombinations)
                 max_combinations_memmap.flush()
 
                 self._map_sample()
-                sample_range_memmap = self._multimemmap.append_empty("sample_range", self.nsamples, 'int32')
+                sample_range_memmap = self._multimemmap.append_empty(
+                    "sample_range", self.nsamples, "int32"
+                )
                 with _log_in_place("metadata", self._verbose) as updater:
-                    for i in range(self.nsamples): #!!!cmk this uses very little memory, is there another low-mem method that would be faster?
+                    for i in range(
+                        self.nsamples
+                    ):  # LATER: Is there another low memory way to do this that would be faster?
                         if i % 1000 == 0:
-                            updater("'sample range': part {0:,} of {1:,}".format(i, self.nsamples))
+                            updater(
+                                "'sample range': part {0:,} of {1:,}".format(
+                                    i, self.nsamples
+                                )
+                            )
                         sample_range_memmap[i] = i
                 sample_range_memmap.flush()
                 del self._multimemmap
-                os.rename(metadata2_temp,metadata2)
+                os.rename(metadata2_temp, metadata2)
 
-        self._multimemmap = MultiMemMap(metadata2,mode="r")
-
-        
-
+        self._multimemmap = MultiMemMap(metadata2, mode="r")
 
     def _map_sample(self):
 
         with _log_in_place("metadata", self._verbose) as updater:
-            if self._samples_filepath is not None:#!!!cmk put out some verbose messages here
+            if self._samples_filepath is not None:
                 assert_file_exist(self._samples_filepath)
                 assert_file_readable(self._samples_filepath)
                 if self._verbose:
-                    print(f"Sample IDs are read from {sample_filepath}.")
+                    print(f"Sample IDs are read from '{self._samples_filepath}''.")
                 max_len = 0
 
-                with self._samples_filepath.open('r') as fp:
+                with self._samples_filepath.open("r") as fp:
                     fp.readline()
                     fp.readline()
-                    for index,line in enumerate(fp):
+                    for index, line in enumerate(fp):
                         if index % 1000 == 0:
-                            updater("'samples_filepath max_len': part {0:,} of {1:,}".format(index, self.nsamples))
-                        max_len = max(max_len,len(line.strip()))
-                    assert index+1 == self.nsamples, "Expect new of samples in file to match number of samples in BGEN file"
-                    samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{max_len}")
-                    with self._samples_filepath.open('r') as fp:
+                            updater(
+                                "'samples_filepath max_len': part {0:,} of {1:,}".format(
+                                    index, self.nsamples
+                                )
+                            )
+                        max_len = max(max_len, len(line.strip()))
+                    assert (
+                        index + 1 == self.nsamples
+                    ), "Expect new of samples in file to match number of samples in BGEN file"
+                    samples_memmap = self._multimemmap.append_empty(
+                        "samples", self.nsamples, f"<U{max_len}"
+                    )
+                    with self._samples_filepath.open("r") as fp:
                         fp.readline()
                         fp.readline()
-                        for index,line in enumerate(fp):
+                        for index, line in enumerate(fp):
                             if index % 1000 == 0:
-                                updater("'samples_filepath': part {0:,} of {1:,}".format(index, self.nsamples))
-                            samples_memmap[index]=line.strip()
+                                updater(
+                                    "'samples_filepath': part {0:,} of {1:,}".format(
+                                        index, self.nsamples
+                                    )
+                                )
+                            samples_memmap[index] = line.strip()
             else:
                 if self._bgen.contain_samples:
                     bgen_samples = lib.bgen_file_read_samples(self._bgen._bgen_file)
                     if bgen_samples == ffi.NULL:
-                        raise RuntimeError(f"Could not fetch samples from the bgen file.")
+                        raise RuntimeError(
+                            f"Could not fetch samples from the bgen file."
+                        )
 
                     try:
                         samples_max_len = ffi.new("uint32_t[]", 1)
-                        lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
+                        lib.read_samples_part1(
+                            bgen_samples, self.nsamples, samples_max_len
+                        )
                         updater("'samples from bgen'")
-                        samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{samples_max_len[0]}")
-                        samples = self._multimemmap.append_empty('_samples', self.nsamples, f"S{samples_max_len[0]}") #This one second, so we can delete it afterwards.
+                        samples_memmap = self._multimemmap.append_empty(
+                            "samples", self.nsamples, f"<U{samples_max_len[0]}"
+                        )
+                        samples = self._multimemmap.append_empty(
+                            "_samples", self.nsamples, f"S{samples_max_len[0]}"
+                        )  # This one second, so we can delete it afterwards.
                         lib.read_samples_part2(
                             bgen_samples,
                             self.nsamples,
                             ffi.from_buffer("char[]", samples),
                             samples_max_len[0],
                         )
-                    finally: #!!!cmk do the other opens have a finally like this?
+                    finally:  # !!!cmk do the other opens have a finally like this?
                         lib.bgen_samples_destroy(bgen_samples)
-                    samples_memmap[:]=samples
-                    self._multimemmap.popitem() #Remove _samples
+                    samples_memmap[:] = samples
+                    self._multimemmap.popitem()  # Remove _samples
                 else:
                     prefix = "sample_"
-                    max_length = len(prefix+str(self.nsamples-1))
-                    samples_memmap = self._multimemmap.append_empty('samples', self.nsamples, f"<U{max_length}")
-                    for i in range(self.nsamples): #!!!cmk any way to do this faster?
+                    max_length = len(prefix + str(self.nsamples - 1))
+                    samples_memmap = self._multimemmap.append_empty(
+                        "samples", self.nsamples, f"<U{max_length}"
+                    )
+                    for i in range(
+                        self.nsamples
+                    ):  # LATER Is there another low-memory way to do this that would be faster?
                         if i % 1000 == 0:
-                            updater("'generate samples': part {0:,} of {1:,}".format(i, self.nsamples))
-                        samples_memmap[i]=prefix+str(i)
+                            updater(
+                                "'generate samples': part {0:,} of {1:,}".format(
+                                    i, self.nsamples
+                                )
+                            )
+                        samples_memmap[i] = prefix + str(i)
         samples_memmap.flush()
-
-
 
     def read(
         self,
@@ -500,7 +548,7 @@ class open_bgen:
                         prob_buffer is None
                         or ncombinations[out_index] != prob_buffer.shape[-1]
                     ):
-                        prob_buffer = np.full(#!!!cmk could offer an option to memmap this buffer?
+                        prob_buffer = np.full(  # LATER could offer an option to memmap this buffer
                             (self.nsamples, ncombinations[out_index]),
                             np.nan,
                             order="C",
@@ -620,14 +668,16 @@ class open_bgen:
     # This is static so that test code can use it easily.
     @staticmethod
     def _metadatapath_from_filename(filename, samples_filepath, assume_simple):
-        #If there is a sample file, put a hash its name is the name of the metadata file
+        # If there is a sample file, put a hash its name is the name of the metadata file
         if samples_filepath is None:
             s_string = ""
         else:
-            hash = hashlib.sha256(samples_filepath.name.encode('utf-8')).hexdigest()
-            s_string = '.S'+hash[:6]
+            hash = hashlib.sha256(samples_filepath.name.encode("utf-8")).hexdigest()
+            s_string = ".S" + hash[:6]
         a_string = "" if not assume_simple else ".simple"
-        return infer_metafile_filepath(Path(filename), f"{s_string}{a_string}.metadata2.mmm")
+        return infer_metafile_filepath(
+            Path(filename), f"{s_string}{a_string}.metadata2.mmm"
+        )
 
     @property
     def samples(self) -> List[str]:
@@ -697,8 +747,6 @@ class open_bgen:
     @property
     def _sample_range(self) -> List[int]:
         return self._multimemmap["sample_range"]
-
-    
 
     @property
     def chromosomes(self) -> List[str]:
@@ -841,10 +889,15 @@ class open_bgen:
             with bgen_metafile(Path(metafile_filepath)) as mf:
                 nparts = mf.npartitions
 
-
-                vaddr_memmap = self._multimemmap.append_empty('vaddr', (self.nvariants), 'uint64')
-                positions_memmap = self._multimemmap.append_empty('positions', (self.nvariants), 'uint32')
-                nalleles_memmap = self._multimemmap.append_empty('nalleles', (self.nvariants), 'uint16')
+                vaddr_memmap = self._multimemmap.append_empty(
+                    "vaddr", (self.nvariants), "uint64"
+                )
+                positions_memmap = self._multimemmap.append_empty(
+                    "positions", (self.nvariants), "uint32"
+                )
+                nalleles_memmap = self._multimemmap.append_empty(
+                    "nalleles", (self.nvariants), "uint16"
+                )
 
                 nvariants_list = []
                 vid_max_list = []
@@ -858,7 +911,9 @@ class open_bgen:
                     updater("'nallele': part {0:,} of {1:,}".format(ipart2, nparts))
 
                     # start = time()
-                    partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
+                    partition = lib.bgen_metafile_read_partition(
+                        mf._bgen_metafile, ipart2
+                    )
                     # print(f"Elapsed: {time() - start} for bgen_metafile_read_partition")
                     if partition == ffi.NULL:
                         raise RuntimeError(f"Could not read partition {partition}.")
@@ -908,18 +963,28 @@ class open_bgen:
                 positions_memmap.flush()
                 nalleles_memmap.flush()
 
-                ids_memmap = self._multimemmap.append_empty('ids', (self.nvariants), f'<U{max(vid_max_list)}')
-                rsids_memmap = self._multimemmap.append_empty('rsids', (self.nvariants), f'<U{max(rsid_max_list)}')
-                chrom_memmap = self._multimemmap.append_empty('chromosomes', (self.nvariants), f'<U{max(chrom_max_list)}')
-                allele_ids_memmap = self._multimemmap.append_empty('allele_ids', (self.nvariants), f'<U{max(allele_ids_max_list)}')
-                    
+                ids_memmap = self._multimemmap.append_empty(
+                    "ids", (self.nvariants), f"<U{max(vid_max_list)}"
+                )
+                rsids_memmap = self._multimemmap.append_empty(
+                    "rsids", (self.nvariants), f"<U{max(rsid_max_list)}"
+                )
+                chrom_memmap = self._multimemmap.append_empty(
+                    "chromosomes", (self.nvariants), f"<U{max(chrom_max_list)}"
+                )
+                allele_ids_memmap = self._multimemmap.append_empty(
+                    "allele_ids", (self.nvariants), f"<U{max(allele_ids_max_list)}"
+                )
+
                 start = 0
                 for ipart2 in range(nparts):  # LATER multithread?
                     # LATER in notebook this message doesn't appear on one line
                     updater("'ids': part {0:,} of {1:,}".format(ipart2, nparts))
 
                     # start = time()
-                    partition = lib.bgen_metafile_read_partition(mf._bgen_metafile, ipart2)
+                    partition = lib.bgen_metafile_read_partition(
+                        mf._bgen_metafile, ipart2
+                    )
                     # print(f"Elapsed: {time() - start} for bgen_metafile_read_partition")
                     if partition == ffi.NULL:
                         raise RuntimeError(f"Could not read partition {partition}.")
@@ -959,7 +1024,6 @@ class open_bgen:
                 rsids_memmap.flush()
                 chrom_memmap.flush()
                 allele_ids_memmap.flush()
-
 
     def __str__(self):
         return "{0}('{1}')".format(self.__class__.__name__, self._filepath.name)
@@ -1010,8 +1074,7 @@ class open_bgen:
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
         if (
-            hasattr(self, "_multimemmap")
-            and self._multimemmap is not None
+            hasattr(self, "_multimemmap") and self._multimemmap is not None
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
             self._multimemmap.__exit__(None, None, None)
@@ -1206,7 +1269,7 @@ class open_bgen:
             [500 rows x 2 columns]
 
         """
-        samples_index, variants_index = self._split_index(index)
+        _, variants_index = self._split_index(index)
         phased_list = self.phased[variants_index]
         nalleles = self.nalleles[variants_index]
         if any(phased_list):
@@ -1267,3 +1330,12 @@ class open_bgen:
 
     def __del__(self):
         self.__exit__()
+
+    # cmk0 format
+    # cmk0 lint
+    # cmk0 coverage
+    # cmk0 add tests
+    # cmk0 add types
+    # cmk0 address 'cmk''s
+    # cmk0 refactor into subfunctions
+    # cmk0 repeat
