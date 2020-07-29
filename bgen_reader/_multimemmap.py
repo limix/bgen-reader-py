@@ -102,6 +102,17 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
     def _metameta_count(self, value):
         self._bootstrap[2] = value
 
+    @property
+    def _last_memmap_name(self):
+        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
+        return self._metameta[self._memmap_count-1, 0]
+
+    @_last_memmap_name.setter
+    def _last_memmap_name(self, value):
+        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
+        self._metameta[self._memmap_count-1, 0] = value
+
+
     def __len__(self):
         assert len(self._name_to_memmap)==self._memmap_count,"real assert"
         return self._memmap_count
@@ -113,15 +124,15 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self, name, shape, dtype
     ):  # !!!cmk say that all these dtypes must be strings, not types
         assert self._mode == "w+", "Can only append with mode 'w+'"
-        memmap_index = self._memmap_count
-        self._metameta[memmap_index, 0] = name
-        self._metameta[memmap_index, 1] = str(dtype)  # cmk repr???
-        self._metameta[memmap_index, 2] = str(shape)
+        assert self._memmap_count+1 < self._memmap_max, "The MultiMemMap contains no room for an additional memmap."
+        self._memmap_count += 1
+        self._last_memmap_name = name
+        self._metameta[self._memmap_count-1, 1] = str(dtype)  # cmk repr???
+        self._metameta[self._memmap_count-1, 2] = str(shape)
         self._metameta.flush()
         memmap = np.memmap(
             self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape
         )
-        self._memmap_count += 1
         # !!!cmk raise an error if every go over slots[2] e.g., 20
         self._bootstrap.flush()
         self._name_to_memmap[name] = memmap
@@ -133,11 +144,10 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self,
     ):  # As of Python 3.7 popitem remove the last item from a dictionary
         assert self._mode == "w+", "Can only append with mode 'w+'"
-        memmap_index = self._memmap_count - 1
-        name = self._metameta[memmap_index, 0]
-        self._metameta[memmap_index, :] = ""
-        self._metameta.flush()
+        name = self._last_memmap_name
+        self._metameta[self._memmap_count - 1, :] = ""
         self._memmap_count += -1
+        self._metameta.flush()
         self._bootstrap.flush()
         memmap = self._name_to_memmap.pop(name)
         self._offset -= memmap.size * memmap.itemsize
