@@ -3,8 +3,8 @@ import numpy as np
 
 class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
-    _slot_dtype = "int32"
-    _slots_length = 3
+    _bootstrap_dtype = "int32"
+    _bootstrap_length = 3
 
     def __init__(self, filename, mode, metameta_dtype="<U50"):
         # !!!cmk check all values of mode
@@ -15,35 +15,35 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             self._offset = 0  # !!!cmk how come not using the inputted mode here?
             self._bootstrap = np.memmap(
                 filename,
-                dtype=self._slot_dtype,
+                dtype=self._bootstrap_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._slots_length),
+                shape=(self._bootstrap_length),
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
-            assert self._slot_used <= self._slot_count
+            assert self._memmap_count <= self._bootstrap_count
 
             self._metameta = np.memmap(
                 filename,
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._slot_count, self._metameta_count),
+                shape=(self._bootstrap_count, self._metameta_count),
             )
             self._offset += self._metameta.size * self._metameta.itemsize
 
             try: #!!!cmk
-                names = self._metameta[: self._slot_used, 0]
+                names = self._metameta[: self._memmap_count, 0]
             except:
                 print('!!!cmk')
-            dtypes = self._metameta[: self._slot_used, 1]
+            dtypes = self._metameta[: self._memmap_count, 1]
             shapes = []
-            for shape_as_str in self._metameta[: self._slot_used, 2]:
+            for shape_as_str in self._metameta[: self._memmap_count, 2]:
                 shapes.append(
                     tuple([int(num_as_str) for num_as_str in shape_as_str.split(",")])
                 )
 
-            for slot_index in range(self._slot_used):
+            for slot_index in range(self._memmap_count):
                 memmap = np.memmap(
                     filename,
                     dtype=dtypes[slot_index],
@@ -58,14 +58,14 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             self._offset = 0
             self._bootstrap = np.memmap(
                 self._filename,
-                dtype=self._slot_dtype,
+                dtype=self._bootstrap_dtype,
                 mode="w+",
                 offset=self._offset,
-                shape=(self._slots_length),
+                shape=(self._bootstrap_length),
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
-            self._slot_used = 0
-            self._slot_count = 20
+            self._memmap_count = 0
+            self._bootstrap_count = 20
             self._metameta_count = 3
             self._bootstrap.flush() #!!!cmk offer (and use a global flush)
 
@@ -74,24 +74,24 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._slot_count, self._metameta_count),
+                shape=(self._bootstrap_count, self._metameta_count),
             )
             self._offset += self._metameta.size * self._metameta.itemsize
 
     @property
-    def _slot_used(self):
+    def _memmap_count(self):
         return self._bootstrap[0]
 
-    @_slot_used.setter
-    def _slot_used(self, value):
+    @_memmap_count.setter
+    def _memmap_count(self, value):
         self._bootstrap[0] = value
 
     @property
-    def _slot_count(self):
+    def _bootstrap_count(self):
         return int(self._bootstrap[1])
 
-    @_slot_count.setter
-    def _slot_count(self, value):
+    @_bootstrap_count.setter
+    def _bootstrap_count(self, value):
         self._bootstrap[1] = value
 
     @property
@@ -103,7 +103,8 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self._bootstrap[2] = value
 
     def __len__(self):
-        return len(self._name_to_memmap)
+        assert len(self._name_to_memmap)==self._memmap_count,"real assert"
+        return self._memmap_count
 
     def __getitem__(self, name):
         return self._name_to_memmap[name]
@@ -120,7 +121,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         memmap = np.memmap(
             self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape
         )
-        self._slot_used = (
+        self._memmap_count = (
             slot_index + 1
         )  # !!!cmk raise an error if every go over slots[2] e.g., 20
         self._bootstrap.flush()
@@ -137,7 +138,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         name = self._metameta[slot_index, 0]
         self._metameta[slot_index, :] = ""
         self._metameta.flush()
-        self._slot_used = slot_index
+        self._memmap_count = slot_index
         self._bootstrap.flush()
         memmap = self._name_to_memmap.pop(name)
         self._offset -= memmap.size * memmap.itemsize
