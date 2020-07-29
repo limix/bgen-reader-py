@@ -5,8 +5,10 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
     _bootstrap_dtype = "int32"
     _bootstrap_length = 3
+    _memmap_param_max = 3
 
-    def __init__(self, filename, mode, metameta_dtype="<U50"):
+    def __init__(self, filename, mode, metameta_dtype="<U50",  memmap_max = 20,
+):
         # !!!cmk check all values of mode
         self._filename = filename
         self._mode = mode
@@ -28,7 +30,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._memmap_max, self._metameta_count),
+                shape=(self._memmap_max, self._memmap_param_max),
             )
             self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
@@ -54,8 +56,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
             self._memmap_count = 0
-            self._memmap_max = 20
-            self._metameta_count = 3
+            self._memmap_max = memmap_max
             self._bootstrap.flush() #!!!cmk offer (and use a global flush)
 
             self._memmap_param = np.memmap(
@@ -63,7 +64,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._memmap_max, self._metameta_count),
+                shape=(self._memmap_max, self._memmap_param_max),
             )
             self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
@@ -82,15 +83,6 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
     @_memmap_max.setter
     def _memmap_max(self, value):
         self._bootstrap[1] = value
-
-    @property
-    def _metameta_count(self):
-        return self._bootstrap[2]
-
-    @_metameta_count.setter
-    def _metameta_count(self, value):
-        self._bootstrap[2] = value
-
 
     def _get_memmap_name(self,index):
         assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
