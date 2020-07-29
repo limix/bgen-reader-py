@@ -113,7 +113,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self, name, shape, dtype
     ):  # !!!cmk say that all these dtypes must be strings, not types
         assert self._mode == "w+", "Can only append with mode 'w+'"
-        memmap_index = len(self)
+        memmap_index = self._memmap_count
         self._metameta[memmap_index, 0] = name
         self._metameta[memmap_index, 1] = str(dtype)  # cmk repr???
         self._metameta[memmap_index, 2] = str(shape)
@@ -121,9 +121,8 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         memmap = np.memmap(
             self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape
         )
-        self._memmap_count = (
-            memmap_index + 1
-        )  # !!!cmk raise an error if every go over slots[2] e.g., 20
+        self._memmap_count += 1
+        # !!!cmk raise an error if every go over slots[2] e.g., 20
         self._bootstrap.flush()
         self._name_to_memmap[name] = memmap
         self._offset += memmap.size * memmap.itemsize
@@ -134,11 +133,11 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self,
     ):  # As of Python 3.7 popitem remove the last item from a dictionary
         assert self._mode == "w+", "Can only append with mode 'w+'"
-        memmap_index = len(self) - 1
+        memmap_index = self._memmap_count - 1
         name = self._metameta[memmap_index, 0]
         self._metameta[memmap_index, :] = ""
         self._metameta.flush()
-        self._memmap_count = memmap_index
+        self._memmap_count += -1
         self._bootstrap.flush()
         memmap = self._name_to_memmap.pop(name)
         self._offset -= memmap.size * memmap.itemsize
