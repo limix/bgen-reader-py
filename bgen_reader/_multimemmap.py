@@ -64,7 +64,6 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             self._magic_string = self._expected_magic_string
             self._memmap_count = 0
             self._memmap_max = memmap_max
-            self._bootstrap.flush() #!!!cmk offer (and use a global flush)
 
             self._memmap_param = np.memmap(
                 self._filename,
@@ -75,6 +74,12 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 order='C',
             )
             self._offset += self._memmap_param.size * self._memmap_param.itemsize
+
+    def flush(self):
+        self._bootstrap.flush()
+        self._memmap_param.flush()
+        for memmap in self._name_to_memmap.items():
+            memmap.flush()
 
     @property
     def _magic_string(self):
@@ -150,15 +155,11 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self._set_memmap_dtype(self._memmap_count-1, dtype)
         self._set_memmap_shape(self._memmap_count-1, shape)
         self._set_memmap_order(self._memmap_count-1, order)
-        self._memmap_param.flush()
         memmap = np.memmap(
             self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape, order=order
         )
-        # !!!cmk raise an error if every go over slots[2] e.g., 20
-        self._bootstrap.flush()
         self._name_to_memmap[name] = memmap
         self._offset += memmap.size * memmap.itemsize
-        memmap.flush()
         return memmap
 
     def popitem(
@@ -169,8 +170,6 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         name = self._get_memmap_name(self._memmap_count-1)
         self._set_memmap_name(self._memmap_count-1, None)
         self._memmap_count += -1
-        self._memmap_param.flush()
-        self._bootstrap.flush()
         memmap = self._name_to_memmap.pop(name)
         self._offset -= memmap.size * memmap.itemsize
         memmap._mmap.close()
