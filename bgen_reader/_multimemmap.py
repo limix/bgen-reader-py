@@ -8,7 +8,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
     _bootstrap_max = 8
     _memmap_param_max = 8
 
-    def __init__(self, filename, mode, metameta_dtype="<U50",  memmap_max = 25,
+    def __init__(self, filename, mode, memmap_param_dtype="<U50",  memmap_max = 25,
 ):
         # !!!cmk check all values of mode
         self._filename = filename
@@ -22,6 +22,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 mode="r+",
                 offset=self._offset,
                 shape=(self._bootstrap_max),
+                order = 'C',
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
             assert self._magic_string == self._expected_magic_string, "Invalid file format. (Didn't find expected magic string.)"
@@ -29,10 +30,11 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
             self._memmap_param = np.memmap(
                 filename,
-                dtype=metameta_dtype,
+                dtype=memmap_param_dtype,
                 mode="r+",
                 offset=self._offset,
                 shape=(self._memmap_max, self._memmap_param_max),
+                order = 'C',
             )
             self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
@@ -43,6 +45,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                     mode="r+",
                     offset=self._offset,
                     shape=self._get_memmap_shape(memmap_index),
+                    order =self._get_memmap_order(memmap_index),
                 )
                 self._offset += memmap.size * memmap.itemsize
                 self._name_to_memmap[self._get_memmap_name(memmap_index)] = memmap
@@ -55,6 +58,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 mode="w+",
                 offset=self._offset,
                 shape=(self._bootstrap_max),
+                order='C',
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
             self._magic_string = self._expected_magic_string
@@ -64,10 +68,11 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
             self._memmap_param = np.memmap(
                 self._filename,
-                dtype=metameta_dtype,
+                dtype=memmap_param_dtype,
                 mode="r+",
                 offset=self._offset,
                 shape=(self._memmap_max, self._memmap_param_max),
+                order='C',
             )
             self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
@@ -120,6 +125,14 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
         self._memmap_param[index, 2] = str(value) #cmk repre???
 
+    def _get_memmap_order(self, index):
+        assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
+        return self._memmap_param[index, 3]
+
+    def _set_memmap_order(self, index, value):
+        assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
+        self._memmap_param[index, 3] = value
+
     def __len__(self):
         assert len(self._name_to_memmap)==self._memmap_count,"real assert"
         return self._memmap_count
@@ -128,7 +141,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         return self._name_to_memmap[name]
 
     def append_empty(
-        self, name, shape, dtype
+        self, name, shape, dtype, order='C',
     ):  # !!!cmk say that all these dtypes must be strings, not types
         assert self._mode == "w+", "Can only append with mode 'w+'"
         assert self._memmap_count+1 < self._memmap_max, "The MultiMemMap contains no room for an additional memmap."
@@ -136,9 +149,10 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self._set_memmap_name(self._memmap_count-1, name)
         self._set_memmap_dtype(self._memmap_count-1, dtype)
         self._set_memmap_shape(self._memmap_count-1, shape)
+        self._set_memmap_order(self._memmap_count-1, order)
         self._memmap_param.flush()
         memmap = np.memmap(
-            self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape
+            self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape, order=order
         )
         # !!!cmk raise an error if every go over slots[2] e.g., 20
         self._bootstrap.flush()
