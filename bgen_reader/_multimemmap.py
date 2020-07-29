@@ -23,22 +23,22 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
             assert self._memmap_count <= self._memmap_max, "real assert"
 
-            self._metameta = np.memmap(
+            self._memmap_param = np.memmap(
                 filename,
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
                 shape=(self._memmap_max, self._metameta_count),
             )
-            self._offset += self._metameta.size * self._metameta.itemsize
+            self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
             try: #!!!cmk
-                names = self._metameta[: self._memmap_count, 0]
+                names = self._memmap_param[: self._memmap_count, 0]
             except:
                 print('!!!cmk')
-            dtypes = self._metameta[: self._memmap_count, 1]
+            dtypes = self._memmap_param[: self._memmap_count, 1]
             shapes = []
-            for shape_as_str in self._metameta[: self._memmap_count, 2]:
+            for shape_as_str in self._memmap_param[: self._memmap_count, 2]:
                 shapes.append(
                     tuple([int(num_as_str) for num_as_str in shape_as_str.split(",")])
                 )
@@ -69,14 +69,14 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             self._metameta_count = 3
             self._bootstrap.flush() #!!!cmk offer (and use a global flush)
 
-            self._metameta = np.memmap(
+            self._memmap_param = np.memmap(
                 self._filename,
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
                 shape=(self._memmap_max, self._metameta_count),
             )
-            self._offset += self._metameta.size * self._metameta.itemsize
+            self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
     @property
     def _memmap_count(self):
@@ -105,13 +105,32 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
     @property
     def _last_memmap_name(self):
         assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
-        return self._metameta[self._memmap_count-1, 0]
+        return self._memmap_param[self._memmap_count-1, 0]
 
     @_last_memmap_name.setter
     def _last_memmap_name(self, value):
         assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
-        self._metameta[self._memmap_count-1, 0] = value
+        self._memmap_param[self._memmap_count-1, 0] = value
 
+    @property
+    def _last_memmap_dtype(self):
+        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
+        return self._memmap_param[self._memmap_count-1, 1]
+
+    @_last_memmap_dtype.setter
+    def _last_memmap_dtype(self, value):
+        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
+        self._memmap_param[self._memmap_count-1, 1] = value
+
+    @property
+    def _last_memmap_shape(self):
+        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
+        return self._memmap_param[self._memmap_count-1, 2]
+
+    @_last_memmap_shape.setter
+    def _last_memmap_shape(self, value):
+        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
+        self._memmap_param[self._memmap_count-1, 2] = value
 
     def __len__(self):
         assert len(self._name_to_memmap)==self._memmap_count,"real assert"
@@ -127,9 +146,9 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         assert self._memmap_count+1 < self._memmap_max, "The MultiMemMap contains no room for an additional memmap."
         self._memmap_count += 1
         self._last_memmap_name = name
-        self._metameta[self._memmap_count-1, 1] = str(dtype)  # cmk repr???
-        self._metameta[self._memmap_count-1, 2] = str(shape)
-        self._metameta.flush()
+        self._last_memmap_dtype = str(dtype)  # cmk repr???
+        self._last_memmap_shape = str(shape)
+        self._memmap_param.flush()
         memmap = np.memmap(
             self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape
         )
@@ -145,9 +164,9 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
     ):  # As of Python 3.7 popitem remove the last item from a dictionary
         assert self._mode == "w+", "Can only append with mode 'w+'"
         name = self._last_memmap_name
-        self._metameta[self._memmap_count - 1, :] = ""
+        self._last_memmap_name = None
         self._memmap_count += -1
-        self._metameta.flush()
+        self._memmap_param.flush()
         self._bootstrap.flush()
         memmap = self._name_to_memmap.pop(name)
         self._offset -= memmap.size * memmap.itemsize
@@ -181,12 +200,12 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
         if (
-            hasattr(self, "_metameta") and self._metameta is not None
+            hasattr(self, "_memmap_param") and self._memmap_param is not None
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
-            self._metameta._mmap.close()
+            self._memmap_param._mmap.close()
             del (
-                self._metameta
+                self._memmap_param
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect
         if self._filename.stat().st_size > self._offset:
