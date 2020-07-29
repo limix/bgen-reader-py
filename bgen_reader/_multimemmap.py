@@ -32,10 +32,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             )
             self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
-            try: #!!!cmk
-                names = self._memmap_param[: self._memmap_count, 0]
-            except:
-                print('!!!cmk')
+            names = self._memmap_param[: self._memmap_count, 0]
             dtypes = self._memmap_param[: self._memmap_count, 1]
             shapes = []
             for shape_as_str in self._memmap_param[: self._memmap_count, 2]:
@@ -102,35 +99,30 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
     def _metameta_count(self, value):
         self._bootstrap[2] = value
 
-    @property
-    def _last_memmap_name(self):
-        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
-        return self._memmap_param[self._memmap_count-1, 0]
 
-    @_last_memmap_name.setter
-    def _last_memmap_name(self, value):
-        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
-        self._memmap_param[self._memmap_count-1, 0] = value
+    def _get_memmap_name(self,index):
+        assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
+        return self._memmap_param[index, 0]
 
-    @property
-    def _last_memmap_dtype(self):
-        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
-        return self._memmap_param[self._memmap_count-1, 1]
+    def _set_memmap_name(self, index, value):
+        assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
+        self._memmap_param[index, 0] = value
 
-    @_last_memmap_dtype.setter
-    def _last_memmap_dtype(self, value):
-        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
-        self._memmap_param[self._memmap_count-1, 1] = value
+    def _get_memmap_dtype(self, index):
+        assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
+        return self._memmap_param[index, 1]
 
-    @property
-    def _last_memmap_shape(self):
-        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
-        return self._memmap_param[self._memmap_count-1, 2]
+    def _set_memmap_dtype(self, index, value):
+        assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
+        self._memmap_param[index, 1] = str(value)  # cmk repr???
 
-    @_last_memmap_shape.setter
-    def _last_memmap_shape(self, value):
-        assert self._memmap_count > 0, "With no memmaps, 'last' is not defined."
-        self._memmap_param[self._memmap_count-1, 2] = value
+    def _get_memmap_shape(self, index):
+        assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
+        return self._memmap_param[index, 2]
+
+    def _set_memmap_shape(self, index, value):
+        assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
+        self._memmap_param[index, 2] = str(value) #cmk repre???
 
     def __len__(self):
         assert len(self._name_to_memmap)==self._memmap_count,"real assert"
@@ -145,9 +137,9 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         assert self._mode == "w+", "Can only append with mode 'w+'"
         assert self._memmap_count+1 < self._memmap_max, "The MultiMemMap contains no room for an additional memmap."
         self._memmap_count += 1
-        self._last_memmap_name = name
-        self._last_memmap_dtype = str(dtype)  # cmk repr???
-        self._last_memmap_shape = str(shape)
+        self._set_memmap_name(self._memmap_count-1, name)
+        self._set_memmap_dtype(self._memmap_count-1, dtype)
+        self._set_memmap_shape(self._memmap_count-1, shape)
         self._memmap_param.flush()
         memmap = np.memmap(
             self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape
@@ -163,8 +155,8 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self,
     ):  # As of Python 3.7 popitem remove the last item from a dictionary
         assert self._mode == "w+", "Can only append with mode 'w+'"
-        name = self._last_memmap_name
-        self._last_memmap_name = None
+        name = self._get_memmap_name(self._memmap_count-1)
+        self._set_memmap_name(self._memmap_count-1, None)
         self._memmap_count += -1
         self._memmap_param.flush()
         self._bootstrap.flush()
