@@ -3,11 +3,11 @@ import numpy as np
 
 class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
-    _bootstrap_dtype = "int32"
+    _bootstrap_dtype = "<U50"
     _bootstrap_length = 3
     _memmap_param_max = 3
 
-    def __init__(self, filename, mode, metameta_dtype="<U50",  memmap_max = 20,
+    def __init__(self, filename, mode, metameta_dtype="<U50",  memmap_max = 25,
 ):
         # !!!cmk check all values of mode
         self._filename = filename
@@ -70,19 +70,19 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
     @property
     def _memmap_count(self):
-        return self._bootstrap[0]
+        return int(self._bootstrap[0])
 
     @_memmap_count.setter
     def _memmap_count(self, value):
-        self._bootstrap[0] = value
+        self._bootstrap[0] = str(value)
 
     @property
     def _memmap_max(self):
-        return self._bootstrap[1]
+        return int(self._bootstrap[1])
 
     @_memmap_max.setter
     def _memmap_max(self, value):
-        self._bootstrap[1] = value
+        self._bootstrap[1] = str(value)
 
     def _get_memmap_name(self,index):
         assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
