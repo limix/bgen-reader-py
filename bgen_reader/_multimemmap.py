@@ -3,6 +3,7 @@ import numpy as np
 
 class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
+    _expected_magic_string = "MultiMemMapV0"
     _bootstrap_dtype = "<U50"
     _bootstrap_max = 8
     _memmap_param_max = 8
@@ -23,6 +24,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 shape=(self._bootstrap_max),
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
+            assert self._magic_string == self._expected_magic_string, "Invalid file format. (Didn't find expected magic string.)"
             assert self._memmap_count <= self._memmap_max, "real assert"
 
             self._memmap_param = np.memmap(
@@ -55,6 +57,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 shape=(self._bootstrap_max),
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
+            self._magic_string = self._expected_magic_string
             self._memmap_count = 0
             self._memmap_max = memmap_max
             self._bootstrap.flush() #!!!cmk offer (and use a global flush)
@@ -69,20 +72,28 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
     @property
+    def _magic_string(self):
+        return self._bootstrap[0]
+
+    @_magic_string.setter
+    def _magic_string(self, value):
+        self._bootstrap[0] = value
+
+    @property
     def _memmap_count(self):
-        return int(self._bootstrap[0])
+        return int(self._bootstrap[1])
 
     @_memmap_count.setter
     def _memmap_count(self, value):
-        self._bootstrap[0] = str(value)
+        self._bootstrap[1] = str(value)
 
     @property
     def _memmap_max(self):
-        return int(self._bootstrap[1])
+        return int(self._bootstrap[2])
 
     @_memmap_max.setter
     def _memmap_max(self, value):
-        self._bootstrap[1] = str(value)
+        self._bootstrap[2] = str(value)
 
     def _get_memmap_name(self,index):
         assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
@@ -139,7 +150,8 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
     def popitem(
         self,
     ):  # As of Python 3.7 popitem remove the last item from a dictionary
-        assert self._mode == "w+", "Can only append with mode 'w+'"
+        assert self._mode == "w+", "Can only popitem with mode 'w+'"
+        assert self._memmap_count > 0, "The MultiMemMap contains no items to pop."
         name = self._get_memmap_name(self._memmap_count-1)
         self._set_memmap_name(self._memmap_count-1, None)
         self._memmap_count += -1
