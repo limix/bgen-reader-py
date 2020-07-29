@@ -4,7 +4,6 @@ import numpy as np
 class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
     _slot_dtype = "int32"
-
     _slots_length = 3
 
     def __init__(self, filename, mode, metameta_dtype="<U50"):
@@ -29,7 +28,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._bootstrap[1], self._bootstrap[2]),
+                shape=(self._slot_count, self._metameta_count),
             )
             self._offset += self._metameta.size * self._metameta.itemsize
 
@@ -65,9 +64,9 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 shape=(self._slots_length),
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
-            self._bootstrap[0] = 0
-            self._bootstrap[1] = 20
-            self._bootstrap[2] = 3
+            self._slot_used = 0
+            self._slot_count = 20
+            self._metameta_count = 3
             self._bootstrap.flush() #!!!cmk offer (and use a global flush)
 
             self._metameta = np.memmap(
@@ -75,7 +74,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._bootstrap[1], self._bootstrap[2]),
+                shape=(self._slot_count, self._metameta_count),
             )
             self._offset += self._metameta.size * self._metameta.itemsize
 
@@ -121,7 +120,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         memmap = np.memmap(
             self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape
         )
-        self._bootstrap[0] = (
+        self._slot_used = (
             slot_index + 1
         )  # !!!cmk raise an error if every go over slots[2] e.g., 20
         self._bootstrap.flush()
@@ -138,7 +137,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         name = self._metameta[slot_index, 0]
         self._metameta[slot_index, :] = ""
         self._metameta.flush()
-        self._bootstrap[0] = slot_index
+        self._slot_used = slot_index
         self._bootstrap.flush()
         memmap = self._name_to_memmap.pop(name)
         self._offset -= memmap.size * memmap.itemsize
