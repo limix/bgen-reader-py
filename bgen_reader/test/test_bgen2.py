@@ -193,6 +193,33 @@ def test_to_improve_coverage():
     assert os.path.getmtime(metadata2) >= os.path.getmtime(filepath)
 
 
+def test_to_improve_coverage2():
+    filepath = example_filepath2("complex.bgen")
+    samplepath = example_filepath2("complex.sample")
+    assume_simple = True
+
+    metadata2_path = open_bgen._metadata_path_from_filename(
+        filepath, samples_filepath=samplepath, assume_simple=assume_simple
+    )
+
+    if metadata2_path.exists():
+        metadata2_path.unlink()
+    metadata2_temp = metadata2_path.parent / (metadata2_path.name + ".temp")
+    metadata2_temp.touch()  # Create an empty .temp file
+
+    bgen2 = open_bgen(
+        filepath,
+        samples_filepath=samplepath,
+        assume_simple=assume_simple,
+        verbose=True,
+    )  # Creates metadata2.mmm file
+    bgen2 = open_bgen(
+        filepath, samples_filepath=samplepath, assume_simple=False, verbose=True,
+    )  # Creates metadata2.mmm file
+
+    del bgen2
+
+
 @pytest.mark.skipif(
     "QCTOOLPATH" not in os.environ, reason="This test requires external QCTOOL"
 )
@@ -476,7 +503,7 @@ if __name__ == "__main__":
         with open_bgen(file, verbose=False) as bgen:
             print(bgen.samples)
 
-    if True:
+    if False:
 
         # filename = r'M:\deldir\fakeuk450000x1000.bgen'
         filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"

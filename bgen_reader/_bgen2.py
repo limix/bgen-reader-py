@@ -1091,7 +1091,7 @@ class open_bgen:
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
         if (
-            hasattr(self, "_multimemmap") and self._metadata2_memmaps is not None
+            hasattr(self, "_metadata2_memmaps") and self._metadata2_memmaps is not None
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
             self._metadata2_memmaps.__exit__(None, None, None)
@@ -1356,3 +1356,5 @@ class open_bgen:
     # cmk0 address 'cmk''s
     # cmk0 refactor into subfunctions
     # cmk0 repeat
+    # cmk0 Didn't Danilo change so not doing multiple returns????
+    # cmk0 update quick start with assume_simple

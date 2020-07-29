@@ -2,44 +2,49 @@ import numpy as np
 
 
 class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
-    def __init__(
-        self, filename, mode, slot_dtype="int32", slots_shape=(3), metameta_dtype="<U50"
-    ):
+
+    _slot_dtype = "int32"
+
+    _slots_length = 3
+
+    def __init__(self, filename, mode, metameta_dtype="<U50"):
         # !!!cmk check all values of mode
         self._filename = filename
         self._mode = mode
         self._name_to_memmap = {}
         if filename.exists():
             self._offset = 0  # !!!cmk how come not using the inputted mode here?
-            self._slots = np.memmap(
+            self._bootstrap = np.memmap(
                 filename,
-                dtype=slot_dtype,
+                dtype=self._slot_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=slots_shape,
+                shape=(self._slots_length),
             )
-            self._offset += self._slots.size * self._slots.itemsize
-            slot_used, slot_count, self._metameta_count = self._slots
-            assert slot_used <= slot_count
+            self._offset += self._bootstrap.size * self._bootstrap.itemsize
+            assert self._slot_used <= self._slot_count
 
             self._metameta = np.memmap(
                 filename,
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._slots[1], self._slots[2]),
+                shape=(self._bootstrap[1], self._bootstrap[2]),
             )
             self._offset += self._metameta.size * self._metameta.itemsize
 
-            names = self._metameta[:slot_used, 0]
-            dtypes = self._metameta[:slot_used, 1]
+            try: #!!!cmk
+                names = self._metameta[: self._slot_used, 0]
+            except:
+                print('!!!cmk')
+            dtypes = self._metameta[: self._slot_used, 1]
             shapes = []
-            for shape_as_str in self._metameta[:slot_used, 2]:
+            for shape_as_str in self._metameta[: self._slot_used, 2]:
                 shapes.append(
                     tuple([int(num_as_str) for num_as_str in shape_as_str.split(",")])
                 )
 
-            for slot_index in range(slot_used):
+            for slot_index in range(self._slot_used):
                 memmap = np.memmap(
                     filename,
                     dtype=dtypes[slot_index],
@@ -52,54 +57,57 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         else:
             assert mode == "w+", "MultiMemMap doesn't exist and mode isn't 'w+'"
             self._offset = 0
-            self._slots = np.memmap(
+            self._bootstrap = np.memmap(
                 self._filename,
-                dtype=slot_dtype,
+                dtype=self._slot_dtype,
                 mode="w+",
                 offset=self._offset,
-                shape=slots_shape,
+                shape=(self._slots_length),
             )
-            self._offset += self._slots.size * self._slots.itemsize
-            self._slots[0] = 0
-            self._slots[1] = 20
-            self._slots[2] = 3
-            self._slots.flush()
+            self._offset += self._bootstrap.size * self._bootstrap.itemsize
+            self._bootstrap[0] = 0
+            self._bootstrap[1] = 20
+            self._bootstrap[2] = 3
+            self._bootstrap.flush() #!!!cmk offer (and use a global flush)
 
             self._metameta = np.memmap(
                 self._filename,
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._slots[1], self._slots[2]),
+                shape=(self._bootstrap[1], self._bootstrap[2]),
             )
             self._offset += self._metameta.size * self._metameta.itemsize
+
+    @property
+    def _slot_used(self):
+        return self._bootstrap[0]
+
+    @_slot_used.setter
+    def _slot_used(self, value):
+        self._bootstrap[0] = value
+
+    @property
+    def _slot_count(self):
+        return int(self._bootstrap[1])
+
+    @_slot_count.setter
+    def _slot_count(self, value):
+        self._bootstrap[1] = value
+
+    @property
+    def _metameta_count(self):
+        return self._bootstrap[2]
+
+    @_metameta_count.setter
+    def _metameta_count(self, value):
+        self._bootstrap[2] = value
 
     def __len__(self):
         return len(self._name_to_memmap)
 
     def __getitem__(self, name):
         return self._name_to_memmap[name]
-
-    def append(self, name, nparray):
-        assert self._mode == "w+", "Can only append with mode 'w+'"
-        slot_index = len(self)
-        self._metameta[slot_index, 0] = name
-        self._metameta[slot_index, 1] = str(nparray.dtype)  # cmk repr???
-        self._metameta[slot_index, 2] = ",".join([str(i) for i in nparray.shape])
-        self._metameta.flush()
-        memmap = np.memmap(
-            self._filename,
-            dtype=nparray.dtype,
-            mode="r+",
-            offset=self._offset,
-            shape=nparray.shape,
-        )
-        self._offset += memmap.size * memmap.itemsize
-        np.copyto(dst=memmap, src=nparray)
-        memmap.flush()
-        self._slots[0] = slot_index + 1
-        self._slots.flush()
-        self._name_to_memmap[name] = memmap
 
     def append_empty(
         self, name, shape, dtype
@@ -113,10 +121,10 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         memmap = np.memmap(
             self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape
         )
-        self._slots[0] = (
+        self._bootstrap[0] = (
             slot_index + 1
         )  # !!!cmk raise an error if every go over slots[2] e.g., 20
-        self._slots.flush()
+        self._bootstrap.flush()
         self._name_to_memmap[name] = memmap
         self._offset += memmap.size * memmap.itemsize
         memmap.flush()
@@ -130,8 +138,8 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         name = self._metameta[slot_index, 0]
         self._metameta[slot_index, :] = ""
         self._metameta.flush()
-        self._slots[0] = slot_index
-        self._slots.flush()
+        self._bootstrap[0] = slot_index
+        self._bootstrap.flush()
         memmap = self._name_to_memmap.pop(name)
         self._offset -= memmap.size * memmap.itemsize
         memmap._mmap.close()
@@ -155,12 +163,12 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
         if (
-            hasattr(self, "_slots") and self._slots is not None
+            hasattr(self, "_bootstrap") and self._bootstrap is not None
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
-            self._slots._mmap.close()
+            self._bootstrap._mmap.close()
             del (
-                self._slots
+                self._bootstrap
             )  # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
         if (
