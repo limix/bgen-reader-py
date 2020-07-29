@@ -32,24 +32,16 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             )
             self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
-            names = self._memmap_param[: self._memmap_count, 0]
-            dtypes = self._memmap_param[: self._memmap_count, 1]
-            shapes = []
-            for shape_as_str in self._memmap_param[: self._memmap_count, 2]:
-                shapes.append(
-                    tuple([int(num_as_str) for num_as_str in shape_as_str.split(",")])
-                )
-
             for memmap_index in range(self._memmap_count):
                 memmap = np.memmap(
                     filename,
-                    dtype=dtypes[memmap_index],
+                    dtype=self._get_memmap_dtype(memmap_index),
                     mode="r+",
                     offset=self._offset,
-                    shape=shapes[memmap_index],
+                    shape=self._get_memmap_shape(memmap_index),
                 )
                 self._offset += memmap.size * memmap.itemsize
-                self._name_to_memmap[names[memmap_index]] = memmap
+                self._name_to_memmap[self._get_memmap_name(memmap_index)] = memmap
         else:
             assert mode == "w+", "MultiMemMap doesn't exist and mode isn't 'w+'"
             self._offset = 0
@@ -118,7 +110,8 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
     def _get_memmap_shape(self, index):
         assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
-        return self._memmap_param[index, 2]
+        shape_as_str = self._memmap_param[index, 2]
+        return tuple([int(num_as_str) for num_as_str in shape_as_str.split(",")])
 
     def _set_memmap_shape(self, index, value):
         assert 0 <= index and index < self._memmap_count > 0, "Expect index between 0 (inclusive) and memmap_count (exclusive)"
