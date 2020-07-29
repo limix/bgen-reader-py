@@ -21,14 +21,14 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 shape=(self._bootstrap_length),
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
-            assert self._memmap_count <= self._bootstrap_count
+            assert self._memmap_count <= self._memmap_max, "real assert"
 
             self._metameta = np.memmap(
                 filename,
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._bootstrap_count, self._metameta_count),
+                shape=(self._memmap_max, self._metameta_count),
             )
             self._offset += self._metameta.size * self._metameta.itemsize
 
@@ -43,16 +43,16 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                     tuple([int(num_as_str) for num_as_str in shape_as_str.split(",")])
                 )
 
-            for slot_index in range(self._memmap_count):
+            for memmap_index in range(self._memmap_count):
                 memmap = np.memmap(
                     filename,
-                    dtype=dtypes[slot_index],
+                    dtype=dtypes[memmap_index],
                     mode="r+",
                     offset=self._offset,
-                    shape=shapes[slot_index],
+                    shape=shapes[memmap_index],
                 )
                 self._offset += memmap.size * memmap.itemsize
-                self._name_to_memmap[names[slot_index]] = memmap
+                self._name_to_memmap[names[memmap_index]] = memmap
         else:
             assert mode == "w+", "MultiMemMap doesn't exist and mode isn't 'w+'"
             self._offset = 0
@@ -65,7 +65,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
             self._memmap_count = 0
-            self._bootstrap_count = 20
+            self._memmap_max = 20
             self._metameta_count = 3
             self._bootstrap.flush() #!!!cmk offer (and use a global flush)
 
@@ -74,7 +74,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 dtype=metameta_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._bootstrap_count, self._metameta_count),
+                shape=(self._memmap_max, self._metameta_count),
             )
             self._offset += self._metameta.size * self._metameta.itemsize
 
@@ -87,11 +87,11 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self._bootstrap[0] = value
 
     @property
-    def _bootstrap_count(self):
-        return int(self._bootstrap[1])
+    def _memmap_max(self):
+        return self._bootstrap[1]
 
-    @_bootstrap_count.setter
-    def _bootstrap_count(self, value):
+    @_memmap_max.setter
+    def _memmap_max(self, value):
         self._bootstrap[1] = value
 
     @property
@@ -113,16 +113,16 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self, name, shape, dtype
     ):  # !!!cmk say that all these dtypes must be strings, not types
         assert self._mode == "w+", "Can only append with mode 'w+'"
-        slot_index = len(self)
-        self._metameta[slot_index, 0] = name
-        self._metameta[slot_index, 1] = str(dtype)  # cmk repr???
-        self._metameta[slot_index, 2] = str(shape)
+        memmap_index = len(self)
+        self._metameta[memmap_index, 0] = name
+        self._metameta[memmap_index, 1] = str(dtype)  # cmk repr???
+        self._metameta[memmap_index, 2] = str(shape)
         self._metameta.flush()
         memmap = np.memmap(
             self._filename, dtype=dtype, mode="r+", offset=self._offset, shape=shape
         )
         self._memmap_count = (
-            slot_index + 1
+            memmap_index + 1
         )  # !!!cmk raise an error if every go over slots[2] e.g., 20
         self._bootstrap.flush()
         self._name_to_memmap[name] = memmap
@@ -134,11 +134,11 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
         self,
     ):  # As of Python 3.7 popitem remove the last item from a dictionary
         assert self._mode == "w+", "Can only append with mode 'w+'"
-        slot_index = len(self) - 1
-        name = self._metameta[slot_index, 0]
-        self._metameta[slot_index, :] = ""
+        memmap_index = len(self) - 1
+        name = self._metameta[memmap_index, 0]
+        self._metameta[memmap_index, :] = ""
         self._metameta.flush()
-        self._memmap_count = slot_index
+        self._memmap_count = memmap_index
         self._bootstrap.flush()
         memmap = self._name_to_memmap.pop(name)
         self._offset -= memmap.size * memmap.itemsize
