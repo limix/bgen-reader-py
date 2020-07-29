@@ -4,8 +4,8 @@ import numpy as np
 class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
 
     _bootstrap_dtype = "<U50"
-    _bootstrap_length = 3
-    _memmap_param_max = 3
+    _bootstrap_max = 8
+    _memmap_param_max = 8
 
     def __init__(self, filename, mode, metameta_dtype="<U50",  memmap_max = 25,
 ):
@@ -20,7 +20,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 dtype=self._bootstrap_dtype,
                 mode="r+",
                 offset=self._offset,
-                shape=(self._bootstrap_length),
+                shape=(self._bootstrap_max),
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
             assert self._memmap_count <= self._memmap_max, "real assert"
@@ -52,7 +52,7 @@ class MultiMemMap:  # !!!should be record and offer order 'F' vs 'C'?
                 dtype=self._bootstrap_dtype,
                 mode="w+",
                 offset=self._offset,
-                shape=(self._bootstrap_length),
+                shape=(self._bootstrap_max),
             )
             self._offset += self._bootstrap.size * self._bootstrap.itemsize
             self._memmap_count = 0
