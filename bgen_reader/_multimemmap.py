@@ -1,4 +1,6 @@
 import numpy as np
+from pathlib import Path
+from typing import Any, List, Optional, Tuple, Union
 
 
 class MultiMemMap:
@@ -12,12 +14,12 @@ class MultiMemMap:
 
     def __init__(
         self,
-        filename,
-        mode,
-        memmap_param_dtype="<U50",
-        memmap_max=25,  # LATER document the last two params are only used when mode is 'w+'
+        filename: Union[str, Path],
+        mode: str,
+        memmap_param_dtype: str = "<U50",
+        memmap_max: int = 25,  # LATER document the last two params are only used when mode is 'w+'
     ):
-        self._filename = filename
+        self._filename = Path(filename)
 
         assert mode in self._mode_list, "Expect mode to be one of {0}".format(
             self._mode_list
@@ -28,7 +30,7 @@ class MultiMemMap:
         else:
             self._read_existing()
 
-    def _create_new(self, memmap_param_dtype, memmap_max):
+    def _create_new(self, memmap_param_dtype: str, memmap_max: int):
         assert self._mode == "w+", "real assert"
 
         self._bootstrap = np.memmap(
@@ -57,7 +59,6 @@ class MultiMemMap:
         self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
         self._name_to_memmap = {}
-
 
     def _read_existing(self):
         assert (
@@ -178,16 +179,16 @@ class MultiMemMap:
         self._check_index(index)
         self._memmap_param[index, 3] = value
 
-    def __len__(self):
+    def __len__(self) -> int:
         assert len(self._name_to_memmap) == self._memmap_count, "real assert"
         return self._memmap_count
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> np.memmap:
         return self._name_to_memmap[name]
 
     def append_empty(
-        self, name, shape, dtype, order="C",
-    ):  # !!!cmk say that all these dtypes must be strings, not types
+        self, name: str, shape: Tuple[int], dtype: str, order: str = "C",
+    ) -> np.memmap:  # !!!cmk say that all these dtypes must be strings, not types
         assert self._mode == "w+", f"Can not append_empty with mode {self._mode}"
         assert (
             self._memmap_count + 1 < self._memmap_max

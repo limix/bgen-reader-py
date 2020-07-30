@@ -111,7 +111,7 @@ class open_bgen:
         self,
         filepath: Union[str, Path],
         samples_filepath: Optional[Union[str, Path]] = None,
-        assume_simple=False,
+        assume_simple: bool = False,
         verbose: bool = True,
     ):
         # !!!cmk need to confirm can still read 4 millions distributions per unit
