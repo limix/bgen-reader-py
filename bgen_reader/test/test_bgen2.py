@@ -508,8 +508,8 @@ if __name__ == "__main__":
 
     if True:
 
-        filename = r'M:\deldir\fakeuk450000x1000.bgen'
-        #filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
+        filename = r"M:\deldir\fakeuk450000x1000.bgen"
+        # filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
         # filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
         # filename = 'M:/deldir/genbgen/good/merged_487400x4840000.bgen'
 
@@ -548,6 +548,5 @@ if __name__ == "__main__":
         # filepath = r"M:\deldir\genbgen\good\merged_487400x22000.bgen"
         bgen = read_bgen(filepath, verbose=True)
         print(len(bgen["variants"]))
-
 
     pytest.main([__file__])
