@@ -7,80 +7,92 @@ class MultiMemMap:
     _bootstrap_dtype = "<U50"
     _bootstrap_max = 8
     _memmap_param_max = 8
-    _mode_list = {'r','r+','w+'} #!!! cmk test all three of these
+    _mode_list = {"r", "r+", "w+"}  # !!! cmk test all three of these
+    # LATER document the meaning of each of these
 
     def __init__(
-        self, filename, mode, memmap_param_dtype="<U50", memmap_max=25, #!!!cmk note the last two params are only used when mode is 'w+'
+        self,
+        filename,
+        mode,
+        memmap_param_dtype="<U50",
+        memmap_max=25,  # LATER document the last two params are only used when mode is 'w+'
     ):
-        # !!!cmk check all values of mode
         self._filename = filename
-        assert mode in self._mode_list, "Expect mode to be one of {0}".format(self._mode_list)
+        assert mode in self._mode_list, "Expect mode to be one of {0}".format(
+            self._mode_list
+        )
         self._mode = mode
-        if mode[0]=='r':
-            assert filename.exists(), f"With mode '{mode}' expect file to exist."
-            self._name_to_memmap = {}
-            self._offset = 0  # !!!cmk how come not using the inputted mode here?
-            self._bootstrap = np.memmap(
-                filename,
-                dtype=self._bootstrap_dtype,
-                mode=self._mode,
-                offset=self._offset,
-                shape=(self._bootstrap_max),
-                order="C",
-            )
-            self._offset += self._bootstrap.size * self._bootstrap.itemsize
-            assert (
-                self._magic_string == self._expected_magic_string
-            ), "Invalid file format. (Didn't find expected magic string.)"
-            assert self._memmap_count <= self._memmap_max, "real assert"
-
-            self._memmap_param = np.memmap(
-                filename,
-                dtype=memmap_param_dtype,
-                mode=self._mode,
-                offset=self._offset,
-                shape=(self._memmap_max, self._memmap_param_max),
-                order="C",
-            )
-            self._offset += self._memmap_param.size * self._memmap_param.itemsize
-
-            for memmap_index in range(self._memmap_count):
-                memmap = np.memmap(
-                    filename,
-                    dtype=self._get_memmap_dtype(memmap_index),
-                    mode=self._mode,
-                    offset=self._offset,
-                    shape=self._get_memmap_shape(memmap_index),
-                    order=self._get_memmap_order(memmap_index),
-                )
-                self._offset += memmap.size * memmap.itemsize
-                self._name_to_memmap[self._get_memmap_name(memmap_index)] = memmap
+        if mode[0] == "r":
+            self._read_existing()
         else:
-            self._name_to_memmap = {}
-            assert mode == 'w+', "real assert"
-            self._offset = 0
-            self._bootstrap = np.memmap(
-                self._filename,
-                dtype=self._bootstrap_dtype,
-                mode='w+', #create file
-                offset=self._offset,
-                shape=(self._bootstrap_max),
-                order="C",
-            )
-            self._offset += self._bootstrap.size * self._bootstrap.itemsize
-            self._magic_string = self._expected_magic_string
-            self._memmap_count = 0
-            self._memmap_max = memmap_max
+            self._create_new()
 
-            self._memmap_param = np.memmap(
-                self._filename,
-                dtype=memmap_param_dtype,
-                mode="r+", # file now already exists
+    def _read_existing(self):
+        assert filename.exists(), f"With mode '{mode}' expect file to exist."
+        self._name_to_memmap = {}
+        self._offset = 0
+        self._bootstrap = np.memmap(
+            filename,
+            dtype=self._bootstrap_dtype,
+            mode=self._mode,
+            offset=self._offset,
+            shape=(self._bootstrap_max),
+            order="C",
+        )
+        self._offset += self._bootstrap.size * self._bootstrap.itemsize
+        assert (
+            self._magic_string == self._expected_magic_string
+        ), "Invalid file format. (Didn't find expected magic string.)"
+        assert self._memmap_count <= self._memmap_max, "real assert"
+
+        self._memmap_param = np.memmap(
+            filename,
+            dtype=memmap_param_dtype,
+            mode=self._mode,
+            offset=self._offset,
+            shape=(self._memmap_max, self._memmap_param_max),
+            order="C",
+        )
+        self._offset += self._memmap_param.size * self._memmap_param.itemsize
+
+        for memmap_index in range(self._memmap_count):
+            memmap = np.memmap(
+                filename,
+                dtype=self._get_memmap_dtype(memmap_index),
+                mode=self._mode,
                 offset=self._offset,
-                shape=(self._memmap_max, self._memmap_param_max),
-                order="C",
+                shape=self._get_memmap_shape(memmap_index),
+                order=self._get_memmap_order(memmap_index),
             )
-            self._offset += self._memmap_param.size * self._memmap_param.itemsize
+            self._offset += memmap.size * memmap.itemsize
+            self._name_to_memmap[self._get_memmap_name(memmap_index)] = memmap
+
+    def _create_new():
+        self._name_to_memmap = {}
+        assert mode == "w+", "real assert"
+        self._offset = 0
+        self._bootstrap = np.memmap(
+            self._filename,
+            dtype=self._bootstrap_dtype,
+            mode="w+",  # create file
+            offset=self._offset,
+            shape=(self._bootstrap_max),
+            order="C",
+        )
+        self._offset += self._bootstrap.size * self._bootstrap.itemsize
+        self._magic_string = self._expected_magic_string
+        self._memmap_count = 0
+        self._memmap_max = memmap_max
+
+        self._memmap_param = np.memmap(
+            self._filename,
+            dtype=memmap_param_dtype,
+            mode="r+",  # file now already exists
+            offset=self._offset,
+            shape=(self._memmap_max, self._memmap_param_max),
+            order="C",
+        )
+        self._offset += self._memmap_param.size * self._memmap_param.itemsize
 
     def flush(self):
         self._bootstrap.flush()
@@ -183,7 +195,7 @@ class MultiMemMap:
         memmap = np.memmap(
             self._filename,
             dtype=dtype,
-            mode="r+", # Because the file already exists
+            mode="r+",  # Because the file already exists
             offset=self._offset,
             shape=shape,
             order=order,
