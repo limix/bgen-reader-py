@@ -22,54 +22,14 @@ class MultiMemMap:
             self._mode_list
         )
         self._mode = mode
-        if mode[0] == "r":
-            self._read_existing()
+        if mode == "w+":
+            self._create_new(memmap_param_dtype, memmap_max)
         else:
-            self._create_new()
+            self._read_existing()
 
-    def _read_existing(self):
-        assert filename.exists(), f"With mode '{mode}' expect file to exist."
+    def _create_new(self, memmap_param_dtype, memmap_max):
         self._name_to_memmap = {}
-        self._offset = 0
-        self._bootstrap = np.memmap(
-            filename,
-            dtype=self._bootstrap_dtype,
-            mode=self._mode,
-            offset=self._offset,
-            shape=(self._bootstrap_max),
-            order="C",
-        )
-        self._offset += self._bootstrap.size * self._bootstrap.itemsize
-        assert (
-            self._magic_string == self._expected_magic_string
-        ), "Invalid file format. (Didn't find expected magic string.)"
-        assert self._memmap_count <= self._memmap_max, "real assert"
-
-        self._memmap_param = np.memmap(
-            filename,
-            dtype=memmap_param_dtype,
-            mode=self._mode,
-            offset=self._offset,
-            shape=(self._memmap_max, self._memmap_param_max),
-            order="C",
-        )
-        self._offset += self._memmap_param.size * self._memmap_param.itemsize
-
-        for memmap_index in range(self._memmap_count):
-            memmap = np.memmap(
-                filename,
-                dtype=self._get_memmap_dtype(memmap_index),
-                mode=self._mode,
-                offset=self._offset,
-                shape=self._get_memmap_shape(memmap_index),
-                order=self._get_memmap_order(memmap_index),
-            )
-            self._offset += memmap.size * memmap.itemsize
-            self._name_to_memmap[self._get_memmap_name(memmap_index)] = memmap
-
-    def _create_new():
-        self._name_to_memmap = {}
-        assert mode == "w+", "real assert"
+        assert self._mode == "w+", "real assert"
         self._offset = 0
         self._bootstrap = np.memmap(
             self._filename,
@@ -83,16 +43,59 @@ class MultiMemMap:
         self._magic_string = self._expected_magic_string
         self._memmap_count = 0
         self._memmap_max = memmap_max
+        self._memmap_param_dtype = memmap_param_dtype  # !!! cmk do a test where we change these when reading but and that is OK
 
         self._memmap_param = np.memmap(
             self._filename,
-            dtype=memmap_param_dtype,
+            dtype=self._memmap_param_dtype,
             mode="r+",  # file now already exists
             offset=self._offset,
             shape=(self._memmap_max, self._memmap_param_max),
             order="C",
         )
         self._offset += self._memmap_param.size * self._memmap_param.itemsize
+
+    def _read_existing(self):
+        assert (
+            self._filename.exists()
+        ), f"With mode '{self._mode}' expect file to exist."
+        self._name_to_memmap = {}
+        self._offset = 0
+        self._bootstrap = np.memmap(
+            self._filename,
+            dtype=self._bootstrap_dtype,
+            mode=self._mode,
+            offset=self._offset,
+            shape=(self._bootstrap_max),
+            order="C",
+        )
+        self._offset += self._bootstrap.size * self._bootstrap.itemsize
+        assert (
+            self._magic_string == self._expected_magic_string
+        ), "Invalid file format. (Didn't find expected magic string.)"
+        assert self._memmap_count <= self._memmap_max, "real assert"
+
+        self._memmap_param = np.memmap(
+            self._filename,
+            dtype=self._memmap_param_dtype,
+            mode=self._mode,
+            offset=self._offset,
+            shape=(self._memmap_max, self._memmap_param_max),
+            order="C",
+        )
+        self._offset += self._memmap_param.size * self._memmap_param.itemsize
+
+        for memmap_index in range(self._memmap_count):
+            memmap = np.memmap(
+                self._filename,
+                dtype=self._get_memmap_dtype(memmap_index),
+                mode=self._mode,
+                offset=self._offset,
+                shape=self._get_memmap_shape(memmap_index),
+                order=self._get_memmap_order(memmap_index),
+            )
+            self._offset += memmap.size * memmap.itemsize
+            self._name_to_memmap[self._get_memmap_name(memmap_index)] = memmap
 
     def flush(self):
         self._bootstrap.flush()
@@ -123,6 +126,14 @@ class MultiMemMap:
     @_memmap_max.setter
     def _memmap_max(self, value):
         self._bootstrap[2] = str(value)
+
+    @property
+    def _memmap_param_dtype(self):
+        return self._bootstrap[3]
+
+    @_memmap_param_dtype.setter
+    def _memmap_param_dtype(self, value):
+        self._bootstrap[3] = value
 
     def _get_memmap_name(self, index):
         assert (
