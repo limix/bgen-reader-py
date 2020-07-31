@@ -532,7 +532,7 @@ if __name__ == "__main__":
                 f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB"
             )
             print("Time = {0} seconds".format(time.time() - start))
-            print("!!!cmk")
+            print("end")
         tracemalloc.stop()
 
     if False:  # !!!cmk

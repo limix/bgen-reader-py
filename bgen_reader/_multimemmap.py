@@ -208,6 +208,8 @@ class MultiMemMap:
             raise ValueError("The MultiMemMap contains no room for an additional memmap.")
         if name in self._name_to_memmap:
             raise KeyError(f"A memmap with name '{name}' already exists")
+        if order not in {'F','C'}:
+            raise TypeError("order not understood")
 
         self._memmap_count += 1
         self._set_memmap_name(self._memmap_count - 1, name)
@@ -226,6 +228,10 @@ class MultiMemMap:
         self._offset += memmap.size * memmap.itemsize
         self._name_to_memmap[name] = memmap
 
+        if memmap.itemsize == 0:
+            self.popitem()
+            raise ValueError(f"Cannot use dtype '{dtype}' because it has a variable- or zero-size element")
+
         return memmap
 
     def popitem(
@@ -242,8 +248,8 @@ class MultiMemMap:
 
         self._memmap_count -= 1
         memmap = self._name_to_memmap.pop(name)
-        self._offset -= memmap.size * memmap.itemsize
         memmap._mmap.close()
+        self._offset -= memmap.size * memmap.itemsize
 
     def close(self):
         self.__exit__()

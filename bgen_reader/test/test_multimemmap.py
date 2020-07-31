@@ -11,7 +11,7 @@ def example_filepath3(filename):
     return filepath
 
 
-def test_errors():  # !!!cmk be sure these are run
+def test_errors():
     with pytest.raises(ValueError):
         MultiMemMap(
             example_filepath3("errors.mmm"), mode="w"
@@ -55,7 +55,7 @@ def test_reads():
         assert len(mmm_r2) == 2
 
     mmm_rplus = MultiMemMap(write_file, mode="r+")
-    mmm_rplus.append_empty("mm3", shape=(1, 3), dtype="str")
+    mmm_rplus.append_empty("mm3", shape=(1, 3), dtype="<U10")
     assert len(mmm_rplus) == 3
     mm0 = mmm_rplus["mm0"]
     assert mm0[1, 2] == 5
@@ -72,51 +72,72 @@ def test_reads():
     del mmm_rplus
 
 
-# !!!cmk test that 'F' and 'C' order are respected
-# !!!cmk test appending name that is already there
-# !!!cmk test a dtype of np.int32
+def test_more():
+    write_file = example_filepath3("write.mmm")
+    with MultiMemMap(write_file, mode="w+") as _:
+        pass
+    zero_length = write_file.stat().st_size
+    with MultiMemMap(write_file, mode="r+") as mmm_rplus:
+        with pytest.raises(ValueError):
+            mmm_rplus.append_empty("mm0", shape=(3, 5), dtype="str")
+        mmm_rplus.append_empty("mm0", shape=(3, 5), dtype="<U10")
+    one_length = write_file.stat().st_size
+    assert zero_length < one_length  # Expect file to grow
+    # Opening the file in w+ will create it from scratch again
+    with MultiMemMap(write_file, mode="w+") as _:
+        pass
+    assert write_file.stat().st_size == zero_length
+
+    with MultiMemMap(write_file, mode="r+") as mmm_rplus:
+        mm0 = mmm_rplus.append_empty("mm0", shape=(3, 5), dtype="<U10")
+        assert mm0.flags['C_CONTIGUOUS']
+        with pytest.raises(TypeError):
+            mmm_rplus.append_empty("mm1", shape=(3, 5), dtype="<U10", order="K")
+        mm1 = mmm_rplus.append_empty("mm1", shape=(3, 5), dtype="<U10", order="F")
+        assert mm1.flags['F_CONTIGUOUS']
+    with MultiMemMap(write_file, mode="r") as mmm_r:
+        assert mm0.flags['C_CONTIGUOUS']
+        assert mm1.flags['F_CONTIGUOUS']
 
 
 def test_writes():
-    write_file = example_filepath3(
-        "write.mmm"
-    )  # !!!cmk test opening an existing file for write and having to re-started
+    write_file = example_filepath3("write.mmm")
     mmm_wplus = MultiMemMap(
         write_file, mode="w+", wplus_memmap_max=2, wplus_memmap_param_dtype="<U1"
     )
     with pytest.raises(ValueError):
-        mmm_wplus.append_empty("0", shape=(3), dtype="str")  # Type is too long
+        mmm_wplus.append_empty("0", shape=(3), dtype="<U10")  # Type is too long
     del mmm_wplus
 
     mmm_wplus = MultiMemMap(
-        write_file, mode="w+", wplus_memmap_max=2, wplus_memmap_param_dtype="<U1"
+        write_file, mode="w+", wplus_memmap_max=2, wplus_memmap_param_dtype="<U5"
     )
-    mmm_wplus.append_empty("0", shape=(3), dtype="S")
-    mmm_wplus.append_empty("1", shape=(3), dtype="S")
+    mmm_wplus.append_empty("0", shape=(3), dtype="<U10")
+    mmm_wplus.append_empty("1", shape=(3), dtype="<U10")
     with pytest.raises(ValueError):
-        mmm_wplus.append_empty("2", shape=(5), dtype="S")  # Too many memmaps
+        mmm_wplus.append_empty("2", shape=(5), dtype="<U10")  # Too many memmaps
     del mmm_wplus
 
     mmm_wplus = MultiMemMap(
         write_file, mode="r+", wplus_memmap_max=200, wplus_memmap_param_dtype="<U100"
     )  # memmap params are ignored with r+ and r
     with pytest.raises(ValueError):
-        mmm_wplus.append_empty("mm2", shape=(1, 3), dtype="S")  # Too many memmaps
+        mmm_wplus.append_empty("mm2", shape=(1, 3), dtype="<U10")  # Too many memmaps
     del mmm_wplus
 
     write_file = example_filepath3("write.mmm")
     mmm_wplus = MultiMemMap(write_file, mode="w+")
-    mmm_wplus.append_empty("mm0", shape=(1, 3), dtype="str")
+    mmm_wplus.append_empty("mm0", shape=(1, 3), dtype="<U10")
     with pytest.raises(KeyError):
-        mmm_wplus.append_empty("mm0", shape=(1, 3), dtype="str")  # Duplicate name
+        mmm_wplus.append_empty("mm0", shape=(1, 3), dtype="<U10")  # Duplicate name
     del mmm_wplus
 
     write_file = example_filepath3("write.mmm")
     mmm_wplus = MultiMemMap(write_file, mode="w+")
     zero_length = write_file.stat().st_size
-    mmm_wplus.append_empty("mm0", shape=(1, 3), dtype="str")
+    mmm_wplus.append_empty("mm0", shape=(1, 3), dtype="<U10")
     one_length = write_file.stat().st_size
-    mmm_wplus.append_empty("mm1", shape=(1, 3), dtype="str")
+    mmm_wplus.append_empty("mm1", shape=(1, 3), dtype="<U10")
     two_length = write_file.stat().st_size
     del mmm_wplus
     assert two_length == write_file.stat().st_size
@@ -135,7 +156,8 @@ def test_writes():
 
 
 if __name__ == "__main__":
-    if True:
+    if True: #!!!cmk
+        test_more()
         test_errors()
         test_reads()
         test_writes()
