@@ -21,12 +21,13 @@ def test_errors():  # !!!cmk be sure these are run
 def test_reads():
     write_file = example_filepath3("write.mmm")
     mmm_wplus = MultiMemMap(write_file, mode="w+")
-    assert (
-        len(mmm_wplus) == 0
-    )
+    assert len(mmm_wplus) == 0
     mm0 = mmm_wplus.append_empty("mm0", shape=(2, 3), dtype="int32")
     assert len(mmm_wplus) == 1
-    mm0[:, :] = [[0, 1, 2], [3, 4, 5]]#!!!cmk test that with 'r' mode we can't change values
+    mm0[:, :] = [
+        [0, 1, 2],
+        [3, 4, 5],
+    ]
     mmm_wplus.append_empty("mm1", shape=(0, 3), dtype="float32")
     assert len(mmm_wplus) == 2
     assert mm0[0, 0] == 0
@@ -36,7 +37,7 @@ def test_reads():
         MultiMemMap(example_filepath3("doesntexisit.mmm"), mode="r")
 
     other_file = example_filepath3("otherfile.txt")
-    with other_file.open('w') as fp:
+    with other_file.open("w") as fp:
         fp.write("this is not a mmm file")
 
     with pytest.raises(Exception):
@@ -66,7 +67,7 @@ def test_reads():
     assert mmm_r3["mm0"][1, 2] == -5
     del mmm_r3
     mmm_rplus.popitem()
-    assert len(mmm_rplus)==2
+    assert len(mmm_rplus) == 2
     del mmm_r2
     del mmm_rplus
 
@@ -77,7 +78,9 @@ def test_reads():
 
 
 def test_writes():
-    write_file = example_filepath3("write.mmm")#!!!cmk test opening an existing file for write and having to re-started
+    write_file = example_filepath3(
+        "write.mmm"
+    )  # !!!cmk test opening an existing file for write and having to re-started
     mmm_wplus = MultiMemMap(
         write_file, mode="w+", wplus_memmap_max=2, wplus_memmap_param_dtype="<U1"
     )

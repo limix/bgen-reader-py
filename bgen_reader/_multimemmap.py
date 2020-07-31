@@ -76,9 +76,8 @@ class MultiMemMap:
         )
         self._offset += self._bootstrap.size * self._bootstrap.itemsize
 
-        assert (
-            self._magic_string == self._expected_magic_string
-        ), "Invalid file format. (Didn't find expected magic string.)"
+        if self._magic_string != self._expected_magic_string:
+            raise Exception("Invalid file format. (Didn't find expected magic string.)")
         assert self._memmap_count <= self._memmap_max, "real assert"
 
         self._memmap_param = np.memmap(
@@ -143,9 +142,8 @@ class MultiMemMap:
         self._bootstrap[3] = value
 
     def _check_index(self, index):
-        assert (
-            0 <= index and index < self._memmap_count > 0
-        ), "Expect index between 0 (inclusive) and memmap_count (exclusive)"
+        if index < 0 or index >= self._memmap_count:
+            raise Exception("!!!cmk")
 
     def _get_memmap_name(self, index):
         self._check_index(index)
