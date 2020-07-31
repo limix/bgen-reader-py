@@ -1352,9 +1352,7 @@ class open_bgen:
     # cmk0 lint
     # cmk0 coverage
     # cmk0 add tests
-    # cmk0 add types
     # cmk0 address 'cmk''s
-    # cmk0 refactor into subfunctions
     # cmk0 repeat
     # cmk0 Didn't Danilo change so not doing multiple returns????
     # cmk0 update quick start with assume_simple

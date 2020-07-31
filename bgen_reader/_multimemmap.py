@@ -1,6 +1,7 @@
+import io
 import numpy as np
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Tuple, Union
 
 
 class MultiMemMap:
@@ -16,37 +17,37 @@ class MultiMemMap:
         self,
         filename: Union[str, Path],
         mode: str,
-        memmap_param_dtype: str = "<U50",
-        memmap_max: int = 25,  # LATER document the last two params are only used when mode is 'w+'
+        wplus_memmap_param_dtype: str = "<U50",
+        wplus_memmap_max: int = 25,  # LATER document the last two params are only used when mode is 'w+'
     ):
         self._filename = Path(filename)
 
-        assert mode in self._mode_list, "Expect mode to be one of {0}".format(
-            self._mode_list
-        )
+        if mode not in self._mode_list:
+            raise ValueError(f"invalid mode: '{mode}'")
         self._mode = mode
         if mode == "w+":
-            self._create_new(memmap_param_dtype, memmap_max)
+            self._create_new(wplus_memmap_param_dtype, wplus_memmap_max)
         else:
             self._read_existing()
 
-    def _create_new(self, memmap_param_dtype: str, memmap_max: int):
+    def _create_new(self, wplus_memmap_param_dtype: str, wplus_memmap_max: int):
         assert self._mode == "w+", "real assert"
 
+        self._offset = 0
         self._bootstrap = np.memmap(
             self._filename,
             dtype=self._bootstrap_dtype,
             mode="w+",  # create file
-            offset=0,
+            offset=self._offset,
             shape=(self._bootstrap_max),
             order="C",
         )
-        self._offset = self._bootstrap.size * self._bootstrap.itemsize
+        self._offset += self._bootstrap.size * self._bootstrap.itemsize
 
         self._magic_string = self._expected_magic_string
         self._memmap_count = 0
-        self._memmap_max = memmap_max
-        self._memmap_param_dtype = memmap_param_dtype  # !!! cmk do a test where we change these when reading but that is OK
+        self._memmap_max = wplus_memmap_max
+        self._memmap_param_dtype = wplus_memmap_param_dtype  # !!! cmk do a test where we change these when reading but that is OK
 
         self._memmap_param = np.memmap(
             self._filename,
@@ -61,19 +62,19 @@ class MultiMemMap:
         self._name_to_memmap = {}
 
     def _read_existing(self):
-        assert (
-            self._filename.exists()
-        ), f"With mode '{self._mode}' expect file to exist."
+        if not self._filename.exists():
+            raise FileNotFoundError(f"No such file or directory: '{self._filename}'")
 
+        self._offset = 0
         self._bootstrap = np.memmap(
             self._filename,
             dtype=self._bootstrap_dtype,
             mode=self._mode,
-            offset=0,
+            offset=self._offset,
             shape=(self._bootstrap_max),
             order="C",
         )
-        self._offset = self._bootstrap.size * self._bootstrap.itemsize
+        self._offset += self._bootstrap.size * self._bootstrap.itemsize
 
         assert (
             self._magic_string == self._expected_magic_string
@@ -106,7 +107,7 @@ class MultiMemMap:
     def flush(self):
         self._bootstrap.flush()
         self._memmap_param.flush()
-        for memmap in self._name_to_memmap.items():
+        for memmap in self._name_to_memmap.values():
             memmap.flush()
 
     @property
@@ -153,6 +154,9 @@ class MultiMemMap:
     def _set_memmap_name(self, index, value):
         self._check_index(index)
         self._memmap_param[index, 0] = value
+        if self._memmap_param[index, 0] != value:
+            raise ValueError(f'Cannot save value as {self._memmap_param_dtype}')
+
 
     def _get_memmap_dtype(self, index):
         self._check_index(index)
@@ -160,16 +164,25 @@ class MultiMemMap:
 
     def _set_memmap_dtype(self, index, value):
         self._check_index(index)
-        self._memmap_param[index, 1] = str(value)  # cmk repr???
+        str_value = str(value)  # cmk repr???
+        self._memmap_param[index, 1] = str_value
+        if self._memmap_param[index, 1] != value:
+            raise ValueError(f'Cannot save value as {self._memmap_param_dtype}')
 
     def _get_memmap_shape(self, index):
         self._check_index(index)
         shape_as_str = self._memmap_param[index, 2]
-        return tuple([int(num_as_str) for num_as_str in shape_as_str.split(",")])
+        return tuple((int(num_as_str) for num_as_str in shape_as_str.split(",")))
 
     def _set_memmap_shape(self, index, value):
         self._check_index(index)
-        self._memmap_param[index, 2] = str(value)  # cmk repre???
+        try:
+            str_value = ",".join((str(num) for num in value))
+        except TypeError:
+            str_value = str(value)
+        self._memmap_param[index, 2] = str_value
+        if self._memmap_param[index, 2] != str_value:
+            raise ValueError(f'Cannot save value as {self._memmap_param_dtype}')
 
     def _get_memmap_order(self, index):
         self._check_index(index)
@@ -178,6 +191,8 @@ class MultiMemMap:
     def _set_memmap_order(self, index, value):
         self._check_index(index)
         self._memmap_param[index, 3] = value
+        if self._memmap_param[index, 3] != value:
+            raise ValueError(f'Cannot save value as {self._memmap_param_dtype}')
 
     def __len__(self) -> int:
         assert len(self._name_to_memmap) == self._memmap_count, "real assert"
@@ -189,10 +204,12 @@ class MultiMemMap:
     def append_empty(
         self, name: str, shape: Tuple[int], dtype: str, order: str = "C",
     ) -> np.memmap:  # !!!cmk say that all these dtypes must be strings, not types
-        assert self._mode == "w+", f"Can not append_empty with mode {self._mode}"
-        assert (
-            self._memmap_count + 1 < self._memmap_max
-        ), "The MultiMemMap contains no room for an additional memmap."
+        if self._mode not in {'r+','w+'}: #!!!cmk test append_empty and popitem with both these modes
+            raise io.UnsupportedOperation('not writable')
+        if self._memmap_count >= self._memmap_max:
+            raise ValueError("The MultiMemMap contains no room for an additional memmap.")
+        if name in self._name_to_memmap:
+            raise KeyError(f"A memmap with name '{name}' already exists")
 
         self._memmap_count += 1
         self._set_memmap_name(self._memmap_count - 1, name)
@@ -216,12 +233,14 @@ class MultiMemMap:
     def popitem(
         self,
     ):  # As of Python 3.7 popitem removes the last item from a dictionary
-        assert self._mode == "w+", f"Can not popitem with mode {self._mode}"
-        assert self._memmap_count > 0, "The MultiMemMap contains no items to pop."
+        if self._mode not in {'r+','w+'}:
+            raise io.UnsupportedOperation('not writable')
+        if self._memmap_count == 0:
+            raise KeyError('poptiem(): MultiMemMap is empty')
 
         name = self._get_memmap_name(self._memmap_count - 1)
         # Not necessary, but mark 'name' out (leave other params as is)
-        self._set_memmap_name(self._memmap_count - 1, None)
+        self._set_memmap_name(self._memmap_count - 1, "")
 
         self._memmap_count -= 1
         memmap = self._name_to_memmap.pop(name)
@@ -250,9 +269,12 @@ class MultiMemMap:
             del self._memmap_param
 
         # If the file is longer than needed (because of 'popitem'), shorten it.
-        if self._filename.stat().st_size > self._offset:
-            with open(self._filename, "a") as fp:
-                fp.truncate(self._offset)
+        try: #!!!cmk
+            if hasattr(self, "_mode") and self._mode in {'r+','w+'} and hasattr(self, "_filename") and self._filename.exists() and hasattr(self,'_offset') and self._filename.stat().st_size > self._offset:
+                with open(self._filename, "a") as fp:
+                    fp.truncate(self._offset)
+        except Exception as e:
+            print("!!!cmk")
 
     def __del__(self):
         self.__exit__()
