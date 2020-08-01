@@ -135,19 +135,14 @@ class open_bgen:
         self._nvariants = self._bgen.nvariants
         self._nsamples = self._bgen.nsamples
 
-        self._metadata2_memmaps = self._load_metadata_creating_if_needed()
-
-    def _load_metadata_creating_if_needed(self):
-
         if self._metadata2_path.exists() and getmtime(self._metadata2_path) < getmtime(
             self._filepath
         ):
             self._metadata2_path.unlink()
-
         if not self._metadata2_path.exists():
             self._create_metadata2()
 
-        return MultiMemMap(self._metadata2_path, mode="r")
+        self._metadata2_memmaps = MultiMemMap(self._metadata2_path, mode="r")
 
     def _create_metadata2(self):
         metadata2_temp = self._metadata2_path.parent / (
@@ -695,7 +690,9 @@ class open_bgen:
             hash = hashlib.sha256(samples_filepath.name.encode("utf-8")).hexdigest()
             s_string = ".S" + hash[:6]
         a_string = "" if not assume_simple else ".simple"
-        return infer_metafile_filepath(Path(filename), f"{s_string}{a_string}.metadata2.mmm")
+        return infer_metafile_filepath(
+            Path(filename), f"{s_string}{a_string}.metadata2.mmm"
+        )
 
     @property
     def samples(self) -> List[str]:
@@ -921,30 +918,25 @@ class open_bgen:
                         "nalleles", (self.nvariants), "uint16"
                     )
 
-                    nvariants_list = []
-                    vid_max_list = []
-                    rsid_max_list = []
-                    chrom_max_list = []
-                    allele_ids_max_list = []
+                    vid_max_max = 0
+                    rsid_max_max = 0
+                    chrom_max_max = 0
+                    allele_ids_max_max = 0
 
                     start = 0
                     for ipart2 in range(nparts):  # LATER multithread?
                         # LATER in notebook this message doesn't appear on one line
                         updater("'nallele': part {0:,} of {1:,}".format(ipart2, nparts))
 
-                        # start = time()
+                        # start = time()#!!!cmk kill timing messages
                         partition = lib.bgen_metafile_read_partition(
                             mf._bgen_metafile, ipart2
                         )
-                        # print(f"Elapsed: {time() - start} for bgen_metafile_read_partition")
                         if partition == ffi.NULL:
                             raise RuntimeError(f"Could not read partition {partition}.")
 
                         try:
                             nvariants = lib.bgen_partition_nvariants(partition)
-                            nvariants_list.append(nvariants)
-
-                            # start = time()
                             position = np.empty(nvariants, dtype=np.uint32)
                             nalleles = np.empty(nvariants, dtype=np.uint16)
                             offset = np.empty(nvariants, dtype=np.uint64)
@@ -952,11 +944,12 @@ class open_bgen:
                             rsid_max_len = ffi.new("uint32_t[]", 1)
                             chrom_max_len = ffi.new("uint32_t[]", 1)
                             allele_ids_max_len = ffi.new("uint32_t[]", 1)
-                            # print(f"Elapsed: {time() - start} empty")
-
-                            # start = time()
-                            position_ptr = ffi.cast("uint32_t *", ffi.from_buffer(position))
-                            nalleles_ptr = ffi.cast("uint16_t *", ffi.from_buffer(nalleles))
+                            position_ptr = ffi.cast(
+                                "uint32_t *", ffi.from_buffer(position)
+                            )
+                            nalleles_ptr = ffi.cast(
+                                "uint16_t *", ffi.from_buffer(nalleles)
+                            )
                             offset_ptr = ffi.cast("uint64_t *", ffi.from_buffer(offset))
                             lib.read_partition_part1(
                                 partition,
@@ -969,10 +962,12 @@ class open_bgen:
                                 allele_ids_max_len,
                             )
 
-                            vid_max_list.append(vid_max_len[0])
-                            rsid_max_list.append(rsid_max_len[0])
-                            chrom_max_list.append(chrom_max_len[0])
-                            allele_ids_max_list.append(allele_ids_max_len[0])
+                            vid_max_max = max(vid_max_max, vid_max_len[0])
+                            rsid_max_max = max(rsid_max_max, rsid_max_len[0])
+                            chrom_max_max = max(chrom_max_max, chrom_max_len[0])
+                            allele_ids_max_max = max(
+                                allele_ids_max_max, allele_ids_max_len[0]
+                            )
 
                             end = start + nvariants
                             vaddr_memmap[start:end] = offset
@@ -984,16 +979,16 @@ class open_bgen:
                             lib.bgen_partition_destroy(partition)
 
                     ids_memmap = self._metadata2_memmaps.append_empty(
-                        "ids", (self.nvariants), f"<U{max(vid_max_list)}"
+                        "ids", (self.nvariants), f"<U{vid_max_max}"
                     )
                     rsids_memmap = self._metadata2_memmaps.append_empty(
-                        "rsids", (self.nvariants), f"<U{max(rsid_max_list)}"
+                        "rsids", (self.nvariants), f"<U{rsid_max_max}"
                     )
                     chrom_memmap = self._metadata2_memmaps.append_empty(
-                        "chromosomes", (self.nvariants), f"<U{max(chrom_max_list)}"
+                        "chromosomes", (self.nvariants), f"<U{chrom_max_max}"
                     )
                     allele_ids_memmap = self._metadata2_memmaps.append_empty(
-                        "allele_ids", (self.nvariants), f"<U{max(allele_ids_max_list)}"
+                        "allele_ids", (self.nvariants), f"<U{allele_ids_max_max}"
                     )
 
                     start = 0
@@ -1005,37 +1000,66 @@ class open_bgen:
                         partition = lib.bgen_metafile_read_partition(
                             mf._bgen_metafile, ipart2
                         )
+
+                        # start = time()
+                        # partition = lib.bgen_metafile_read_partition(self._bgen_metafile, index)
                         # print(f"Elapsed: {time() - start} for bgen_metafile_read_partition")
+                        from numpy import empty, uint16, uint32, uint64, zeros
+
                         if partition == ffi.NULL:
                             raise RuntimeError(f"Could not read partition {partition}.")
 
                         try:
-                            nvariants = nvariants_list[ipart2]
 
-                            # start = time()
-                            vid = np.zeros(nvariants, dtype=f"S{vid_max_len[0]}")
-                            rsid = np.zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
-                            chrom = np.zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
-                            allele_ids = np.zeros(
+                            nvariants = lib.bgen_partition_nvariants(partition)
+
+                            position = empty(nvariants, dtype=uint32)
+                            nalleles = empty(nvariants, dtype=uint16)
+                            offset = empty(nvariants, dtype=uint64)
+                            vid_max_len = ffi.new("uint32_t[]", 1)
+                            rsid_max_len = ffi.new("uint32_t[]", 1)
+                            chrom_max_len = ffi.new("uint32_t[]", 1)
+                            allele_ids_max_len = ffi.new("uint32_t[]", 1)
+
+                            position_ptr = ffi.cast(
+                                "uint32_t *", ffi.from_buffer(position)
+                            )
+                            nalleles_ptr = ffi.cast(
+                                "uint16_t *", ffi.from_buffer(nalleles)
+                            )
+                            offset_ptr = ffi.cast("uint64_t *", ffi.from_buffer(offset))
+                            # If we don't call "part1" the call to "part2" will give the wrong answers
+                            lib.read_partition_part1(
+                                partition,
+                                position_ptr,
+                                nalleles_ptr,
+                                offset_ptr,
+                                vid_max_len,
+                                rsid_max_len,
+                                chrom_max_len,
+                                allele_ids_max_len,
+                            )
+
+                            vid = zeros(nvariants, dtype=f"S{vid_max_len[0]}")
+                            rsid = zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
+                            chrom = zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
+                            allele_ids = zeros(
                                 nvariants, dtype=f"S{allele_ids_max_len[0]}"
                             )
-                            # print(f"Elapsed: {time() - start} create_strings")
-
                             # start = time()
                             lib.read_partition_part2(
                                 partition,
                                 ffi.from_buffer("char[]", vid),
-                                vid_max_list[ipart2],
+                                vid_max_len[0],
                                 ffi.from_buffer("char[]", rsid),
-                                rsid_max_list[ipart2],
+                                rsid_max_len[0],
                                 ffi.from_buffer("char[]", chrom),
-                                chrom_max_list[ipart2],
+                                chrom_max_len[0],
                                 ffi.from_buffer("char[]", allele_ids),
-                                allele_ids_max_list[ipart2],
+                                allele_ids_max_len[0],
                             )
 
                         finally:
-                            # print(f"Elapsed: {time() - start} read_partition2")
                             lib.bgen_partition_destroy(partition)
 
                         end = start + nvariants

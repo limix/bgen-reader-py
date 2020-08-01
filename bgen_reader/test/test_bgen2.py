@@ -503,13 +503,13 @@ if __name__ == "__main__":
         with open_bgen(file, verbose=False) as bgen:
             print(bgen.samples)
 
-    if True:
+    if False:
         test_open_bgen_complex()
 
     if True:
 
-        filename = r"M:\deldir\fakeuk450000x1000.bgen"
-        # filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
+        # filename = r"M:\deldir\fakeuk450000x1000.bgen"
+        filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
         # filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
         # filename = 'M:/deldir/genbgen/good/merged_487400x4840000.bgen'
 
@@ -523,7 +523,17 @@ if __name__ == "__main__":
         print(os.path.getsize(filename))
 
         start = time.time()
+
+        if False:
+            from bgen_reader import read_bgen
+
+            bgen0 = read_bgen(filename)
+            bgen0["variants"].head()
+
         with open_bgen(filename, assume_simple=True, verbose=True) as bgen:
+            print(bgen.ids)
+            print(bgen.rsids)
+            print(bgen.chromosomes)
             print(bgen.nsamples)
             print(bgen.nvariants)
             print(bgen.read((5, 5)))

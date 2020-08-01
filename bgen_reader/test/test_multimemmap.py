@@ -99,6 +99,15 @@ def test_more():
         assert mm0.flags['C_CONTIGUOUS']
         assert mm1.flags['F_CONTIGUOUS']
 
+    with MultiMemMap(write_file, mode="w+") as mmm_wplus:
+        mmm_wplus.append_empty("mm0", shape=(3, 5), dtype="<U10")
+        mmm_wplus.append_empty("mm1", shape=(3, 5), dtype="<U10")
+        mmm_wplus.append_empty("mm2", shape=(3, 5), dtype="<U10")
+        mmm_wplus.popitem()
+        mmm_wplus.popitem()
+    assert write_file.stat().st_size == one_length
+
+
 
 def test_writes():
     write_file = example_filepath3("write.mmm")

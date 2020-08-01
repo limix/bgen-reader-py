@@ -10,7 +10,7 @@ class MultiMemMap:
     _bootstrap_dtype = "<U50"
     _bootstrap_max = 8
     _memmap_param_max = 8
-    _mode_list = {"r", "r+", "w+"}  # !!! cmk test all three of these
+    _mode_list = {"r", "r+", "w+"}
     # LATER document the meaning of each of these
 
     def __init__(
@@ -47,7 +47,7 @@ class MultiMemMap:
         self._magic_string = self._expected_magic_string
         self._memmap_count = 0
         self._memmap_max = wplus_memmap_max
-        self._memmap_param_dtype = wplus_memmap_param_dtype  # !!! cmk do a test where we change these when reading but that is OK
+        self._memmap_param_dtype = wplus_memmap_param_dtype
 
         self._memmap_param = np.memmap(
             self._filename,
@@ -142,8 +142,7 @@ class MultiMemMap:
         self._bootstrap[3] = value
 
     def _check_index(self, index):
-        if index < 0 or index >= self._memmap_count:
-            raise Exception("!!!cmk")
+        assert 0 <= index and index < self._memmap_count, "real assert"
 
     def _get_memmap_name(self, index):
         self._check_index(index)
@@ -162,7 +161,7 @@ class MultiMemMap:
 
     def _set_memmap_dtype(self, index, value):
         self._check_index(index)
-        str_value = str(value)  # cmk repr???
+        str_value = str(value)
         self._memmap_param[index, 1] = str_value
         if self._memmap_param[index, 1] != value:
             raise ValueError(f'Cannot save value as {self._memmap_param_dtype}')
@@ -196,13 +195,16 @@ class MultiMemMap:
         assert len(self._name_to_memmap) == self._memmap_count, "real assert"
         return self._memmap_count
 
+    def __contains__(self,item) -> bool:
+        return item in self._name_to_memmap
+
     def __getitem__(self, name: str) -> np.memmap:
         return self._name_to_memmap[name]
 
     def append_empty(
         self, name: str, shape: Tuple[int], dtype: str, order: str = "C",
-    ) -> np.memmap:  # !!!cmk say that all these dtypes must be strings, not types
-        if self._mode not in {'r+','w+'}: #!!!cmk test append_empty and popitem with both these modes
+    ) -> np.memmap:  # Document that these dtypes must be strings, not types
+        if self._mode not in {'r+','w+'}:
             raise io.UnsupportedOperation('not writable')
         if self._memmap_count >= self._memmap_max:
             raise ValueError("The MultiMemMap contains no room for an additional memmap.")
@@ -273,15 +275,10 @@ class MultiMemMap:
             del self._memmap_param
 
         # If the file is longer than needed (because of 'popitem'), shorten it.
-        try: #!!!cmk
-            if hasattr(self, "_mode") and self._mode in {'r+','w+'} and hasattr(self, "_filename") and self._filename.exists() and hasattr(self,'_offset') and self._filename.stat().st_size > self._offset:
-                with open(self._filename, "a") as fp:
-                    fp.truncate(self._offset)
-        except Exception as e:
-            print("!!!cmk")
+        if hasattr(self, "_mode") and self._mode in {'r+','w+'} and hasattr(self, "_filename") and self._filename.exists() and hasattr(self,'_offset') and self._filename.stat().st_size > self._offset:
+            with open(self._filename, "a") as fp:
+                fp.truncate(self._offset)
 
     def __del__(self):
         self.__exit__()
 
-
-# !!!cmk needs tests
