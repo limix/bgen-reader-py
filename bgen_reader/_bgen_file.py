@@ -32,7 +32,7 @@ class bgen_file:
         nsamples = self.nsamples
         bgen_samples = lib.bgen_file_read_samples(self._bgen_file)
         if bgen_samples == ffi.NULL:
-            raise RuntimeError(f"Could not fetch samples from the bgen file.")
+            raise RuntimeError("Could not fetch samples from the bgen file.")
 
         try:
             samples_max_len = ffi.new("uint32_t[]", 1)
