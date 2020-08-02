@@ -14,9 +14,9 @@ from numpy.testing import assert_allclose, assert_equal
 
 def example_filepath2(filename):
     filepath = example_filepath(filename)
-    for assume_simple in [False,True]:
+    for allow_complex in [False,True]:
         metadata2_path = open_bgen._metadata_path_from_filename(
-            filepath, samples_filepath=None, assume_simple=assume_simple
+            filepath, samples_filepath=None, allow_complex=allow_complex
         )
         if metadata2_path.exists():
             metadata2_path.unlink()
@@ -197,10 +197,10 @@ def test_to_improve_coverage():
 def test_to_improve_coverage2():
     filepath = example_filepath2("complex.bgen")
     samplepath = example_filepath2("complex.sample")
-    assume_simple = True
+    allow_complex = False
 
     metadata2_path = open_bgen._metadata_path_from_filename(
-        filepath, samples_filepath=samplepath, assume_simple=assume_simple
+        filepath, samples_filepath=samplepath, allow_complex=allow_complex
     )
 
     if metadata2_path.exists():
@@ -211,11 +211,11 @@ def test_to_improve_coverage2():
     bgen2 = open_bgen(
         filepath,
         samples_filepath=samplepath,
-        assume_simple=assume_simple,
+        allow_complex=allow_complex,
         verbose=True,
     )  # Creates metadata2.mmm file
     bgen2 = open_bgen(
-        filepath, samples_filepath=samplepath, assume_simple=False, verbose=True,
+        filepath, samples_filepath=samplepath, allow_complex=True, verbose=True,
     )  # Creates metadata2.mmm file
 
     del bgen2
@@ -254,7 +254,7 @@ def random_file_tests(nsamples, nvariants, bits, verbose=False, overwrite=False)
             cleanup_temp_files=True,
         )
     metadata2_path = open_bgen._metadata_path_from_filename(
-        filepath, samples_filepath=None, assume_simple=False
+        filepath, samples_filepath=None, allow_complex=True
     )
     if metadata2_path.exists():
         metadata2_path.unlink()
@@ -512,7 +512,7 @@ if __name__ == "__main__":
 
         # filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
         filename = "M:/deldir/genbgen/good/merged_487400x1100000.bgen"
-        with open_bgen(filename, assume_simple=True, verbose=True) as bgen:
+        with open_bgen(filename, allow_complex=False, verbose=True) as bgen:
             val = bgen.read((None, slice(1000000, 1000031)))
             # val = bgen.read(1000000)
             # val = bgen.read((slice(200000,200031),slice(1000000,1000031)))
@@ -555,7 +555,7 @@ if __name__ == "__main__":
             bgen0 = read_bgen(filename)
             bgen0["variants"].head()
 
-        with open_bgen(filename, assume_simple=True, verbose=True) as bgen:
+        with open_bgen(filename, allow_complex=False, verbose=True) as bgen:
             print(bgen.ids)
             print(bgen.rsids)
             print(bgen.chromosomes)

@@ -29,11 +29,11 @@ class open_bgen:
     samples_filepath
         Path to a `sample format`_ file or ``None`` to read samples from the BGEN file itself.
         Defaults to ``None``.
-    assume_simple
-        ``False`` (default). The BGEN format allows every variant to vary in its phased-ness, its allele count,
-        and its maximum ploidy. For large files where these values actually don't vary,
-        set ``assume_simple`` to ``True``. On UK Biobank-like files with 1 million variants this reduces
-        the one-time metadata creation time from 3 hours to 20 minutes.
+    allow_complex
+        ``False`` (default) assume homogeneous data; ``True`` to allow more complex data.
+       The BGEN format allows every variant to vary in its phased-ness, its allele count,
+        and its maximum ploidy. For files where these values actually may vary,
+        set ``allow_complex`` to ``True``.
 
     verbose
         ``True`` (default) to show progress; ``False`` otherwise.
@@ -43,7 +43,7 @@ class open_bgen:
     an open_bgen object : :class:`open_bgen`
 
     The first time a file is opened , ``open_bgen`` creates a \*.metadata2.mmm file, a process that takes seconds to hours,
-    depending on the size of the file and the ``assume_simple`` setting. Subsequent openings take just a fraction of
+    depending on the size of the file and the ``allow_complex`` setting. Subsequent openings take just a fraction of
     a second.
 
     .. _open_examples:
@@ -57,7 +57,7 @@ class open_bgen:
         >>> from bgen_reader import example_filepath, open_bgen
         >>>
         >>> file = example_filepath("haplotypes.bgen")
-        >>> with open_bgen(file, assume_simple=True, verbose=False) as bgen:
+        >>> with open_bgen(file, verbose=False) as bgen:
         ...     print(bgen.ids)
         ...     print(bgen.samples)
         ...     print(bgen.read())
@@ -102,7 +102,7 @@ class open_bgen:
 
     .. doctest::
 
-        >>> bgen = open_bgen(file, assume_simple=True, verbose=False)
+        >>> bgen = open_bgen(file, verbose=False)
         >>> print(bgen.read((slice(1,3),slice(2,4))))
         [[[0. 1. 0. 1.]
           [1. 0. 1. 0.]]
@@ -120,20 +120,20 @@ class open_bgen:
         self,
         filepath: Union[str, Path],
         samples_filepath: Optional[Union[str, Path]] = None,
-        assume_simple: bool = False,
+        allow_complex: bool = False,
         verbose: bool = True,
     ):
         filepath = Path(filepath)
         assert_file_exist(filepath)
         assert_file_readable(filepath)
         self._filepath = filepath
-        self._assume_simple = assume_simple
+        self._allow_complex = allow_complex
         self._verbose = verbose
         self._samples_filepath = (
             Path(samples_filepath) if samples_filepath is not None else None
         )
         self._metadata2_path = self._metadata_path_from_filename(
-            self._filepath, self._samples_filepath, self._assume_simple
+            self._filepath, self._samples_filepath, self._allow_complex
         ).resolve()  # needed because of tmp_cwd in create_metadata
 
         self._bgen_context_manager = bgen_file(filepath)
@@ -287,10 +287,10 @@ class open_bgen:
             "phased", (self.nvariants), "bool"
         )
 
-        if self._assume_simple:
+        if not self._allow_complex:
             assert (
                 self.nvariants > 0
-            ), "If assume_simple is True, there must be at least one variant"
+            ), "If allow_complex is False, there must be at least one variant"
             i = 0
             previous_i = None
             while i < self.nvariants:
@@ -303,7 +303,7 @@ class open_bgen:
                 assert previous_i is None or (
                     ncombinations_memmap[previous_i] == ncombinations_memmap[i]
                     and phased_memmap[previous_i] == phased_memmap[i]
-                ), "assume_simple is True but a spot check shows that file is not simple"
+                ), "allow_complex is False but a spot check shows that file is complex"
                 previous_i = i
                 i = (i + 1) * 2 - 1
             ncombinations_memmap[1:] = ncombinations_memmap[0]
@@ -311,7 +311,7 @@ class open_bgen:
         else:
             if self._verbose:
                 print(
-                    "Parameter 'assume_simple' is False, so reading phase and distribution length of every variant"
+                    "Parameter 'allow_complex' is True, so reading phase and ncombinations of every variant"
                 )
             with _log_in_place("metadata", self._verbose) as updater:
                 for i, vaddr0 in enumerate(self._vaddr):
@@ -416,7 +416,7 @@ class open_bgen:
                 >>> import numpy as np
                 >>> from bgen_reader import example_filepath, open_bgen
                 >>>
-                >>> with open_bgen(example_filepath("haplotypes.bgen"), assume_simple=True, verbose=False) as bgen_h:
+                >>> with open_bgen(example_filepath("haplotypes.bgen"), verbose=False) as bgen_h:
                 ...     print(bgen_h.read()) #real all
                 [[[1. 0. 1. 0.]
                   [0. 1. 1. 0.]
@@ -443,7 +443,7 @@ class open_bgen:
 
             .. doctest::
 
-                >>> bgen_e = open_bgen(example_filepath("example.bgen"), assume_simple=True, verbose=False)
+                >>> bgen_e = open_bgen(example_filepath("example.bgen"), verbose=False)
                 >>> probs = bgen_e.read(5)  # read the variant indexed by 5.
                 >>> print(probs.shape)      # print the dimensions of the returned numpy array.
                 (500, 1, 3)
@@ -689,14 +689,14 @@ class open_bgen:
     # This is static so that test code can use it easily.
     # LATER could make a version of this method public
     @staticmethod
-    def _metadata_path_from_filename(filename, samples_filepath, assume_simple):
+    def _metadata_path_from_filename(filename, samples_filepath, allow_complex):
         # If there is a sample file, put a hash its name is the name of the metadata file
         if samples_filepath is None:
             s_string = ""
         else:
             hash = hashlib.sha256(samples_filepath.name.encode("utf-8")).hexdigest()
             s_string = ".S" + hash[:6]
-        a_string = "" if not assume_simple else ".simple"
+        a_string = "" if not allow_complex else ".complex"
         return infer_metafile_filepath(
             Path(filename), f"{s_string}{a_string}.metadata2.mmm"
         )
@@ -1168,7 +1168,7 @@ class open_bgen:
             >>> filepath = example_filepath("example.32bits.bgen")
             >>>
             >>> # Read the example.
-            >>> bgen = open_bgen(filepath, assume_simple=True, verbose=False)
+            >>> bgen = open_bgen(filepath, verbose=False)
             >>> sample_index = bgen.samples=="sample_005" # will be only 1 sample
             >>> variant_index = bgen.rsids=="RSID_6"      # will be only 1 variant
             >>> p = bgen.read((sample_index,variant_index))
@@ -1206,7 +1206,7 @@ class open_bgen:
             >>> from bgen_reader import open_bgen, example_filepath
             >>>
             >>> filepath = example_filepath("example.32bits.bgen")
-            >>> bgen = open_bgen(filepath, assume_simple=True, verbose=False)
+            >>> bgen = open_bgen(filepath, verbose=False)
             >>>
             >>> variant_index = (bgen.rsids=="RSID_6")      # will be only 1 variant
             >>> e = bgen.allele_expectation(variant_index)
@@ -1228,7 +1228,7 @@ class open_bgen:
             >>> filepath = example_filepath("example.32bits.bgen")
             >>>
             >>> # Read the example.
-            >>> bgen = open_bgen(filepath, assume_simple=True, verbose=False)
+            >>> bgen = open_bgen(filepath, verbose=False)
             >>>
             >>> # Extract the allele expectations of the fourth variant.
             >>> variant_index = 3
@@ -1248,7 +1248,7 @@ class open_bgen:
             >>> import pandas as pd
             >>> from bgen_reader import open_bgen
             >>> filepath = example_filepath("example.32bits.bgen")
-            >>> bgen = open_bgen(filepath, assume_simple=True, verbose=False)
+            >>> bgen = open_bgen(filepath, verbose=False)
             >>>
             >>> variant_index = [3]
             >>> # Print the metadata of the fourth variant.
@@ -1382,4 +1382,4 @@ class open_bgen:
     # cmk address 'cmk''s
     # cmkx repeat
     # cmkx Didn't Danilo change so not doing multiple returns????
-    # cmk0 update quick start with assume_simple
+    # cmk0 update quick start with allow_complex
