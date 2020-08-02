@@ -498,6 +498,34 @@ def test_read_multiple_returns():
 
 
 if __name__ == "__main__":
+    if True:
+
+        import tracemalloc
+        import logging
+        import os
+        import time
+
+        logging.basicConfig(level=logging.INFO)
+        tracemalloc.start()
+
+        start = time.time()
+
+        #filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
+        filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
+        with open_bgen(filename, assume_simple=True, verbose=True) as bgen:
+            val = bgen.read((None,slice(1000000,1000031)))
+            #val = bgen.read(1000000)
+            #val = bgen.read((slice(200000,200031),slice(1000000,1000031)))
+            print('{0},{1:,}'.format(val.shape,val.shape[0]*val.shape[1]))
+
+        current, peak = tracemalloc.get_traced_memory()
+        print(
+            f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB"
+        )
+        print("Time = {0} seconds".format(time.time() - start))
+        tracemalloc.stop()
+
+
     if False:
         file = example_filepath("haplotypes.bgen")
         with open_bgen(file, verbose=False) as bgen:
@@ -506,7 +534,7 @@ if __name__ == "__main__":
     if False:
         test_open_bgen_complex()
 
-    if True:
+    if False:
 
         # filename = r"M:\deldir\fakeuk450000x1000.bgen"
         filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
