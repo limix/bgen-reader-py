@@ -37,7 +37,7 @@ Let's read the ``example.bgen`` file and print out some information.
 
    >>> from bgen_reader import open_bgen
    >>>
-   >>> bgen = open_bgen(example_bgen_path, verbose=False)
+   >>> bgen = open_bgen(example_bgen_path, assume_simple=True, verbose=False)
    >>>
    >>> # Samples
    >>> print(bgen.samples[:5]) #first 5
@@ -96,7 +96,7 @@ Phased genotype
 
 .. doctest::
 
-   >>> bgen = open_bgen(haplotypes_bgen_path, verbose=False)
+   >>> bgen = open_bgen(haplotypes_bgen_path, assume_simple=True, verbose=False)
    >>>
    >>> # Samples
    >>> print(bgen.samples)
@@ -141,7 +141,7 @@ Complex file
 
 The bgen file format allows the storage of very heterogeneous genetic data.
 In the ``complex.bgen`` file we have variants with different ploidy and numbers of
-alleles, as well as phased\ *ness*.
+alleles, as well as phased\ *ness*. 
 
 .. doctest::
 

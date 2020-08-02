@@ -152,8 +152,7 @@ class MultiMemMap:
         self._check_index(index)
         self._memmap_param[index, 0] = value
         if self._memmap_param[index, 0] != value:
-            raise ValueError(f'Cannot save value as {self._memmap_param_dtype}')
-
+            raise ValueError(f"Cannot save value as {self._memmap_param_dtype}")
 
     def _get_memmap_dtype(self, index):
         self._check_index(index)
@@ -164,7 +163,7 @@ class MultiMemMap:
         str_value = str(value)
         self._memmap_param[index, 1] = str_value
         if self._memmap_param[index, 1] != value:
-            raise ValueError(f'Cannot save value as {self._memmap_param_dtype}')
+            raise ValueError(f"Cannot save value as {self._memmap_param_dtype}")
 
     def _get_memmap_shape(self, index):
         self._check_index(index)
@@ -179,7 +178,7 @@ class MultiMemMap:
             str_value = str(value)
         self._memmap_param[index, 2] = str_value
         if self._memmap_param[index, 2] != str_value:
-            raise ValueError(f'Cannot save value as {self._memmap_param_dtype}')
+            raise ValueError(f"Cannot save value as {self._memmap_param_dtype}")
 
     def _get_memmap_order(self, index):
         self._check_index(index)
@@ -189,13 +188,13 @@ class MultiMemMap:
         self._check_index(index)
         self._memmap_param[index, 3] = value
         if self._memmap_param[index, 3] != value:
-            raise ValueError(f'Cannot save value as {self._memmap_param_dtype}')
+            raise ValueError(f"Cannot save value as {self._memmap_param_dtype}")
 
     def __len__(self) -> int:
         assert len(self._name_to_memmap) == self._memmap_count, "real assert"
         return self._memmap_count
 
-    def __contains__(self,item) -> bool:
+    def __contains__(self, item) -> bool:
         return item in self._name_to_memmap
 
     def __getitem__(self, name: str) -> np.memmap:
@@ -204,13 +203,15 @@ class MultiMemMap:
     def append_empty(
         self, name: str, shape: Tuple[int], dtype: str, order: str = "C",
     ) -> np.memmap:  # Document that these dtypes must be strings, not types
-        if self._mode not in {'r+','w+'}:
-            raise io.UnsupportedOperation('not writable')
+        if self._mode not in {"r+", "w+"}:
+            raise io.UnsupportedOperation("not writable")
         if self._memmap_count >= self._memmap_max:
-            raise ValueError("The MultiMemMap contains no room for an additional memmap.")
+            raise ValueError(
+                "The MultiMemMap contains no room for an additional memmap."
+            )
         if name in self._name_to_memmap:
             raise KeyError(f"A memmap with name '{name}' already exists")
-        if order not in {'F','C'}:
+        if order not in {"F", "C"}:
             raise TypeError("order not understood")
 
         self._memmap_count += 1
@@ -232,17 +233,19 @@ class MultiMemMap:
 
         if memmap.itemsize == 0:
             self.popitem()
-            raise ValueError(f"Cannot use dtype '{dtype}' because it has a variable- or zero-size element")
+            raise ValueError(
+                f"Cannot use dtype '{dtype}' because it has a variable- or zero-size element"
+            )
 
         return memmap
 
     def popitem(
         self,
     ):  # As of Python 3.7 popitem removes the last item from a dictionary
-        if self._mode not in {'r+','w+'}:
-            raise io.UnsupportedOperation('not writable')
+        if self._mode not in {"r+", "w+"}:
+            raise io.UnsupportedOperation("not writable")
         if self._memmap_count == 0:
-            raise KeyError('poptiem(): MultiMemMap is empty')
+            raise KeyError("poptiem(): MultiMemMap is empty")
 
         name = self._get_memmap_name(self._memmap_count - 1)
         # Not necessary, but mark 'name' out (leave other params as is)
@@ -275,10 +278,16 @@ class MultiMemMap:
             del self._memmap_param
 
         # If the file is longer than needed (because of 'popitem'), shorten it.
-        if hasattr(self, "_mode") and self._mode in {'r+','w+'} and hasattr(self, "_filename") and self._filename.exists() and hasattr(self,'_offset') and self._filename.stat().st_size > self._offset:
+        if (
+            hasattr(self, "_mode")
+            and self._mode in {"r+", "w+"}
+            and hasattr(self, "_filename")
+            and self._filename.exists()
+            and hasattr(self, "_offset")
+            and self._filename.stat().st_size > self._offset
+        ):
             with open(self._filename, "a") as fp:
                 fp.truncate(self._offset)
 
     def __del__(self):
         self.__exit__()
-

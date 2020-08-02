@@ -29,6 +29,12 @@ class open_bgen:
     samples_filepath
         Path to a `sample format`_ file or ``None`` to read samples from the BGEN file itself.
         Defaults to ``None``.
+    assume_simple
+        ``False`` (default). The BGEN format allows every variant to vary in its phased-ness, its allele count,
+        and its maximum ploidy. For large files where these values actually don't vary,
+        set ``assume_simple`` to ``True``. On UK Biobank-like files with 1 million variants this reduces
+        the one-time metadata creation time from 3 hours to 20 minutes.
+
     verbose
         ``True`` (default) to show progress; ``False`` otherwise.
 
@@ -36,6 +42,9 @@ class open_bgen:
     -------
     an open_bgen object : :class:`open_bgen`
 
+    The first time a file is opened , ``open_bgen`` creates a \*.metadata2.mmm file, a process that takes seconds to hours,
+    depending on the size of the file and the ``assume_simple`` setting. Subsequent openings take just a fraction of
+    a second.
 
     .. _open_examples:
 
@@ -48,7 +57,7 @@ class open_bgen:
         >>> from bgen_reader import example_filepath, open_bgen
         >>>
         >>> file = example_filepath("haplotypes.bgen")
-        >>> with open_bgen(file, verbose=False) as bgen:
+        >>> with open_bgen(file, assume_simple=True, verbose=False) as bgen:
         ...     print(bgen.ids)
         ...     print(bgen.samples)
         ...     print(bgen.read())
@@ -93,7 +102,7 @@ class open_bgen:
 
     .. doctest::
 
-        >>> bgen = open_bgen(file, verbose=False)
+        >>> bgen = open_bgen(file, assume_simple=True, verbose=False)
         >>> print(bgen.read((slice(1,3),slice(2,4))))
         [[[0. 1. 0. 1.]
           [1. 0. 1. 0.]]
@@ -407,7 +416,7 @@ class open_bgen:
                 >>> import numpy as np
                 >>> from bgen_reader import example_filepath, open_bgen
                 >>>
-                >>> with open_bgen(example_filepath("haplotypes.bgen"), verbose=False) as bgen_h:
+                >>> with open_bgen(example_filepath("haplotypes.bgen"), assume_simple=True, verbose=False) as bgen_h:
                 ...     print(bgen_h.read()) #real all
                 [[[1. 0. 1. 0.]
                   [0. 1. 1. 0.]
@@ -434,7 +443,7 @@ class open_bgen:
 
             .. doctest::
 
-                >>> bgen_e = open_bgen(example_filepath("example.bgen"), verbose=False)
+                >>> bgen_e = open_bgen(example_filepath("example.bgen"), assume_simple=True, verbose=False)
                 >>> probs = bgen_e.read(5)  # read the variant indexed by 5.
                 >>> print(probs.shape)      # print the dimensions of the returned numpy array.
                 (500, 1, 3)
@@ -1159,7 +1168,7 @@ class open_bgen:
             >>> filepath = example_filepath("example.32bits.bgen")
             >>>
             >>> # Read the example.
-            >>> bgen = open_bgen(filepath, verbose=False)
+            >>> bgen = open_bgen(filepath, assume_simple=True, verbose=False)
             >>> sample_index = bgen.samples=="sample_005" # will be only 1 sample
             >>> variant_index = bgen.rsids=="RSID_6"      # will be only 1 variant
             >>> p = bgen.read((sample_index,variant_index))
@@ -1197,7 +1206,7 @@ class open_bgen:
             >>> from bgen_reader import open_bgen, example_filepath
             >>>
             >>> filepath = example_filepath("example.32bits.bgen")
-            >>> bgen = open_bgen(filepath, verbose=False)
+            >>> bgen = open_bgen(filepath, assume_simple=True, verbose=False)
             >>>
             >>> variant_index = (bgen.rsids=="RSID_6")      # will be only 1 variant
             >>> e = bgen.allele_expectation(variant_index)
@@ -1219,7 +1228,7 @@ class open_bgen:
             >>> filepath = example_filepath("example.32bits.bgen")
             >>>
             >>> # Read the example.
-            >>> bgen = open_bgen(filepath, verbose=False)
+            >>> bgen = open_bgen(filepath, assume_simple=True, verbose=False)
             >>>
             >>> # Extract the allele expectations of the fourth variant.
             >>> variant_index = 3
@@ -1239,7 +1248,7 @@ class open_bgen:
             >>> import pandas as pd
             >>> from bgen_reader import open_bgen
             >>> filepath = example_filepath("example.32bits.bgen")
-            >>> bgen = open_bgen(filepath, verbose=False)
+            >>> bgen = open_bgen(filepath, assume_simple=True, verbose=False)
             >>>
             >>> variant_index = [3]
             >>> # Print the metadata of the fourth variant.
@@ -1366,11 +1375,11 @@ class open_bgen:
     def __del__(self):
         self.__exit__()
 
-    # cmk format
-    # cmk lint
-    # cmk coverage
-    # cmk add tests
+    # cmkx format
+    # cmkx lint
+    # cmkx coverage
+    # cmkx add tests
     # cmk address 'cmk''s
-    # cmk repeat
-    # cmk0 Didn't Danilo change so not doing multiple returns????
+    # cmkx repeat
+    # cmkx Didn't Danilo change so not doing multiple returns????
     # cmk0 update quick start with assume_simple

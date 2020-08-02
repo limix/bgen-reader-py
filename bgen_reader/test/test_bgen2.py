@@ -14,11 +14,12 @@ from numpy.testing import assert_allclose, assert_equal
 
 def example_filepath2(filename):
     filepath = example_filepath(filename)
-    metadata2_path = open_bgen._metadata_path_from_filename(
-        filepath, samples_filepath=None, assume_simple=False
-    )
-    if metadata2_path.exists():
-        metadata2_path.unlink()
+    for assume_simple in [False,True]:
+        metadata2_path = open_bgen._metadata_path_from_filename(
+            filepath, samples_filepath=None, assume_simple=assume_simple
+        )
+        if metadata2_path.exists():
+            metadata2_path.unlink()
     return filepath
 
 
@@ -218,7 +219,6 @@ def test_to_improve_coverage2():
     )  # Creates metadata2.mmm file
 
     del bgen2
-
 
 @pytest.mark.skipif(
     "QCTOOLPATH" not in os.environ, reason="This test requires external QCTOOL"
@@ -510,21 +510,18 @@ if __name__ == "__main__":
 
         start = time.time()
 
-        #filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
-        filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
+        # filename = "M:/deldir/genbgen/good/merged_487400x220000.bgen"
+        filename = "M:/deldir/genbgen/good/merged_487400x1100000.bgen"
         with open_bgen(filename, assume_simple=True, verbose=True) as bgen:
-            val = bgen.read((None,slice(1000000,1000031)))
-            #val = bgen.read(1000000)
-            #val = bgen.read((slice(200000,200031),slice(1000000,1000031)))
-            print('{0},{1:,}'.format(val.shape,val.shape[0]*val.shape[1]))
+            val = bgen.read((None, slice(1000000, 1000031)))
+            # val = bgen.read(1000000)
+            # val = bgen.read((slice(200000,200031),slice(1000000,1000031)))
+            print("{0},{1:,}".format(val.shape, val.shape[0] * val.shape[1]))
 
         current, peak = tracemalloc.get_traced_memory()
-        print(
-            f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB"
-        )
+        print(f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
         print("Time = {0} seconds".format(time.time() - start))
         tracemalloc.stop()
-
 
     if False:
         file = example_filepath("haplotypes.bgen")

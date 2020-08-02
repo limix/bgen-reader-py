@@ -90,23 +90,39 @@ def test_more():
 
     with MultiMemMap(write_file, mode="r+") as mmm_rplus:
         mm0 = mmm_rplus.append_empty("mm0", shape=(3, 5), dtype="<U10")
-        assert mm0.flags['C_CONTIGUOUS']
+        assert mm0.flags["C_CONTIGUOUS"]
         with pytest.raises(TypeError):
             mmm_rplus.append_empty("mm1", shape=(3, 5), dtype="<U10", order="K")
         mm1 = mmm_rplus.append_empty("mm1", shape=(3, 5), dtype="<U10", order="F")
-        assert mm1.flags['F_CONTIGUOUS']
+        assert mm1.flags["F_CONTIGUOUS"]
     with MultiMemMap(write_file, mode="r") as mmm_r:
-        assert mm0.flags['C_CONTIGUOUS']
-        assert mm1.flags['F_CONTIGUOUS']
+        assert mmm_r["mm0"].flags["C_CONTIGUOUS"]
+        assert mmm_r["mm1"].flags["F_CONTIGUOUS"]
 
     with MultiMemMap(write_file, mode="w+") as mmm_wplus:
         mmm_wplus.append_empty("mm0", shape=(3, 5), dtype="<U10")
+        assert "mm0" in mmm_wplus
         mmm_wplus.append_empty("mm1", shape=(3, 5), dtype="<U10")
         mmm_wplus.append_empty("mm2", shape=(3, 5), dtype="<U10")
         mmm_wplus.popitem()
         mmm_wplus.popitem()
+        mmm_wplus.close()
     assert write_file.stat().st_size == one_length
 
+    with MultiMemMap(
+        write_file, mode="w+", wplus_memmap_param_dtype="<U10"
+    ) as mmm_wplus:
+        with pytest.raises(ValueError):
+            mmm_wplus.append_empty(
+                "toolong_toolong_toolong", shape=(3, 5), dtype="<U10"
+            )
+    with MultiMemMap(
+        write_file, mode="w+", wplus_memmap_param_dtype="<U10"
+    ) as mmm_wplus:
+        with pytest.raises(ValueError):
+            mmm_wplus.append_empty(
+                "mm0", shape=(0, 1, 2, 3, 4, 5, 6, 7, 8, 9), dtype="<U10"
+            )
 
 
 def test_writes():
@@ -165,7 +181,7 @@ def test_writes():
 
 
 if __name__ == "__main__":
-    if True: #!!!cmk
+    if True:  # !!!cmk
         test_more()
         test_errors()
         test_reads()
