@@ -30,9 +30,9 @@ class open_bgen:
         Path to a `sample format`_ file or ``None`` to read samples from the BGEN file itself.
         Defaults to ``None``.
     allow_complex
-        ``False`` (default) assume homogeneous data; ``True`` to allow more complex data.
-       The BGEN format allows every variant to vary in its phased-ness, its allele count,
-        and its maximum ploidy. For files where these values actually may vary,
+        ``False`` (default) to assume homogeneous data; ``True`` to allow complex data.
+        The BGEN format allows every variant to vary in its phased\ *ness*, its allele count,
+        and its maximum ploidy. For files where these values may actually vary,
         set ``allow_complex`` to ``True``.
 
     verbose
@@ -42,9 +42,10 @@ class open_bgen:
     -------
     an open_bgen object : :class:`open_bgen`
 
-    The first time a file is opened , ``open_bgen`` creates a *.metadata2.mmm file, a process that takes seconds to hours,
+
+    The first time a file is opened , ``open_bgen`` creates a \*.metadata2.mmm file, a process that takes seconds to hours,
     depending on the size of the file and the ``allow_complex`` setting. Subsequent openings take just a fraction of
-    a second. Changing ``samples_filepath`` or ``allow_complex`` results in a new *.metadata2.mmm with a slightly
+    a second. Changing ``samples_filepath`` or ``allow_complex`` results in a new \*.metadata2.mmm with a slightly
     different name.
 
     .. _open_examples:
