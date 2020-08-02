@@ -14,7 +14,7 @@ from numpy.testing import assert_allclose, assert_equal
 
 def example_filepath2(filename):
     filepath = example_filepath(filename)
-    for allow_complex in [False,True]:
+    for allow_complex in [False, True]:
         metadata2_path = open_bgen._metadata_path_from_filename(
             filepath, samples_filepath=None, allow_complex=allow_complex
         )
@@ -220,6 +220,7 @@ def test_to_improve_coverage2():
 
     del bgen2
 
+
 @pytest.mark.skipif(
     "QCTOOLPATH" not in os.environ, reason="This test requires external QCTOOL"
 )
@@ -270,7 +271,7 @@ def random_file_tests(nsamples, nvariants, bits, verbose=False, overwrite=False)
 
 def test_open_bgen_without_metadata():
     filepath = example_filepath2("example.32bits.bgen")
-    bgen2 = open_bgen(filepath, verbose=False)
+    bgen2 = open_bgen(filepath, allow_complex=True, verbose=False)
     assert_equal(bgen2.allele_ids[7], "A,G")
     assert_equal(bgen2.samples[-1], "sample_500")
 
@@ -282,7 +283,7 @@ def test_open_bgen_file_notfound():
 
 def test_open_bgen_complex():
     filepath = example_filepath2("complex.23bits.bgen")
-    bgen2 = open_bgen(filepath, verbose=False)
+    bgen2 = open_bgen(filepath, allow_complex=True, verbose=False)
 
     assert_equal(bgen2.chromosomes[0], "01")
     assert_equal(bgen2.ids[0], "")
@@ -332,6 +333,7 @@ def test_open_bgen_complex_sample_file():
     bgen2 = open_bgen(
         example_filepath2("complex.23bits.bgen"),
         samples_filepath=example_filepath("complex.sample"),
+        allow_complex=True,
         verbose=False,
     )
 
@@ -498,7 +500,7 @@ def test_read_multiple_returns():
 
 
 if __name__ == "__main__":
-    if True:
+    if False:  # !!!cmk remove the non-test stuff
 
         import tracemalloc
         import logging
@@ -570,13 +572,13 @@ if __name__ == "__main__":
             print("end")
         tracemalloc.stop()
 
-    if False:  # !!!cmk
+    if False:
         filepath = r"M:\deldir\genbgen\good\merged_487400x2420000.bgen"
         # filepath = r"M:\deldir\genbgen\good\merged_487400x220000.11.bgen"
         with open_bgen(filepath, verbose=True) as bgen2:
             print(bgen2.nvariants)
 
-    if False:  # !!!cmk
+    if False:
         from bgen_reader import read_bgen
 
         filepath = r"M:\deldir\genbgen\good\merged_487400x2420000.bgen"

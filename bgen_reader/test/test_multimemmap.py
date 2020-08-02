@@ -181,7 +181,7 @@ def test_writes():
 
 
 if __name__ == "__main__":
-    if True:  # !!!cmk
+    if False:  # !!!cmk Remove these
         test_more()
         test_errors()
         test_reads()

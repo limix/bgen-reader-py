@@ -40,7 +40,7 @@ def test_dosage1():
 
 def test_error():
     filepath = example_filepath("complex.bgen")
-    with open_bgen(filepath, verbose=False) as bgen:
+    with open_bgen(filepath, allow_complex=True, verbose=False) as bgen:
         with pytest.raises(ValueError):
             bgen.allele_expectation()  # some phased
 
@@ -61,7 +61,7 @@ def test_error():
 
 def test_zero_width():
     filepath = example_filepath("complex.bgen")
-    with open_bgen(filepath, verbose=False) as bgen:
+    with open_bgen(filepath, allow_complex=True, verbose=False) as bgen:
         for assume_constant_ploidy in [False, True]:
             e = bgen.allele_expectation(
                 [], assume_constant_ploidy=assume_constant_ploidy,

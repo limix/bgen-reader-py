@@ -42,9 +42,10 @@ class open_bgen:
     -------
     an open_bgen object : :class:`open_bgen`
 
-    The first time a file is opened , ``open_bgen`` creates a \*.metadata2.mmm file, a process that takes seconds to hours,
+    The first time a file is opened , ``open_bgen`` creates a *.metadata2.mmm file, a process that takes seconds to hours,
     depending on the size of the file and the ``allow_complex`` setting. Subsequent openings take just a fraction of
-    a second.
+    a second. Changing ``samples_filepath`` or ``allow_complex`` results in a new *.metadata2.mmm with a slightly
+    different name.
 
     .. _open_examples:
 
@@ -1374,12 +1375,3 @@ class open_bgen:
 
     def __del__(self):
         self.__exit__()
-
-    # cmkx format
-    # cmkx lint
-    # cmkx coverage
-    # cmkx add tests
-    # cmk address 'cmk''s
-    # cmkx repeat
-    # cmkx Didn't Danilo change so not doing multiple returns????
-    # cmk0 update quick start with allow_complex
