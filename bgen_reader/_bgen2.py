@@ -114,8 +114,6 @@ class open_bgen:
         assume_simple: bool = False,
         verbose: bool = True,
     ):
-        # !!!cmk need to confirm can still read 4 millions distributions per unit
-
         filepath = Path(filepath)
         assert_file_exist(filepath)
         assert_file_readable(filepath)
@@ -928,7 +926,6 @@ class open_bgen:
                         # LATER in notebook this message doesn't appear on one line
                         updater("'nallele': part {0:,} of {1:,}".format(ipart2, nparts))
 
-                        # start = time()#!!!cmk kill timing messages
                         partition = lib.bgen_metafile_read_partition(
                             mf._bgen_metafile, ipart2
                         )
@@ -993,17 +990,12 @@ class open_bgen:
 
                     start = 0
                     for ipart2 in range(nparts):  # LATER multithread?
-                        # LATER in notebook this message doesn't appear on one line
                         updater("'ids': part {0:,} of {1:,}".format(ipart2, nparts))
 
-                        # start = time()
                         partition = lib.bgen_metafile_read_partition(
                             mf._bgen_metafile, ipart2
                         )
 
-                        # start = time()
-                        # partition = lib.bgen_metafile_read_partition(self._bgen_metafile, index)
-                        # print(f"Elapsed: {time() - start} for bgen_metafile_read_partition")
                         from numpy import empty, uint16, uint32, uint64, zeros
 
                         if partition == ffi.NULL:
@@ -1046,7 +1038,6 @@ class open_bgen:
                             allele_ids = zeros(
                                 nvariants, dtype=f"S{allele_ids_max_len[0]}"
                             )
-                            # start = time()
                             lib.read_partition_part2(
                                 partition,
                                 ffi.from_buffer("char[]", vid),
@@ -1375,11 +1366,11 @@ class open_bgen:
     def __del__(self):
         self.__exit__()
 
-    # cmk0 format
-    # cmk0 lint
-    # cmk0 coverage
-    # cmk0 add tests
-    # cmk0 address 'cmk''s
-    # cmk0 repeat
+    # cmk format
+    # cmk lint
+    # cmk coverage
+    # cmk add tests
+    # cmk address 'cmk''s
+    # cmk repeat
     # cmk0 Didn't Danilo change so not doing multiple returns????
     # cmk0 update quick start with assume_simple
