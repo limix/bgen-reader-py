@@ -691,7 +691,7 @@ class open_bgen:
     # This is static so that test code can use it easily.
     # LATER could make a version of this method public
     @staticmethod
-    def _metadata_path_from_filename(filename, samples_filepath, allow_complex):
+    def _metadata_path_from_filename(filename, samples_filepath, allow_complex=False):
         # If there is a sample file, put a hash its name is the name of the metadata file
         if samples_filepath is None:
             s_string = ""

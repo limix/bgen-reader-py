@@ -113,7 +113,7 @@ deploy:
       branch: bgen2memmap
   - provider: s3
     skip_cleanup: true
-    access_key_id: AKIAJBGXHKLTJUONLLXQ
+    access_key_id: AKIAIH6I45BAJIHWYAAQ
     secret_access_key: $AWS_SECRET_KEY
     bucket: "traviscibucket"
     upload_dir: $TRAVIS_REPO_SLUG/$TRAVIS_BRANCH/$TRAVIS_BUILD_NUMBER.$TRAVIS_COMMIT/$TRAVIS_OS_NAME
