@@ -110,7 +110,7 @@ deploy:
     skip_cleanup: true
     script: bash -c "ls -las"
     on:
-      branch: bgen2memap
+      branch: bgen2memmap
   - provider: s3
     skip_cleanup: true
     access_key_id: AKIAJBGXHKLTJUONLLXQ
