@@ -119,4 +119,4 @@ deploy:
     upload_dir: $TRAVIS_REPO_SLUG/$TRAVIS_BRANCH/$TRAVIS_BUILD_NUMBER.$TRAVIS_COMMIT/$TRAVIS_OS_NAME
     local_dir: $TRAVIS_BUILD_DIR/wheelhouse
     on:
-      branch: bgen2api
+      branch: bgen2memmap
