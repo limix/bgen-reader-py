@@ -78,6 +78,7 @@ install:
   - isort --check-only .
   - python3 setup.py test
   - python3 -m pip install cibuildwheel
+  - git clean -xdfq
 script:
   - python3 -m cibuildwheel --output-dir wheelhouse
 after_success:

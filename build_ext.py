@@ -18,6 +18,12 @@ folder = os.path.dirname(os.path.abspath(__file__))
 with open(join(folder, "bgen_reader", "interface.h"), "r") as f:
     ffibuilder.cdef(f.read())
 
+with open(join(folder, "bgen_reader", "genotype.h"), "r") as f:
+    ffibuilder.cdef(f.read())
+
+with open(join(folder, "bgen_reader", "genotype.c"), "r") as f:
+    genotype_c = f.read()
+
 with open(join(folder, "bgen_reader", "partition.h"), "r") as f:
     ffibuilder.cdef(f.read())
 
@@ -38,6 +44,7 @@ ffibuilder.set_source(
     "bgen_reader._ffi",
     fr"""
     #include "bgen/bgen.h"
+    {genotype_c}
     {partition_c}
     {samples_c}
     """,
