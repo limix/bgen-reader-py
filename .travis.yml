@@ -2,7 +2,6 @@ language: python
 python: 3.7
 env:
   global:
-    - URL=https://raw.githubusercontent.com/horta/ci/master
     - CIBW_SKIP="pp* cp27-* cp34-* cp35-* cp36-* *i686* *-win32"
     - CIBW_BEFORE_BUILD_LINUX="{project}/ci/linux-deps"
     - CIBW_BEFORE_BUILD_MACOS="{project}/ci/macos-deps"
@@ -18,8 +17,7 @@ matrix:
         - LD_LIBRARY_PATH=/usr/local/lib
         - BGEN_READER_EXTRA_LINK_ARGS="-Wl,-rpath,/usr/local/lib"
       before_install:
-        - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install)
-    - os: osx
+        - bash <(curl -fsSL https://raw.githubusercontent.com/horta/zstd.install/master/install) - os: osx
       osx_image: xcode11.2
       env:
         - C_INCLUDE_PATH=/usr/local/include
@@ -72,11 +70,12 @@ addons:
 install:
   - curl -fsSL https://git.io/JerYI | GITHUB_USER=horta GITHUB_PROJECT=almosthere bash
   - curl -fsSL https://git.io/JerYI | GITHUB_USER=limix GITHUB_PROJECT=bgen bash
-  - curl -fsSL $URL/check-readme.sh | bash
-  - curl -fsSL $URL/py-min-deps.sh | bash -s -- --numpy --pandas
-  - curl -fsSL $URL/py-check-style.sh | bash
-  - curl -fsSL $URL/py-dev-test.sh | bash
-  - curl -fsSL $URL/py-sdist-test.sh | bash
+  - python3 -m pip install pip --upgrade
+  - python3 -m pip install flake8 black isort pytest --upgrade
+  - flake8
+  - black --check .
+  - isort --check-only .
+  - pytest
   - python3 -m pip install cibuildwheel
 script:
   - python3 -m cibuildwheel --output-dir wheelhouse
