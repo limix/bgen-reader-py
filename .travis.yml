@@ -71,11 +71,11 @@ install:
   - curl -fsSL https://git.io/JerYI | GITHUB_USER=horta GITHUB_PROJECT=almosthere bash
   - curl -fsSL https://git.io/JerYI | GITHUB_USER=limix GITHUB_PROJECT=bgen bash
   - python3 -m pip install pip --upgrade
-  - python3 -m pip install flake8 black isort pytest --upgrade
+  - python3 -m pip install setuptools flake8 black isort pytest --upgrade
   - flake8
   - black --check .
   - isort --check-only .
-  - pytest
+  - python setup.py test
   - python3 -m pip install cibuildwheel
 script:
   - python3 -m cibuildwheel --output-dir wheelhouse
