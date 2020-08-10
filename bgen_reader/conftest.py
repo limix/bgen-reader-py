@@ -64,6 +64,7 @@ def _compatibility():
 def large_bgen_filepath():
     from pathlib import Path
     from subprocess import check_call
+
     from bgen_reader._environment import BGEN_READER_CACHE_HOME
     from bgen_reader._file import file_hash
 

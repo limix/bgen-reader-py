@@ -1,5 +1,7 @@
 import io
+
 import pytest
+
 from bgen_reader._environment import BGEN_READER_CACHE_HOME
 from bgen_reader._multimemmap import MultiMemMap
 

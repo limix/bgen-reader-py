@@ -4,12 +4,13 @@ from shutil import copyfile
 
 import numpy as np
 import pytest
+from numpy import array, array_equal, isnan
+from numpy.testing import assert_allclose, assert_equal
+
 from bgen_reader import example_filepath, open_bgen
 from bgen_reader._environment import BGEN_READER_CACHE_HOME
 from bgen_reader.test.test_bgen_reader import noread_permission
 from bgen_reader.test.write_random import _write_random
-from numpy import array, array_equal, isnan
-from numpy.testing import assert_allclose, assert_equal
 
 
 def example_filepath2(filename):
@@ -502,10 +503,10 @@ def test_read_multiple_returns():
 if __name__ == "__main__":
     if False:  # !!!cmk remove the non-test stuff
 
-        import tracemalloc
         import logging
         import os
         import time
+        import tracemalloc
 
         logging.basicConfig(level=logging.INFO)
         tracemalloc.start()
@@ -540,10 +541,10 @@ if __name__ == "__main__":
         # filename = 'M:/deldir/genbgen/good/merged_487400x1100000.bgen'
         # filename = 'M:/deldir/genbgen/good/merged_487400x4840000.bgen'
 
-        import tracemalloc
         import logging
         import os
         import time
+        import tracemalloc
 
         logging.basicConfig(level=logging.INFO)
         tracemalloc.start()

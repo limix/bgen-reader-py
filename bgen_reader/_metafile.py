@@ -2,13 +2,13 @@ import warnings
 from pathlib import Path
 from typing import Union
 
-from ._environment import BGEN_READER_CACHE_HOME
 from ._bgen_file import bgen_file
+from ._environment import BGEN_READER_CACHE_HOME
 from ._file import (
     assert_file_exist,
     assert_file_readable,
-    path_to_filename,
     is_file_writable,
+    path_to_filename,
 )
 
 

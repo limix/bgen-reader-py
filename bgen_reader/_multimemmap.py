@@ -1,7 +1,8 @@
 import io
-import numpy as np
 from pathlib import Path
 from typing import Tuple, Union
+
+import numpy as np
 
 
 class MultiMemMap:
