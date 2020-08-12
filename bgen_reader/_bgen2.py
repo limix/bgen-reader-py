@@ -192,7 +192,7 @@ class open_bgen:
                 if i % 1000 == 0:
                     updater(
                         "'generate samples': part {0:,} of {1:,}".format(
-                            i, self.nsamples
+                            i+1, self.nsamples
                         )
                     )
                 samples_memmap[i] = prefix + str(i)
@@ -235,7 +235,7 @@ class open_bgen:
             ):  # LATER: Is there another low memory way to do this that would be faster?
                 if i % 1000 == 0:
                     updater(
-                        "'sample range': part {0:,} of {1:,}".format(i, self.nsamples)
+                        "'sample range': part {0:,} of {1:,}".format(i+1, self.nsamples)
                     )
                 sample_range_memmap[i] = i
 
@@ -255,7 +255,7 @@ class open_bgen:
                     if index % 1000 == 0:
                         updater(
                             "'samples_filepath max_len': part {0:,} of {1:,}".format(
-                                index, self.nsamples
+                                index+1, self.nsamples
                             )
                         )
                     max_len = max(max_len, len(line.strip()))
@@ -275,7 +275,7 @@ class open_bgen:
                     if index % 1000 == 0:
                         updater(
                             "'samples_filepath': part {0:,} of {1:,}".format(
-                                index, self.nsamples
+                                index+1, self.nsamples
                             )
                         )
                     samples_memmap[index] = line.strip()
@@ -320,7 +320,7 @@ class open_bgen:
                     if i % 1000 == 0:
                         updater(
                             "'ncombinations': part {0:,} of {1:,}".format(
-                                i, self.nvariants
+                                i+1, self.nvariants
                             )
                         )
                     genotype = lib.bgen_file_open_genotype(
@@ -562,7 +562,7 @@ class open_bgen:
         with _log_in_place("reading", self._verbose) as updater:
             for out_index, vaddr0 in enumerate(vaddr):
                 if out_index % vaddr_per_second == 0:
-                    updater("part {0:,} of {1:,}".format(out_index, len(vaddr)))
+                    updater("part {0:,} of {1:,}".format(out_index+1, len(vaddr)))
 
                 genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
 

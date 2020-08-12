@@ -114,3 +114,5 @@ ENV/
 /.vscode
 /bgen_reader/_bgen2_main.py
 /bgen_reader/libzstd.dll
+/bgen_reader/test/delprofile.txt
+/bgen_reader/test/test.profile

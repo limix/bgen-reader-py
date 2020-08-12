@@ -119,7 +119,7 @@ def _write_random(
                         if updater_freq > 1 and index > 0 and index % updater_freq == 0:
                             updater(
                                 "{0:,} of {1:,} ({2:2}%)".format(
-                                    index,
+                                    index+1,
                                     nsamples * nvariants,
                                     100.0 * index / (nsamples * nvariants),
                                 )
