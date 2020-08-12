@@ -1,6 +1,6 @@
+import pytest
 from numpy import all, isnan, logical_not, zeros
 from numpy.testing import assert_allclose, assert_equal
-import pytest
 
 from bgen_reader import example_filepath, open_bgen
 
@@ -89,8 +89,8 @@ def test_zero_width():
 
 
 def test_dosage2():
-    import pandas as pd
     import numpy as np
+    import pandas as pd
 
     filepath = example_filepath("example.32bits.bgen")
     with open_bgen(filepath, verbose=False) as bgen:

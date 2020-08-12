@@ -57,13 +57,13 @@ def read_genotype_partition(bgen_filepath: Path, offsets):
 
 
 def _estimate_best_nsub_parts(nsamples, part_size):
-    # Assume ideal block size, `bs`: 256KB
+    # Assume ideal block size, `bs`: 16MB
     # Assume 16 bytes per genotype per sample, `vs`
     # ideal nvariants to read: iv = bs / (vs * nsamples)
     # We then use iv to figure out in how many parts a partition will be subdivided
     # Let part_size be the number of variants in a partition
     # nsub_parts = min(int(part_size / iv), 1)
-    bs = 256 * 1024
+    bs = 16 * 1024 * 1024
     vs = 16
     iv = bs / (vs * nsamples)
     return max(int(part_size / iv), 1)

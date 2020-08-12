@@ -1,7 +1,7 @@
 import os
+import platform
 from contextlib import contextmanager
 from shutil import copyfile
-import platform
 
 import dask.dataframe as dd
 import pytest

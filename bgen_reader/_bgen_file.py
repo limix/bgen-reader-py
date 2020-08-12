@@ -1,7 +1,7 @@
 from math import floor, sqrt
 from pathlib import Path
 
-from numpy import asarray, float64, full, nan, zeros
+from numpy import float64, full, nan, uint8, zeros
 from pandas import Series
 
 from ._ffi import ffi, lib
@@ -71,13 +71,15 @@ class bgen_file:
         lib.bgen_genotype_read(genotype, ffi.cast("double *", probs.ctypes.data))
 
         phased = lib.bgen_genotype_phased(genotype)
-        ploidy = asarray(
-            [lib.bgen_genotype_ploidy(genotype, i) for i in range(nsamples)], int
-        )
-        missing = asarray(
-            [lib.bgen_genotype_missing(genotype, i) for i in range(nsamples)], bool
-        )
+
+        ploidy = full(nsamples, 0, dtype=uint8)
+        lib.read_ploidy(genotype, ffi.cast("uint8_t *", ploidy.ctypes.data), nsamples)
+
+        missing = full(nsamples, 0, dtype=bool)
+        lib.read_missing(genotype, ffi.cast("bool *", missing.ctypes.data), nsamples)
+
         lib.bgen_genotype_close(genotype)
+
         return {"probs": probs, "phased": phased, "ploidy": ploidy, "missing": missing}
 
     def close(self):

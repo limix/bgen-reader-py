@@ -3,6 +3,8 @@ include README.md
 include bgen_reader/athr.dll
 include bgen_reader/bgen.dll
 include bgen_reader/interface.h
+include bgen_reader/genotype.c
+include bgen_reader/genotype.h
 include bgen_reader/partition.c
 include bgen_reader/partition.h
 include bgen_reader/samples.c

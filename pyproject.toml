@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=49.3.0", "wheel>=0.34.2", "cffi>=1.14.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.isort]
+profile = "black"
+src_paths = ["bgen_reader"]
+known_third_party = [
+    "appdirs",
+    "cachetools",
+    "cffi",
+    "dask",
+    "numpy",
+    "pandas",
+    "pytest",
+    "pytest-runner",
+    "requests",
+    "texttable",
+    "tqdm",
+    "xarray"
+]

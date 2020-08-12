@@ -4,10 +4,7 @@ from typing import Optional, Union
 
 from ._bgen_file import bgen_file
 from ._bgen_metafile import bgen_metafile
-from ._file import (
-    assert_file_exist,
-    assert_file_readable,
-)
+from ._file import assert_file_exist, assert_file_readable
 from ._genotype import create_genotypes
 from ._metafile import create_metafile, infer_metafile_filepath
 from ._samples import generate_samples, read_samples_file

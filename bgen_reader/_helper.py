@@ -1,7 +1,7 @@
-from contextlib import contextmanager
-import time
 import datetime
 import sys
+import time
+from contextlib import contextmanager
 
 
 def get_genotypes(ploidy, nalleles):
