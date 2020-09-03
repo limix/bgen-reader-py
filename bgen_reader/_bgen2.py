@@ -8,11 +8,11 @@ from typing import Any, List, Optional, Tuple, Union
 import numpy as np
 from numpy import asarray, stack
 
-from ._bgen_file import bgen_file
-from ._bgen_metafile import bgen_metafile
-from ._ffi import ffi, lib
+from cbgen import bgen_file
+#from ._bgen_metafile import bgen_metafile
+#from ._ffi import ffi, lib
 from ._file import assert_file_exist, assert_file_readable, tmp_cwd
-from ._helper import _log_in_place, genotypes_to_allele_counts, get_genotypes
+from ._helper import _log_in_place #, genotypes_to_allele_counts, get_genotypes
 from ._metafile import infer_metafile_filepath
 from ._multimemmap import MultiMemMap
 
@@ -138,8 +138,7 @@ class open_bgen:
             self._filepath, self._samples_filepath, self._allow_complex
         ).resolve()  # needed because of tmp_cwd in create_metadata
 
-        self._bgen_context_manager = bgen_file(filepath)
-        self._bgen = self._bgen_context_manager.__enter__()
+        self._bgen = bgen_file(filepath)
 
         self._nvariants = self._bgen.nvariants
         self._nsamples = self._bgen.nsamples
@@ -488,7 +487,7 @@ class open_bgen:
                 (50, 199, 3)
 
             To read selected samples and selected variants, set ``index`` to a tuple of the form ``(sample_index,variant_index)``,
-            where ``sample index`` and ``variant_index`` follow the forms above.
+            where ``sample_index`` and ``variant_index`` follow the forms above.
 
             .. doctest::
 
@@ -512,7 +511,7 @@ class open_bgen:
                 [2]
         """
         # LATER could allow strings (variant names) and lists of strings
-        if not hasattr(self, "_bgen_context_manager"):
+        if not hasattr(self, "_bgen"):
             raise ValueError("I/O operation on a closed file")
 
         max_combinations = (
@@ -536,6 +535,7 @@ class open_bgen:
 
         # allocating prob_buffer only when its size changes makes reading
         # 10x5M data 30% faster
+        dtype = np.dtype(dtype)
         if return_probabilities:
             val = np.full(
                 (len(samples_index), len(vaddr), max_combinations),
@@ -566,26 +566,22 @@ class open_bgen:
                 if out_index % vaddr_per_second == 0:
                     updater("part {0:,} of {1:,}".format(out_index + 1, len(vaddr)))
 
-                genotype = lib.bgen_file_open_genotype(self._bgen._bgen_file, vaddr0)
+                if dtype==np.float16 or dtype==np.float32:
+                    precision = 32
+                else:
+                    precision = 64
+
+                if return_missings or return_ploidies:
+                    genotype = self._bgen.read_genotype(vaddr0, precision)
+                    probability = genotype.probability
+                elif return_probabilities:
+                    probability = self._bgen.read_probability(vaddr0, precision)
 
                 if return_probabilities:
-                    if (
-                        prob_buffer is None
-                        or ncombinations[out_index] != prob_buffer.shape[-1]
-                    ):
-                        prob_buffer = np.full(  # LATER could offer an option to memmap this buffer
-                            (self.nsamples, ncombinations[out_index]),
-                            np.nan,
-                            order="C",
-                            dtype="float64",
-                        )
-                    lib.bgen_genotype_read(
-                        genotype, ffi.cast("double *", prob_buffer.ctypes.data)
-                    )
                     val[:, out_index, : ncombinations[out_index]] = (
-                        prob_buffer
+                        probability
                         if (samples_index is self._sample_range)
-                        else prob_buffer[samples_index, :]
+                        else probability[samples_index, :]
                     )
 
                 if return_missings:
@@ -597,8 +593,6 @@ class open_bgen:
                     ploidy_val[:, out_index] = [
                         lib.bgen_genotype_ploidy(genotype, i) for i in samples_index
                     ]
-
-                lib.bgen_genotype_close(genotype)
 
         result_array = (
             ([val] if return_probabilities else [])
@@ -1112,14 +1106,13 @@ class open_bgen:
 
     def __exit__(self, *_):
         if (
-            hasattr(self, "_bgen_context_manager")
-            and self._bgen_context_manager is not None
+            hasattr(self, "_bgen")
+            and self._bgen is not None
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
-            self._bgen_context_manager.__exit__(None, None, None)
-            del (
-                self._bgen_context_manager
-            )  # This allows __del__ and __exit__ to be called twice on the same object with
+            self._bgen.close()
+            del self._bgen
+            # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
         if (
             hasattr(self, "_metadata2_memmaps") and self._metadata2_memmaps is not None

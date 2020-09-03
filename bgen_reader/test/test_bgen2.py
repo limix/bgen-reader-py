@@ -502,11 +502,11 @@ def test_read_multiple_returns():
 
 
 if __name__ == "__main__":
-    if True:  # !!!cmk remove the non-test stuff
+    if False:  # !!!cmk remove the non-test stuff
         filename = "M:/deldir/genbgen/good/merged_487400x1100000.bgen"
         with open_bgen(filename, allow_complex=False, verbose=True) as bgen:
             variant_start = 100 * 10000
-            val = bgen.read(np.s_[:1000, variant_start : variant_start + 10000])
+            val = bgen.read(np.s_[:1000, variant_start : variant_start + 1000])
 
     if False:  # !!!cmk remove the non-test stuff
 
@@ -595,5 +595,5 @@ if __name__ == "__main__":
         print(len(bgen["variants"]))
 
 # !!!cmk put back
-# pytest.main([__file__])
+pytest.main([__file__])
 # !!!cmk add warning and example to docs that properites (e.g. ids, samples, will disappear after closed. If want to keep, must .copy()
