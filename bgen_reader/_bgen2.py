@@ -710,6 +710,10 @@ class open_bgen:
         """
         The sample identifiers (a :class:`numpy.ndarray` of ``str``).
 
+        Note
+        ----
+        To access after file closes, make a copy.
+
         Example
         -------
         .. doctest::
@@ -721,6 +725,12 @@ class open_bgen:
             ...     print(bgen.samples)
             ['sample_0' 'sample_1' 'sample_2' 'sample_3']
 
+            >>> # To access after file closes, make a copy
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     samples = bgen.samples.copy()
+            >>> print(samples)
+            ['sample_0' 'sample_1' 'sample_2' 'sample_3']
+
         """
         return self._metadata2_memmaps["samples"]
 
@@ -728,6 +738,10 @@ class open_bgen:
     def ids(self) -> List[str]:
         """
         The variant identifiers (a :class:`numpy.ndarray` of ``str``).
+
+        Note
+        ----
+        To access after file closes, make a copy.
 
         Example
         -------
@@ -740,6 +754,13 @@ class open_bgen:
             ...     print(bgen.ids)
             ['SNP1' 'SNP2' 'SNP3' 'SNP4']
 
+            >>> # To access after file closes, make a copy
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     ids = bgen.ids.copy()
+            >>> print(ids)
+            ['SNP1' 'SNP2' 'SNP3' 'SNP4']
+
+
         """
         return self._metadata2_memmaps["ids"]
 
@@ -747,6 +768,10 @@ class open_bgen:
     def rsids(self) -> List[str]:
         """
         The variant RS numbers (a :class:`numpy.ndarray` of ``str``).
+
+        Note
+        ----
+        To access after file closes, make a copy.
 
         Example
         -------
@@ -757,6 +782,12 @@ class open_bgen:
             >>> file = example_filepath("haplotypes.bgen")
             >>> with open_bgen(file, verbose=False) as bgen:
             ...     print(bgen.rsids)
+            ['RS1' 'RS2' 'RS3' 'RS4']
+
+            >>> # To access after file closes, make a copy
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     rsids = bgen.rsids.copy()
+            >>> print(rsids)
             ['RS1' 'RS2' 'RS3' 'RS4']
 
         """
@@ -779,6 +810,10 @@ class open_bgen:
         """
         The chromosome of each variant (a :class:`numpy.ndarray` of ``str``).
 
+        Note
+        ----
+        To access after file closes, make a copy.
+
         Example
         -------
         .. doctest::
@@ -790,6 +825,12 @@ class open_bgen:
             ...     print(bgen.chromosomes)
             ['1' '1' '1' '1']
 
+            >>> # To access after file closes, make a copy
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     chromosomes = bgen.chromosomes.copy()
+            >>> print(chromosomes)
+            ['1' '1' '1' '1']
+
         """
         return self._metadata2_memmaps["chromosomes"]
 
@@ -797,6 +838,10 @@ class open_bgen:
     def positions(self) -> List[int]:
         """
         The genetic position of each variant (a :class:`numpy.ndarray` of ``int``).
+
+        Note
+        ----
+        To access after file closes, make a copy.
 
         Example
         -------
@@ -809,6 +854,12 @@ class open_bgen:
             ...     print(bgen.positions)
             [1 2 3 4]
 
+            >>> # To access after file closes, make a copy
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     positions = bgen.positions.copy()
+            >>> print(positions)
+            [1 2 3 4]
+
         """
         return self._metadata2_memmaps["positions"]
 
@@ -816,6 +867,10 @@ class open_bgen:
     def nalleles(self) -> List[int]:
         """
         The number of alleles for each variant (a :class:`numpy.ndarray` of ``int``).
+
+        Note
+        ----
+        To access after file closes, make a copy.
 
         Example
         -------
@@ -828,6 +883,12 @@ class open_bgen:
             ...     print(bgen.nalleles)
             [2 2 2 2]
 
+            >>> # To access after file closes, make a copy
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     nalleles = bgen.nalleles.copy()
+            >>> print(nalleles)
+            [2 2 2 2]
+
         """
         return self._metadata2_memmaps["nalleles"]
 
@@ -835,6 +896,10 @@ class open_bgen:
     def allele_ids(self) -> List[str]:
         """
         The comma-delimited list of alleles for each variant (a :class:`numpy.ndarray` of ``str``).
+
+        Note
+        ----
+        To access after file closes, make a copy.
 
         Example
         -------
@@ -847,6 +912,12 @@ class open_bgen:
             ...     print(bgen.allele_ids)
             ['A,G' 'A,G' 'A,G' 'A,G']
 
+            >>> # To access after file closes, make a copy
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     allele_ids = bgen.allele_ids.copy()
+            >>> print(allele_ids)
+            ['A,G' 'A,G' 'A,G' 'A,G']
+
         """
         return self._metadata2_memmaps["allele_ids"]
 
@@ -855,6 +926,10 @@ class open_bgen:
         """
         The number of values needed for each variant's probability distribution (a
         :class:`numpy.ndarray` of ``int``).
+
+        Note
+        ----
+        To access after file closes, make a copy.
 
         Example
         -------
@@ -867,6 +942,12 @@ class open_bgen:
             ...     print(bgen.ncombinations)
             [4 4 4 4]
 
+            >>> # To access after file closes, make a copy
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     ncombinations = bgen.ncombinations.copy()
+            >>> print(ncombinations)
+            [4 4 4 4]
+
         """
         return self._metadata2_memmaps["ncombinations"]
 
@@ -875,6 +956,10 @@ class open_bgen:
         """
         For each variant, ``True`` if and only the variant is phased (a :class:`numpy.ndarray` of
         bool).
+
+        Note
+        ----
+        To access after file closes, make a copy.
 
         Example
         -------
@@ -885,6 +970,12 @@ class open_bgen:
             >>> file = example_filepath("haplotypes.bgen")
             >>> with open_bgen(file, verbose=False) as bgen:
             ...     print(bgen.phased)
+            [ True  True  True  True]
+
+            >>> # To access after file closes, make a copy
+            >>> with open_bgen(file, verbose=False) as bgen:
+            ...     phased = bgen.phased.copy()
+            >>> print(phased)
             [ True  True  True  True]
 
         """

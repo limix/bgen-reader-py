@@ -183,10 +183,4 @@ def test_writes():
 
 
 if __name__ == "__main__":
-    if False:  # !!!cmk Remove these
-        test_more()
-        test_errors()
-        test_reads()
-        test_writes()
-
     pytest.main([__file__])
