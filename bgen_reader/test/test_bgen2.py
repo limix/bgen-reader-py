@@ -53,7 +53,7 @@ def test_bgen_samples_specify_samples_file():
     assert all(data.samples == samples)
 
 
-# TODO: have it back. It was not working anymore. #!!!Cmk
+# TODO: have it back. It was not working anymore.
 @pytest.mark.skip
 def test_bgen_samples_outside_bgen_unreadable(tmp_path):
     bgen_filepath = example_filepath2("complex.23bits.bgen")
@@ -503,6 +503,15 @@ def test_read_multiple_returns():
 
 
 if __name__ == "__main__":
+    if True:
+        import numpy as np
+        from bgen_reader import open_bgen
+
+        bgen = open_bgen("M:/deldir/genbgen/good/merged_487400x1100000.bgen")
+         # read all samples and variants 1M to 1M+31
+        val = bgen.read(np.s_[:,1000000:1000031])
+        print(val.shape)
+
     if False:
         test_read_dtype_and_order()
         test_read_dtype_and_order()
@@ -602,3 +611,5 @@ if __name__ == "__main__":
 # !!!cmk put back
 pytest.main([__file__])
 # !!!cmk add warning and example to docs that properties (e.g. ids, samples, will disappear after closed. If want to keep, must .copy()
+#!!!cmk check coverage
+#!!!cmk isort and flake8

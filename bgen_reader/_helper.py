@@ -35,7 +35,7 @@ def _make_genotype(ploidy, start, end):
     return tups
 
 
-# !!! cmk consider switching to tqdm package?
+# Later: consider switching to tqdm package?
 # best location?
 @contextmanager
 def _log_in_place(name, verbose, time_lambda=time.time, show_log_diffs=False):

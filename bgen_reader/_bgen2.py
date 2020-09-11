@@ -560,7 +560,7 @@ class open_bgen:
         )  # Do "logarithmic rounding" to make numbers look nicer, e.g.  999 -> 1000
         with _log_in_place("reading", self._verbose) as updater:
             for out_index, vaddr0 in enumerate(vaddr):
-                if out_index % vaddr_per_second == 0 or out_index + 1==len(vaddr):
+                if (out_index+1) % vaddr_per_second == 0 or out_index + 1==len(vaddr):
                     updater("part {0:,} of {1:,}".format(out_index + 1, len(vaddr)))
 
                 if dtype==np.float16 or dtype==np.float32:
