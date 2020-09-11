@@ -160,33 +160,27 @@ class open_bgen:
         if metadata2_temp.exists():
             metadata2_temp.unlink()
 
-        self._metadata2_memmaps = None
-        try:
-            self._metadata2_memmaps = MultiMemMap(metadata2_temp, mode="w+")
-
-            self._extract_nalleles_ids_etc()
-            self._extract_ncombinations_etc()
-            self._extract_samples_etc()
-        finally:
-            if self._metadata2_memmaps is not None:
-                del self._metadata2_memmaps
+        with MultiMemMap(metadata2_temp, mode="w+") as mmm_wplus:
+            self._extract_nalleles_ids_etc(mmm_wplus)
+            self._extract_ncombinations_etc(mmm_wplus)
+            self._extract_samples_etc(mmm_wplus)
         os.rename(metadata2_temp, self._metadata2_path)
 
-    def _extract_samples_etc(self):
+    def _extract_samples_etc(self, mmm_wplus):
         if self._samples_filepath is not None:
-            self._extract_samples_from_samples_file()
+            self._extract_samples_from_samples_file(mmm_wplus)
         else:
             if self._cbgen.contain_samples:
-                self._extract_samples_from_bgen_file()
+                self._extract_samples_from_bgen_file(mmm_wplus)
             else:
-                self._extract_samples_from_nothing()
-        self._extract_sample_range()
+                self._extract_samples_from_nothing(mmm_wplus)
+        self._extract_sample_range(mmm_wplus)
 
-    def _extract_samples_from_nothing(self):
+    def _extract_samples_from_nothing(self, mmm_wplus):
         with _log_in_place("metadata", self._verbose) as updater:
             prefix = "sample_"
             max_length = len(prefix + str(self.nsamples - 1))
-            samples_memmap = self._metadata2_memmaps.append_empty(
+            samples_memmap = mmm_wplus.append_empty(
                 "samples", self.nsamples, f"<U{max_length}"
             )
             for i in range(
@@ -200,7 +194,7 @@ class open_bgen:
                     )
                 samples_memmap[i] = prefix + str(i)
 
-    def _extract_samples_from_bgen_file(self):
+    def _extract_samples_from_bgen_file(self, mmm_wplus):
         with _log_in_place("metadata", self._verbose) as updater:
             # Use cb_lib instead of Python cbgen so can allocate to memory map instead of RAM.
             bgen_samples = cb_lib.bgen_file_read_samples(self._cbgen._bgen_file)
@@ -211,10 +205,10 @@ class open_bgen:
                 samples_max_len = cb_ffi.new("uint32_t[]", 1)
                 cb_lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
                 updater("'samples from bgen'")
-                samples_memmap = self._metadata2_memmaps.append_empty(
+                samples_memmap = mmm_wplus.append_empty(
                     "samples", self.nsamples, f"<U{samples_max_len[0]}"
                 )
-                samples = self._metadata2_memmaps.append_empty(
+                samples = mmm_wplus.append_empty(
                     "_samples", self.nsamples, f"S{samples_max_len[0]}"
                 )  # This one second, so we can delete it afterwards.
                 cb_lib.read_samples_part2(
@@ -226,10 +220,10 @@ class open_bgen:
             finally:
                 cb_lib.bgen_samples_destroy(bgen_samples)
             samples_memmap[:] = samples
-            self._metadata2_memmaps.popitem()  # Remove _samples
+            mmm_wplus.popitem()  # Remove _samples
 
-    def _extract_sample_range(self):
-        sample_range_memmap = self._metadata2_memmaps.append_empty(
+    def _extract_sample_range(self, mmm_wplus):
+        sample_range_memmap = mmm_wplus.append_empty(
             "sample_range", self.nsamples, "int32"
         )
         with _log_in_place("metadata", self._verbose) as updater:
@@ -244,7 +238,7 @@ class open_bgen:
                     )
                 sample_range_memmap[i] = i
 
-    def _extract_samples_from_samples_file(self):
+    def _extract_samples_from_samples_file(self, mmm_wplus):
         with _log_in_place("metadata", self._verbose) as updater:
             assert_file_exist(self._samples_filepath)
             assert_file_readable(self._samples_filepath)
@@ -270,7 +264,7 @@ class open_bgen:
                 ), "Expect new of samples in file to match number of samples in BGEN file"
 
             # Copy samples into memmap
-            samples_memmap = self._metadata2_memmaps.append_empty(
+            samples_memmap = mmm_wplus.append_empty(
                 "samples", self.nsamples, f"<U{max_len}"
             )
             with self._samples_filepath.open("r") as fp:
@@ -285,12 +279,12 @@ class open_bgen:
                         )
                     samples_memmap[index] = line.strip()
 
-    def _extract_ncombinations_etc(self):
+    def _extract_ncombinations_etc(self, mmm_wplus):
 
-        ncombinations_memmap = self._metadata2_memmaps.append_empty(
+        ncombinations_memmap = mmm_wplus.append_empty(
             "ncombinations", (self.nvariants), "int32"
         )
-        phased_memmap = self._metadata2_memmaps.append_empty(
+        phased_memmap = mmm_wplus.append_empty(
             "phased", (self.nvariants), "bool"
         )
 
@@ -301,7 +295,7 @@ class open_bgen:
             i = 0
             previous_i = None
             while i < self.nvariants:
-                genotype = self._cbgen.read_genotype(self._vaddr[i])
+                genotype = self._cbgen.read_genotype(mmm_wplus["vaddr"][i])
                 ncombinations_memmap[i] = genotype.probability.shape[-1]
                 phased_memmap[i] = genotype.phased
                 if not( previous_i is None or (
@@ -319,7 +313,7 @@ class open_bgen:
                     "Parameter 'allow_complex' is True, so reading phase and ncombinations of every variant"
                 )
             with _log_in_place("metadata", self._verbose) as updater:
-                for i, vaddr0 in enumerate(self._vaddr):
+                for i, vaddr0 in enumerate(mmm_wplus["vaddr"]):
                     if i % 1000 == 0:
                         updater(
                             "'ncombinations': part {0:,} of {1:,}".format(
@@ -337,10 +331,10 @@ class open_bgen:
                         if genotype is not None:
                             cb_lib.bgen_genotype_close(genotype)
 
-        max_combinations_memmap = self._metadata2_memmaps.append_empty(
+        max_combinations_memmap = mmm_wplus.append_empty(
             "max_combinations", (1), "int32"
         )
-        max_combinations_memmap[0] = max(self.ncombinations)
+        max_combinations_memmap[0] = max(mmm_wplus["ncombinations"])
 
     def read(
         self,
@@ -911,7 +905,7 @@ class open_bgen:
             pass
         return index
 
-    def _extract_nalleles_ids_etc(self):
+    def _extract_nalleles_ids_etc(self, mmm_wplus):
         with tmp_cwd():
             metafile_filepath = Path("bgen.metadata")
             self._cbgen.create_metafile(metafile_filepath, verbose=self._verbose)
@@ -920,13 +914,13 @@ class open_bgen:
                 with bgen_metafile(metafile_filepath) as mf:
                     nparts = mf.npartitions
 
-                    vaddr_memmap = self._metadata2_memmaps.append_empty(
+                    vaddr_memmap = mmm_wplus.append_empty(
                         "vaddr", (self.nvariants), "uint64"
                     )
-                    positions_memmap = self._metadata2_memmaps.append_empty(
+                    positions_memmap = mmm_wplus.append_empty(
                         "positions", (self.nvariants), "uint32"
                     )
-                    nalleles_memmap = self._metadata2_memmaps.append_empty(
+                    nalleles_memmap = mmm_wplus.append_empty(
                         "nalleles", (self.nvariants), "uint16"
                     )
 
@@ -957,16 +951,16 @@ class open_bgen:
                         nalleles_memmap[start:end] = variants.nalleles
                         start = end
 
-                    ids_memmap = self._metadata2_memmaps.append_empty(
+                    ids_memmap = mmm_wplus.append_empty(
                         "ids", (self.nvariants), f"<U{vid_max_max}"
                     )
-                    rsids_memmap = self._metadata2_memmaps.append_empty(
+                    rsids_memmap = mmm_wplus.append_empty(
                         "rsids", (self.nvariants), f"<U{rsid_max_max}"
                     )
-                    chrom_memmap = self._metadata2_memmaps.append_empty(
+                    chrom_memmap = mmm_wplus.append_empty(
                         "chromosomes", (self.nvariants), f"<U{chrom_max_max}"
                     )
-                    allele_ids_memmap = self._metadata2_memmaps.append_empty(
+                    allele_ids_memmap = mmm_wplus.append_empty(
                         "allele_ids", (self.nvariants), f"<U{allele_ids_max_max}"
                     )
 
