@@ -503,11 +503,11 @@ def test_read_multiple_returns():
 
 
 if __name__ == "__main__":
-    if True:
-        test_close_del_with()
+    if False:
+        test_read_dtype_and_order()
         test_read_dtype_and_order()
 
-    if False:  # !!!cmk remove the non-test stuff
+    if True:  # !!!cmk remove the non-test stuff
         filename = r"M:\bgen-reader-cache\test_data\example.32bits.bgen"#M:\deldir\genbgen\good\test_data\1000x500000.bgen"
         with open_bgen(filename, allow_complex=True, verbose=True) as bgen:
             variant_start = 0 * 10000

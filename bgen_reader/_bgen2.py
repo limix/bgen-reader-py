@@ -186,7 +186,7 @@ class open_bgen:
             for i in range(
                 self.nsamples
             ):  # LATER Is there another low-memory way to do this that would be faster?
-                if i % 1000 == 0:
+                if i % 1000 == 0 or i+1==self.nsamples:
                     updater(
                         "'generate samples': part {0:,} of {1:,}".format(
                             i + 1, self.nsamples
@@ -230,7 +230,7 @@ class open_bgen:
             for i in range(
                 self.nsamples
             ):  # LATER: Is there another low memory way to do this that would be faster?
-                if i % 1000 == 0:
+                if i % 1000 == 0 or i+1==self.nsamples:
                     updater(
                         "'sample range': part {0:,} of {1:,}".format(
                             i + 1, self.nsamples
@@ -251,7 +251,7 @@ class open_bgen:
                 fp.readline()
                 fp.readline()
                 for index, line in enumerate(fp):
-                    if index % 1000 == 0:
+                    if index % 1000 == 0 or index+1==self.nsamples:
                         updater(
                             "'samples_filepath max_len': part {0:,} of {1:,}".format(
                                 index + 1, self.nsamples
@@ -271,7 +271,7 @@ class open_bgen:
                 fp.readline()
                 fp.readline()
                 for index, line in enumerate(fp):
-                    if index % 1000 == 0:
+                    if index % 1000 == 0 or index+1==self.nsamples:
                         updater(
                             "'samples_filepath': part {0:,} of {1:,}".format(
                                 index + 1, self.nsamples
@@ -314,7 +314,7 @@ class open_bgen:
                 )
             with _log_in_place("metadata", self._verbose) as updater:
                 for i, vaddr0 in enumerate(mmm_wplus["vaddr"]):
-                    if i % 1000 == 0:
+                    if i % 1000 == 0 or i+1==self.nsamples:
                         updater(
                             "'ncombinations': part {0:,} of {1:,}".format(
                                 i + 1, self.nvariants
@@ -560,7 +560,7 @@ class open_bgen:
         )  # Do "logarithmic rounding" to make numbers look nicer, e.g.  999 -> 1000
         with _log_in_place("reading", self._verbose) as updater:
             for out_index, vaddr0 in enumerate(vaddr):
-                if out_index % vaddr_per_second == 0:
+                if out_index % vaddr_per_second == 0 or out_index + 1==len(vaddr):
                     updater("part {0:,} of {1:,}".format(out_index + 1, len(vaddr)))
 
                 if dtype==np.float16 or dtype==np.float32:
@@ -932,7 +932,7 @@ class open_bgen:
                     start = 0
                     for ipart2 in range(nparts):  # LATER multithread?
                         # LATER in notebook this message doesn't appear on one line
-                        updater("'nallele': part {0:,} of {1:,}".format(ipart2, nparts))
+                        updater("'nallele': part {0:,} of {1:,}".format(ipart2+1, nparts))
 
                         partition = mf.read_partition(ipart2)
                         variants = partition.variants
@@ -966,7 +966,7 @@ class open_bgen:
 
                     start = 0
                     for ipart2 in range(nparts):  # LATER multithread?
-                        updater("'ids': part {0:,} of {1:,}".format(ipart2, nparts))
+                        updater("'ids': part {0:,} of {1:,}".format(ipart2+1, nparts))
 
                         partition = mf.read_partition(ipart2)
                         variants = partition.variants
