@@ -24,6 +24,7 @@ def example_filepath(filename: str):
         raise ValueError(f"Unknown filename {filename}.")
 
     test_data_folder = BGEN_READER_CACHE_HOME / "test_data"
+    test_data_folder.mkdir(parents=True, exist_ok=True)
     filepath = test_data_folder / filename
 
     if filepath.exists() and file_hash(filepath) != _filenames[filename]:

@@ -37,7 +37,7 @@ def test_typing():
 
 
 def test_bgen_samples_not_present():
-    data = open_bgen(example_filepath2("complex.23bits.no.samples.bgen"), verbose=False)
+    data = open_bgen(example_filepath2("complex.23bits.no.samples.bgen"), allow_complex=True, verbose=False)
     samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
     assert all(data.samples == samples)
 
@@ -46,13 +46,14 @@ def test_bgen_samples_specify_samples_file():
     data = open_bgen(
         example_filepath2("complex.23bits.bgen"),
         samples_filepath=example_filepath("complex.sample"),
+        allow_complex=True,
         verbose=False,
     )
     samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
     assert all(data.samples == samples)
 
 
-# TODO: have it back. It was not working anymore.
+# TODO: have it back. It was not working anymore. #!!!Cmk
 @pytest.mark.skip
 def test_bgen_samples_outside_bgen_unreadable(tmp_path):
     bgen_filepath = example_filepath2("complex.23bits.bgen")
@@ -199,7 +200,7 @@ def test_to_improve_coverage():
 def test_to_improve_coverage2():
     filepath = example_filepath2("complex.bgen")
     samplepath = example_filepath2("complex.sample")
-    allow_complex = False
+    allow_complex = True
 
     metadata2_path = open_bgen._metadata_path_from_filename(
         filepath, samples_filepath=samplepath, allow_complex=allow_complex
@@ -413,7 +414,7 @@ def test_read_dtype_and_order():
     val = bgen2.read(None, dtype="float32", order="C")
     assert val.dtype == np.float32
     assert val.flags["C_CONTIGUOUS"] and not val.flags["F_CONTIGUOUS"]
-    assert np.allclose(full, val, equal_nan=True)
+    assert np.allclose(full, val, atol=5e-8, equal_nan=True)
 
 
 def test_read_indexing():
@@ -502,11 +503,15 @@ def test_read_multiple_returns():
 
 
 if __name__ == "__main__":
+    if True:
+        test_close_del_with()
+        test_read_dtype_and_order()
+
     if False:  # !!!cmk remove the non-test stuff
-        filename = "M:/deldir/genbgen/good/merged_487400x1100000.bgen"
-        with open_bgen(filename, allow_complex=False, verbose=True) as bgen:
-            variant_start = 100 * 10000
-            val = bgen.read(np.s_[:1000, variant_start : variant_start + 1000])
+        filename = r"M:\bgen-reader-cache\test_data\example.32bits.bgen"#M:\deldir\genbgen\good\test_data\1000x500000.bgen"
+        with open_bgen(filename, allow_complex=True, verbose=True) as bgen:
+            variant_start = 0 * 10000
+            val = bgen.read(np.s_[:1000, variant_start : variant_start + 1000],return_missings=True,return_ploidies=True)
 
     if False:  # !!!cmk remove the non-test stuff
 
@@ -596,4 +601,4 @@ if __name__ == "__main__":
 
 # !!!cmk put back
 pytest.main([__file__])
-# !!!cmk add warning and example to docs that properites (e.g. ids, samples, will disappear after closed. If want to keep, must .copy()
+# !!!cmk add warning and example to docs that properties (e.g. ids, samples, will disappear after closed. If want to keep, must .copy()

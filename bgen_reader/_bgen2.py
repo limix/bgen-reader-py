@@ -8,9 +8,10 @@ from typing import Any, List, Optional, Tuple, Union
 import numpy as np
 from numpy import asarray, stack
 
-from cbgen import bgen_file
+from cbgen import bgen_file, bgen_metafile
 #from ._bgen_metafile import bgen_metafile
-#from ._ffi import ffi, lib
+from cbgen._ffi import lib as cb_lib
+from cbgen._ffi import ffi as cb_ffi
 from ._file import assert_file_exist, assert_file_readable, tmp_cwd
 from ._helper import _log_in_place #, genotypes_to_allele_counts, get_genotypes
 from ._metafile import infer_metafile_filepath
@@ -138,10 +139,10 @@ class open_bgen:
             self._filepath, self._samples_filepath, self._allow_complex
         ).resolve()  # needed because of tmp_cwd in create_metadata
 
-        self._bgen = bgen_file(filepath)
+        self._cbgen = bgen_file(filepath)
 
-        self._nvariants = self._bgen.nvariants
-        self._nsamples = self._bgen.nsamples
+        self._nvariants = self._cbgen.nvariants
+        self._nsamples = self._cbgen.nsamples
 
         if self._metadata2_path.exists() and getmtime(self._metadata2_path) < getmtime(
             self._filepath
@@ -159,20 +160,23 @@ class open_bgen:
         if metadata2_temp.exists():
             metadata2_temp.unlink()
 
-        self._metadata2_memmaps = MultiMemMap(metadata2_temp, mode="w+")
+        self._metadata2_memmaps = None
+        try:
+            self._metadata2_memmaps = MultiMemMap(metadata2_temp, mode="w+")
 
-        self._extract_nalleles_ids_etc()
-        self._extract_ncombinations_etc()
-        self._extract_samples_etc()
-
-        del self._metadata2_memmaps
+            self._extract_nalleles_ids_etc()
+            self._extract_ncombinations_etc()
+            self._extract_samples_etc()
+        finally:
+            if self._metadata2_memmaps is not None:
+                del self._metadata2_memmaps
         os.rename(metadata2_temp, self._metadata2_path)
 
     def _extract_samples_etc(self):
         if self._samples_filepath is not None:
             self._extract_samples_from_samples_file()
         else:
-            if self._bgen.contain_samples:
+            if self._cbgen.contain_samples:
                 self._extract_samples_from_bgen_file()
             else:
                 self._extract_samples_from_nothing()
@@ -198,14 +202,14 @@ class open_bgen:
 
     def _extract_samples_from_bgen_file(self):
         with _log_in_place("metadata", self._verbose) as updater:
-
-            bgen_samples = lib.bgen_file_read_samples(self._bgen._bgen_file)
-            if bgen_samples == ffi.NULL:
+            # Use cb_lib instead of Python cbgen so can allocate to memory map instead of RAM.
+            bgen_samples = cb_lib.bgen_file_read_samples(self._cbgen._bgen_file)
+            if bgen_samples == cb_ffi.NULL:
                 raise RuntimeError("Could not fetch samples from the bgen file.")
 
             try:
-                samples_max_len = ffi.new("uint32_t[]", 1)
-                lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
+                samples_max_len = cb_ffi.new("uint32_t[]", 1)
+                cb_lib.read_samples_part1(bgen_samples, self.nsamples, samples_max_len)
                 updater("'samples from bgen'")
                 samples_memmap = self._metadata2_memmaps.append_empty(
                     "samples", self.nsamples, f"<U{samples_max_len[0]}"
@@ -213,14 +217,14 @@ class open_bgen:
                 samples = self._metadata2_memmaps.append_empty(
                     "_samples", self.nsamples, f"S{samples_max_len[0]}"
                 )  # This one second, so we can delete it afterwards.
-                lib.read_samples_part2(
+                cb_lib.read_samples_part2(
                     bgen_samples,
                     self.nsamples,
-                    ffi.from_buffer("char[]", samples),
+                    cb_ffi.from_buffer("char[]", samples),
                     samples_max_len[0],
                 )
             finally:
-                lib.bgen_samples_destroy(bgen_samples)
+                cb_lib.bgen_samples_destroy(bgen_samples)
             samples_memmap[:] = samples
             self._metadata2_memmaps.popitem()  # Remove _samples
 
@@ -293,20 +297,18 @@ class open_bgen:
         if not self._allow_complex:
             assert (
                 self.nvariants > 0
-            ), "If allow_complex is False, there must be at least one variant"
+            ), "If allow_complex is False, there must be at least one variant"#!!!cmk change these to throws
             i = 0
             previous_i = None
             while i < self.nvariants:
-                genotype = lib.bgen_file_open_genotype(
-                    self._bgen._bgen_file, self._vaddr[0]
-                )
-                ncombinations_memmap[i] = lib.bgen_genotype_ncombs(genotype)
-                phased_memmap[i] = lib.bgen_genotype_phased(genotype)
-                lib.bgen_genotype_close(genotype)
-                assert previous_i is None or (
+                genotype = self._cbgen.read_genotype(self._vaddr[i])
+                ncombinations_memmap[i] = genotype.probability.shape[-1]
+                phased_memmap[i] = genotype.phased
+                if not( previous_i is None or (
                     ncombinations_memmap[previous_i] == ncombinations_memmap[i]
                     and phased_memmap[previous_i] == phased_memmap[i]
-                ), "allow_complex is False but a spot check shows that file is complex"
+                )):
+                    raise ValueError("allow_complex is False but a spot check shows that file is complex") #!!!cmk right type?
                 previous_i = i
                 i = (i + 1) * 2 - 1
             ncombinations_memmap[1:] = ncombinations_memmap[0]
@@ -324,12 +326,16 @@ class open_bgen:
                                 i + 1, self.nvariants
                             )
                         )
-                    genotype = lib.bgen_file_open_genotype(
-                        self._bgen._bgen_file, vaddr0
-                    )
-                    ncombinations_memmap[i] = lib.bgen_genotype_ncombs(genotype)
-                    phased_memmap[i] = lib.bgen_genotype_phased(genotype)
-                    lib.bgen_genotype_close(genotype)
+                    genotype = None
+                    try:
+                        genotype = cb_lib.bgen_file_open_genotype(
+                            self._cbgen._bgen_file, vaddr0
+                        )
+                        ncombinations_memmap[i] = cb_lib.bgen_genotype_ncombs(genotype)
+                        phased_memmap[i] = cb_lib.bgen_genotype_phased(genotype)
+                    finally:
+                        if genotype is not None:
+                            cb_lib.bgen_genotype_close(genotype)
 
         max_combinations_memmap = self._metadata2_memmaps.append_empty(
             "max_combinations", (1), "int32"
@@ -511,7 +517,7 @@ class open_bgen:
                 [2]
         """
         # LATER could allow strings (variant names) and lists of strings
-        if not hasattr(self, "_bgen"):
+        if not hasattr(self, "_cbgen"):
             raise ValueError("I/O operation on a closed file")
 
         max_combinations = (
@@ -533,8 +539,6 @@ class open_bgen:
                 )
             )
 
-        # allocating prob_buffer only when its size changes makes reading
-        # 10x5M data 30% faster
         dtype = np.dtype(dtype)
         if return_probabilities:
             val = np.full(
@@ -543,7 +547,6 @@ class open_bgen:
                 dtype=dtype,
                 order=order,
             )
-            prob_buffer = None
         if return_missings:
             missing_val = np.full(
                 (len(samples_index), len(vaddr)), False, dtype="bool", order=order
@@ -572,10 +575,10 @@ class open_bgen:
                     precision = 64
 
                 if return_missings or return_ploidies:
-                    genotype = self._bgen.read_genotype(vaddr0, precision)
+                    genotype = self._cbgen.read_genotype(vaddr0, precision)
                     probability = genotype.probability
                 elif return_probabilities:
-                    probability = self._bgen.read_probability(vaddr0, precision)
+                    probability = self._cbgen.read_probability(vaddr0, precision)
 
                 if return_probabilities:
                     val[:, out_index, : ncombinations[out_index]] = (
@@ -585,14 +588,18 @@ class open_bgen:
                     )
 
                 if return_missings:
-                    missing_val[:, out_index] = [
-                        lib.bgen_genotype_missing(genotype, i) for i in samples_index
-                    ]
+                    missing_val[:, out_index] = (
+                        genotype.missings
+                        if (samples_index is self._sample_range)
+                        else genotype.missing[samples_index]
+                        )
 
                 if return_ploidies:
-                    ploidy_val[:, out_index] = [
-                        lib.bgen_genotype_ploidy(genotype, i) for i in samples_index
-                    ]
+                    ploidy_val[:, out_index] = (
+                        genotype.ploidy
+                        if (samples_index is self._sample_range)
+                        else genotype.ploidy[samples_index]
+                        )
 
         result_array = (
             ([val] if return_probabilities else [])
@@ -907,7 +914,7 @@ class open_bgen:
     def _extract_nalleles_ids_etc(self):
         with tmp_cwd():
             metafile_filepath = Path("bgen.metadata")
-            self._bgen.create_metafile(metafile_filepath, verbose=self._verbose)
+            self._cbgen.create_metafile(metafile_filepath, verbose=self._verbose)
 
             with _log_in_place("metadata", self._verbose) as updater:
                 with bgen_metafile(metafile_filepath) as mf:
@@ -933,54 +940,22 @@ class open_bgen:
                         # LATER in notebook this message doesn't appear on one line
                         updater("'nallele': part {0:,} of {1:,}".format(ipart2, nparts))
 
-                        partition = lib.bgen_metafile_read_partition(
-                            mf._bgen_metafile, ipart2
+                        partition = mf.read_partition(ipart2)
+                        variants = partition.variants
+                        nvariants = partition.variants.size
+
+                        vid_max_max = max(vid_max_max, variants.id.dtype.itemsize)
+                        rsid_max_max = max(rsid_max_max, variants.rsid.dtype.itemsize)
+                        chrom_max_max = max(chrom_max_max, variants.chromosome.dtype.itemsize)
+                        allele_ids_max_max = max(
+                            allele_ids_max_max, variants.allele_ids.dtype.itemsize
                         )
-                        if partition == ffi.NULL:
-                            raise RuntimeError(f"Could not read partition {partition}.")
 
-                        try:
-                            nvariants = lib.bgen_partition_nvariants(partition)
-                            position = np.empty(nvariants, dtype=np.uint32)
-                            nalleles = np.empty(nvariants, dtype=np.uint16)
-                            offset = np.empty(nvariants, dtype=np.uint64)
-                            vid_max_len = ffi.new("uint32_t[]", 1)
-                            rsid_max_len = ffi.new("uint32_t[]", 1)
-                            chrom_max_len = ffi.new("uint32_t[]", 1)
-                            allele_ids_max_len = ffi.new("uint32_t[]", 1)
-                            position_ptr = ffi.cast(
-                                "uint32_t *", ffi.from_buffer(position)
-                            )
-                            nalleles_ptr = ffi.cast(
-                                "uint16_t *", ffi.from_buffer(nalleles)
-                            )
-                            offset_ptr = ffi.cast("uint64_t *", ffi.from_buffer(offset))
-                            lib.read_partition_part1(
-                                partition,
-                                position_ptr,
-                                nalleles_ptr,
-                                offset_ptr,
-                                vid_max_len,
-                                rsid_max_len,
-                                chrom_max_len,
-                                allele_ids_max_len,
-                            )
-
-                            vid_max_max = max(vid_max_max, vid_max_len[0])
-                            rsid_max_max = max(rsid_max_max, rsid_max_len[0])
-                            chrom_max_max = max(chrom_max_max, chrom_max_len[0])
-                            allele_ids_max_max = max(
-                                allele_ids_max_max, allele_ids_max_len[0]
-                            )
-
-                            end = start + nvariants
-                            vaddr_memmap[start:end] = offset
-                            positions_memmap[start:end] = position
-                            nalleles_memmap[start:end] = nalleles
-                            start = end
-
-                        finally:
-                            lib.bgen_partition_destroy(partition)
+                        end = start + nvariants
+                        vaddr_memmap[start:end] = variants.offset
+                        positions_memmap[start:end] = variants.position
+                        nalleles_memmap[start:end] = variants.nalleles
+                        start = end
 
                     ids_memmap = self._metadata2_memmaps.append_empty(
                         "ids", (self.nvariants), f"<U{vid_max_max}"
@@ -999,72 +974,15 @@ class open_bgen:
                     for ipart2 in range(nparts):  # LATER multithread?
                         updater("'ids': part {0:,} of {1:,}".format(ipart2, nparts))
 
-                        partition = lib.bgen_metafile_read_partition(
-                            mf._bgen_metafile, ipart2
-                        )
-
-                        from numpy import empty, uint16, uint32, uint64, zeros
-
-                        if partition == ffi.NULL:
-                            raise RuntimeError(f"Could not read partition {partition}.")
-
-                        try:
-
-                            nvariants = lib.bgen_partition_nvariants(partition)
-
-                            position = empty(nvariants, dtype=uint32)
-                            nalleles = empty(nvariants, dtype=uint16)
-                            offset = empty(nvariants, dtype=uint64)
-                            vid_max_len = ffi.new("uint32_t[]", 1)
-                            rsid_max_len = ffi.new("uint32_t[]", 1)
-                            chrom_max_len = ffi.new("uint32_t[]", 1)
-                            allele_ids_max_len = ffi.new("uint32_t[]", 1)
-
-                            position_ptr = ffi.cast(
-                                "uint32_t *", ffi.from_buffer(position)
-                            )
-                            nalleles_ptr = ffi.cast(
-                                "uint16_t *", ffi.from_buffer(nalleles)
-                            )
-                            offset_ptr = ffi.cast("uint64_t *", ffi.from_buffer(offset))
-                            # If we don't call "part1" the call to "part2" will give the wrong answers
-                            lib.read_partition_part1(
-                                partition,
-                                position_ptr,
-                                nalleles_ptr,
-                                offset_ptr,
-                                vid_max_len,
-                                rsid_max_len,
-                                chrom_max_len,
-                                allele_ids_max_len,
-                            )
-
-                            vid = zeros(nvariants, dtype=f"S{vid_max_len[0]}")
-                            rsid = zeros(nvariants, dtype=f"S{rsid_max_len[0]}")
-                            chrom = zeros(nvariants, dtype=f"S{chrom_max_len[0]}")
-                            allele_ids = zeros(
-                                nvariants, dtype=f"S{allele_ids_max_len[0]}"
-                            )
-                            lib.read_partition_part2(
-                                partition,
-                                ffi.from_buffer("char[]", vid),
-                                vid_max_len[0],
-                                ffi.from_buffer("char[]", rsid),
-                                rsid_max_len[0],
-                                ffi.from_buffer("char[]", chrom),
-                                chrom_max_len[0],
-                                ffi.from_buffer("char[]", allele_ids),
-                                allele_ids_max_len[0],
-                            )
-
-                        finally:
-                            lib.bgen_partition_destroy(partition)
+                        partition = mf.read_partition(ipart2)
+                        variants = partition.variants
+                        nvariants = partition.variants.size
 
                         end = start + nvariants
-                        ids_memmap[start:end] = vid
-                        rsids_memmap[start:end] = rsid
-                        chrom_memmap[start:end] = chrom
-                        allele_ids_memmap[start:end] = allele_ids
+                        ids_memmap[start:end] = variants.id
+                        rsids_memmap[start:end] = variants.rsid
+                        chrom_memmap[start:end] = variants.chromosome
+                        allele_ids_memmap[start:end] = variants.allele_ids
                         start = end
 
     def __str__(self):
@@ -1106,12 +1024,12 @@ class open_bgen:
 
     def __exit__(self, *_):
         if (
-            hasattr(self, "_bgen")
-            and self._bgen is not None
+            hasattr(self, "_cbgen")
+            and self._cbgen is not None
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
-            self._bgen.close()
-            del self._bgen
+            self._cbgen.close()
+            del self._cbgen
             # This allows __del__ and __exit__ to be called twice on the same object with
             # no bad effect.
         if (
