@@ -6,14 +6,15 @@ from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
+from cbgen import bgen_file, bgen_metafile
+
+# from ._bgen_metafile import bgen_metafile
+from cbgen._ffi import ffi as cb_ffi
+from cbgen._ffi import lib as cb_lib
 from numpy import asarray, stack
 
-from cbgen import bgen_file, bgen_metafile
-#from ._bgen_metafile import bgen_metafile
-from cbgen._ffi import lib as cb_lib
-from cbgen._ffi import ffi as cb_ffi
 from ._file import assert_file_exist, assert_file_readable, tmp_cwd
-from ._helper import _log_in_place #, genotypes_to_allele_counts, get_genotypes
+from ._helper import _log_in_place, genotypes_to_allele_counts, get_genotypes
 from ._metafile import infer_metafile_filepath
 from ._multimemmap import MultiMemMap
 
@@ -186,7 +187,7 @@ class open_bgen:
             for i in range(
                 self.nsamples
             ):  # LATER Is there another low-memory way to do this that would be faster?
-                if i % 1000 == 0 or i+1==self.nsamples:
+                if i % 1000 == 0 or i + 1 == self.nsamples:
                     updater(
                         "'generate samples': part {0:,} of {1:,}".format(
                             i + 1, self.nsamples
@@ -230,7 +231,7 @@ class open_bgen:
             for i in range(
                 self.nsamples
             ):  # LATER: Is there another low memory way to do this that would be faster?
-                if i % 1000 == 0 or i+1==self.nsamples:
+                if i % 1000 == 0 or i + 1 == self.nsamples:
                     updater(
                         "'sample range': part {0:,} of {1:,}".format(
                             i + 1, self.nsamples
@@ -251,7 +252,7 @@ class open_bgen:
                 fp.readline()
                 fp.readline()
                 for index, line in enumerate(fp):
-                    if index % 1000 == 0 or index+1==self.nsamples:
+                    if index % 1000 == 0 or index + 1 == self.nsamples:
                         updater(
                             "'samples_filepath max_len': part {0:,} of {1:,}".format(
                                 index + 1, self.nsamples
@@ -259,9 +260,10 @@ class open_bgen:
                         )
                     max_len = max(max_len, len(line.strip()))
 
-                assert (
-                    index + 1 == self.nsamples
-                ), "Expect new of samples in file to match number of samples in BGEN file"
+                if index + 1 != self.nsamples:
+                    raise ValueError(
+                        "Expect number of samples in file to match number of samples in BGEN file"
+                    )
 
             # Copy samples into memmap
             samples_memmap = mmm_wplus.append_empty(
@@ -271,7 +273,7 @@ class open_bgen:
                 fp.readline()
                 fp.readline()
                 for index, line in enumerate(fp):
-                    if index % 1000 == 0 or index+1==self.nsamples:
+                    if index % 1000 == 0 or index + 1 == self.nsamples:
                         updater(
                             "'samples_filepath': part {0:,} of {1:,}".format(
                                 index + 1, self.nsamples
@@ -284,25 +286,26 @@ class open_bgen:
         ncombinations_memmap = mmm_wplus.append_empty(
             "ncombinations", (self.nvariants), "int32"
         )
-        phased_memmap = mmm_wplus.append_empty(
-            "phased", (self.nvariants), "bool"
-        )
+        phased_memmap = mmm_wplus.append_empty("phased", (self.nvariants), "bool")
 
         if not self._allow_complex:
-            assert (
-                self.nvariants > 0
-            ), "If allow_complex is False, there must be at least one variant"#!!!cmk change these to throws
+            if self.nvariants == 0:
+                raise ValueError(
+                    "If allow_complex is False, there must be at least one variant"
+                )
             i = 0
             previous_i = None
             while i < self.nvariants:
                 genotype = self._cbgen.read_genotype(mmm_wplus["vaddr"][i])
                 ncombinations_memmap[i] = genotype.probability.shape[-1]
                 phased_memmap[i] = genotype.phased
-                if not( previous_i is None or (
-                    ncombinations_memmap[previous_i] == ncombinations_memmap[i]
-                    and phased_memmap[previous_i] == phased_memmap[i]
-                )):
-                    raise ValueError("allow_complex is False but a spot check shows that file is complex") #!!!cmk right type?
+                if previous_i is not None and (
+                    ncombinations_memmap[previous_i] != ncombinations_memmap[i]
+                    or phased_memmap[previous_i] != phased_memmap[i]
+                ):
+                    raise ValueError(
+                        "allow_complex is False but a spot check shows that file is complex"
+                    )
                 previous_i = i
                 i = (i + 1) * 2 - 1
             ncombinations_memmap[1:] = ncombinations_memmap[0]
@@ -314,7 +317,7 @@ class open_bgen:
                 )
             with _log_in_place("metadata", self._verbose) as updater:
                 for i, vaddr0 in enumerate(mmm_wplus["vaddr"]):
-                    if i % 1000 == 0 or i+1==self.nsamples:
+                    if i % 1000 == 0 or i + 1 == self.nsamples:
                         updater(
                             "'ncombinations': part {0:,} of {1:,}".format(
                                 i + 1, self.nvariants
@@ -560,10 +563,12 @@ class open_bgen:
         )  # Do "logarithmic rounding" to make numbers look nicer, e.g.  999 -> 1000
         with _log_in_place("reading", self._verbose) as updater:
             for out_index, vaddr0 in enumerate(vaddr):
-                if (out_index+1) % vaddr_per_second == 0 or out_index + 1==len(vaddr):
+                if (out_index + 1) % vaddr_per_second == 0 or out_index + 1 == len(
+                    vaddr
+                ):
                     updater("part {0:,} of {1:,}".format(out_index + 1, len(vaddr)))
 
-                if dtype==np.float16 or dtype==np.float32:
+                if dtype == np.float16 or dtype == np.float32:
                     precision = 32
                 else:
                     precision = 64
@@ -586,14 +591,14 @@ class open_bgen:
                         genotype.missings
                         if (samples_index is self._sample_range)
                         else genotype.missing[samples_index]
-                        )
+                    )
 
                 if return_ploidies:
                     ploidy_val[:, out_index] = (
                         genotype.ploidy
                         if (samples_index is self._sample_range)
                         else genotype.ploidy[samples_index]
-                        )
+                    )
 
         result_array = (
             ([val] if return_probabilities else [])
@@ -932,7 +937,9 @@ class open_bgen:
                     start = 0
                     for ipart2 in range(nparts):  # LATER multithread?
                         # LATER in notebook this message doesn't appear on one line
-                        updater("'nallele': part {0:,} of {1:,}".format(ipart2+1, nparts))
+                        updater(
+                            "'nallele': part {0:,} of {1:,}".format(ipart2 + 1, nparts)
+                        )
 
                         partition = mf.read_partition(ipart2)
                         variants = partition.variants
@@ -940,7 +947,9 @@ class open_bgen:
 
                         vid_max_max = max(vid_max_max, variants.id.dtype.itemsize)
                         rsid_max_max = max(rsid_max_max, variants.rsid.dtype.itemsize)
-                        chrom_max_max = max(chrom_max_max, variants.chromosome.dtype.itemsize)
+                        chrom_max_max = max(
+                            chrom_max_max, variants.chromosome.dtype.itemsize
+                        )
                         allele_ids_max_max = max(
                             allele_ids_max_max, variants.allele_ids.dtype.itemsize
                         )
@@ -966,7 +975,7 @@ class open_bgen:
 
                     start = 0
                     for ipart2 in range(nparts):  # LATER multithread?
-                        updater("'ids': part {0:,} of {1:,}".format(ipart2+1, nparts))
+                        updater("'ids': part {0:,} of {1:,}".format(ipart2 + 1, nparts))
 
                         partition = mf.read_partition(ipart2)
                         variants = partition.variants
@@ -1018,8 +1027,7 @@ class open_bgen:
 
     def __exit__(self, *_):
         if (
-            hasattr(self, "_cbgen")
-            and self._cbgen is not None
+            hasattr(self, "_cbgen") and self._cbgen is not None
         ):  # we need to test this because Python doesn't guarantee that __init__ was
             # fully run
             self._cbgen.close()

@@ -37,7 +37,11 @@ def test_typing():
 
 
 def test_bgen_samples_not_present():
-    data = open_bgen(example_filepath2("complex.23bits.no.samples.bgen"), allow_complex=True, verbose=False)
+    data = open_bgen(
+        example_filepath2("complex.23bits.no.samples.bgen"),
+        allow_complex=True,
+        verbose=False,
+    )
     samples = ["sample_0", "sample_1", "sample_2", "sample_3"]
     assert all(data.samples == samples)
 
@@ -502,25 +506,76 @@ def test_read_multiple_returns():
     assert np.allclose(full_ploidy[10:30:2, :][:, [11, 9]], ploidy, equal_nan=False)
 
 
+def test_coverage3():
+    with pytest.raises(ValueError):
+        with open_bgen(
+            example_filepath2("example.bgen"),
+            samples_filepath=example_filepath(
+                "complex.sample"
+            ),  # Wrong size sample file
+            verbose=False,
+        ) as _:
+            pass
+
+    with pytest.raises(ValueError):
+        with open_bgen(example_filepath2("complex.bgen"), verbose=False,) as _:
+            pass
+
+
+def test_allele_expectation():
+    filepath = example_filepath("example.32bits.bgen")
+    with open_bgen(filepath, verbose=False) as bgen2:
+        e = bgen2.allele_expectation(
+            np.s_[bgen2.samples == "sample_005", bgen2.rsids == "RSID_6"]
+        )
+        assert np.allclose(e, [[[1.01086423, 0.98913577]]])
+
+    with pytest.raises(ValueError):
+        filepath = example_filepath("haplotypes.bgen")
+        with open_bgen(filepath, verbose=False) as bgen2:
+            bgen2.allele_expectation()
+
+    filepath = example_filepath("example.32bits.bgen")
+    with open_bgen(filepath, verbose=False) as bgen2:
+        e = bgen2.allele_expectation(np.s_[:, []])
+        assert e.shape == (500, 0, 2)
+
+    filepath = example_filepath("example.32bits.bgen")
+    with open_bgen(filepath, verbose=False) as bgen2:
+        e = bgen2.allele_expectation(
+            np.s_[bgen2.samples == "sample_005", bgen2.rsids == "RSID_6"],
+            assume_constant_ploidy=False,
+        )
+        assert np.allclose(e, [[[1.01086423, 0.98913577]]])
+
+    filepath = example_filepath("example.32bits.bgen")
+    with open_bgen(filepath, verbose=False) as bgen2:
+        e = bgen2.allele_expectation(np.s_[:, []], assume_constant_ploidy=False)
+        assert e.shape == (500, 0, 2)
+
+
 if __name__ == "__main__":
-    if True:
-        import numpy as np
-        from bgen_reader import open_bgen
+    if False:
+        # import numpy as np
+        # from bgen_reader import open_bgen
 
         bgen = open_bgen("M:/deldir/genbgen/good/merged_487400x1100000.bgen")
-         # read all samples and variants 1M to 1M+31
-        val = bgen.read(np.s_[:,1000000:1000031])
+        # read all samples and variants 1M to 1M+31
+        val = bgen.read(np.s_[:, 1000000:1000031])
         print(val.shape)
 
-    if False:
-        test_read_dtype_and_order()
-        test_read_dtype_and_order()
+    if True:
+        test_allele_expectation()
 
-    if True:  # !!!cmk remove the non-test stuff
-        filename = r"M:\bgen-reader-cache\test_data\example.32bits.bgen"#M:\deldir\genbgen\good\test_data\1000x500000.bgen"
+    if False:  # !!!cmk remove the non-test stuff
+        filename = r"M:\bgen-reader-cache\test_data\example.32bits.bgen"  # M:\deldir\genbgen\good\test_data\1000x500000.bgen"
         with open_bgen(filename, allow_complex=True, verbose=True) as bgen:
             variant_start = 0 * 10000
-            val = bgen.read(np.s_[:1000, variant_start : variant_start + 1000],return_missings=True,return_ploidies=True)
+            val = bgen.read(
+                np.s_[:1000, variant_start : variant_start + 1000],
+                return_missings=True,
+                return_ploidies=True,
+            )
 
     if False:  # !!!cmk remove the non-test stuff
 
@@ -611,5 +666,5 @@ if __name__ == "__main__":
 # !!!cmk put back
 pytest.main([__file__])
 # !!!cmk add warning and example to docs that properties (e.g. ids, samples, will disappear after closed. If want to keep, must .copy()
-#!!!cmk check coverage
-#!!!cmk isort and flake8
+# !!!cmk check coverage
+# !!!cmk isort and flake8
