@@ -1,6 +1,7 @@
 import os
 import platform
 from shutil import copyfile
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -520,6 +521,17 @@ def test_coverage3():
     with pytest.raises(ValueError):
         with open_bgen(example_filepath2("complex.bgen"), verbose=False,) as _:
             pass
+
+def test_coverage4(tmp_path):
+    oldpwd = os.getcwd()
+    filepath = example_filepath2("example.32bits.bgen")
+    try:
+        os.chdir(filepath.parent)
+        with open_bgen(filepath.name) as bgen2:
+            assert bgen2.shape == (500, 199,3)
+    finally:
+        os.chdir(oldpwd)
+
 
 
 def test_allele_expectation():
