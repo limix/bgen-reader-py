@@ -1,6 +1,8 @@
 import hashlib
 import math
+import multiprocessing
 import os
+import threading
 from os.path import getmtime
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
@@ -352,6 +354,7 @@ class open_bgen:
         return_probabilities: Optional[bool] = True,
         return_missings: Optional[bool] = False,
         return_ploidies: Optional[bool] = False,
+        num_threads: Optional[int] = None,
     ) -> Union[
         None,
         np.ndarray,
@@ -387,6 +390,9 @@ class open_bgen:
         return_ploidies: bool
             Read and return the ploidy for the samples and variants specified.
             Defaults to ``False``.
+        num_threads: bool
+            The number of threads with which to read data. Defaults to all available processors or the number of variants
+            being read, whichever is less. Can also be set with the 'MKL_NUM_THREADS' environment variable.
 
         Returns
         -------
@@ -531,6 +537,7 @@ class open_bgen:
             samples_index
         ]  # converts slice(), etc to a list of  numbers
         vaddr = self._vaddr[variants_index]
+        num_threads = self._get_num_threads(num_threads, len(vaddr))
         ncombinations = self._ncombinations[variants_index]
 
         if len(ncombinations) > 0 and max(ncombinations) > max_combinations:
@@ -557,7 +564,6 @@ class open_bgen:
                 (len(samples_index), len(vaddr)), 0, dtype="int", order=order
             )
 
-        # LATER multithread?
         approx_read_seconds = len(vaddr) / 20000.0 + len(vaddr) * self.nsamples / (
             2 * 1000 * 1000.0
         )
@@ -565,44 +571,73 @@ class open_bgen:
         vaddr_per_second = 10 ** (
             int(math.log10(vaddr_per_second) + 0.5)
         )  # Do "logarithmic rounding" to make numbers look nicer, e.g.  999 -> 1000
-        with _log_in_place("reading", self._verbose) as updater:
-            for out_index, vaddr0 in enumerate(vaddr):
-                if (out_index + 1) % vaddr_per_second == 0 or out_index + 1 == len(
-                    vaddr
-                ):
-                    updater("part {0:,} of {1:,}".format(out_index + 1, len(vaddr)))
+        with _log_in_place(
+            "reading", self._verbose
+        ) as updater:
 
-                if dtype == np.float16 or dtype == np.float32:
-                    precision = 32
-                else:
-                    precision = 64
+            def worker(start, end, thread_index, thread_count):
+                with bgen_file(self._filepath) as cbgen:
+                    for out_index in range(start, end):
+                        vaddr0 = vaddr[out_index]
+                        if (
+                            thread_index == 0
+                            and (out_index + 1) % vaddr_per_second == 0
+                            or out_index + 1 == end - start
+                        ):
+                            updater(
+                                f"thread {thread_index+1} of {thread_count}, part {out_index + 1:,} of {end-start:,}"
+                            )
 
-                if return_missings or return_ploidies:
-                    genotype = self._cbgen.read_genotype(vaddr0, precision)
-                    probability = genotype.probability
-                elif return_probabilities:
-                    probability = self._cbgen.read_probability(vaddr0, precision)
+                        if dtype == np.float16 or dtype == np.float32:
+                            precision = 32
+                        else:
+                            precision = 64
 
-                if return_probabilities:
-                    val[:, out_index, : ncombinations[out_index]] = (
-                        probability
-                        if (samples_index is self._sample_range)
-                        else probability[samples_index, :]
+                        if return_missings or return_ploidies:
+                            genotype = cbgen.read_genotype(vaddr0, precision)
+                            probability = genotype.probability
+                        elif return_probabilities:
+                            probability = cbgen.read_probability(vaddr0, precision)
+
+                        if return_probabilities:
+                            val[:, out_index, : ncombinations[out_index]] = (
+                                probability
+                                if (samples_index is self._sample_range)
+                                else probability[samples_index, :]
+                            )
+
+                        if return_missings:
+                            missing_val[:, out_index] = (
+                                genotype.missings
+                                if (samples_index is self._sample_range)
+                                else genotype.missing[samples_index]
+                            )
+
+                        if return_ploidies:
+                            ploidy_val[:, out_index] = (
+                                genotype.ploidy
+                                if (samples_index is self._sample_range)
+                                else genotype.ploidy[samples_index]
+                            )
+
+            threads = []
+            vaddr_per_thread = -(-len(vaddr) // num_threads)  # Int Ceiling
+            start = 0
+            for thread_index in range(
+                num_threads
+            ):
+                end = min(start + vaddr_per_thread, len(vaddr))
+                threads.append(
+                    threading.Thread(
+                        target=worker, args=(start, end, thread_index, num_threads)
                     )
-
-                if return_missings:
-                    missing_val[:, out_index] = (
-                        genotype.missings
-                        if (samples_index is self._sample_range)
-                        else genotype.missing[samples_index]
-                    )
-
-                if return_ploidies:
-                    ploidy_val[:, out_index] = (
-                        genotype.ploidy
-                        if (samples_index is self._sample_range)
-                        else genotype.ploidy[samples_index]
-                    )
+                )
+                start = end
+            for t in threads:
+                t.start()
+            # Wait for all threads to complete
+            for t in threads:
+                t.join()
 
         result_array = (
             ([val] if return_probabilities else [])
@@ -613,6 +648,13 @@ class open_bgen:
             return result_array[0]
         else:
             return tuple(result_array)
+
+    def _get_num_threads(self, num_threads, len_vaddr):
+        if num_threads is not None:
+            return max(min(num_threads, len_vaddr), 1)
+        if "MKL_NUM_THREADS" in os.environ:
+            return max(min(int(os.environ["MKL_NUM_THREADS"]), len_vaddr), 1)
+        return max(min(multiprocessing.cpu_count(), len_vaddr), 1)
 
     @property
     def nsamples(self) -> int:
