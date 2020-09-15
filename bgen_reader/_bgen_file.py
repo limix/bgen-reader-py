@@ -47,7 +47,7 @@ class bgen_file:
         finally:
             lib.bgen_samples_destroy(bgen_samples)
 
-        return Series(samples, dtype=str, name="id")
+        return Series(samples.astype(str), dtype=str, name="id")
 
     def create_metafile(self, filepath: Path, verbose: bool):
         n = _estimate_best_npartitions(self.nvariants)
