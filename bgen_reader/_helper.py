@@ -40,8 +40,8 @@ def _make_genotype(ploidy, start, end):
 @contextmanager
 def _log_in_place(name, verbose, time_lambda=time.time, show_log_diffs=False):
     """
-        Create a one-argument function to write messages to. All messages will be on the same line and
-        will include time.
+    Create a one-argument function to write messages to. All messages will be on the same line and
+    will include time.
 
     """
     # LATER what if logging messages aren't suppose to go to stdout?

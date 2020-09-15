@@ -571,9 +571,7 @@ class open_bgen:
         vaddr_per_second = 10 ** (
             int(math.log10(vaddr_per_second) + 0.5)
         )  # Do "logarithmic rounding" to make numbers look nicer, e.g.  999 -> 1000
-        with _log_in_place(
-            "reading", self._verbose
-        ) as updater:
+        with _log_in_place("reading", self._verbose) as updater:
 
             def worker(start, end, thread_index, thread_count):
                 with bgen_file(self._filepath) as cbgen:
@@ -623,9 +621,7 @@ class open_bgen:
             threads = []
             vaddr_per_thread = -(-len(vaddr) // num_threads)  # Int Ceiling
             start = 0
-            for thread_index in range(
-                num_threads
-            ):
+            for thread_index in range(num_threads):
                 end = min(start + vaddr_per_thread, len(vaddr))
                 threads.append(
                     threading.Thread(
@@ -1156,7 +1152,7 @@ class open_bgen:
              [[0. 1. 1. 0.]]]
             >>> bgen.close()     #'del bgen' is better.
 
-            """
+        """
         self.__exit__()
 
     def __enter__(self):
@@ -1182,7 +1178,9 @@ class open_bgen:
             # no bad effect.
 
     def allele_expectation(
-        self, index: Optional[Any] = None, assume_constant_ploidy: bool = True,
+        self,
+        index: Optional[Any] = None,
+        assume_constant_ploidy: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Allele expectation.

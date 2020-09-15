@@ -202,7 +202,11 @@ class MultiMemMap:
         return self._name_to_memmap[name]
 
     def append_empty(
-        self, name: str, shape: Tuple[int], dtype: str, order: str = "C",
+        self,
+        name: str,
+        shape: Tuple[int],
+        dtype: str,
+        order: str = "C",
     ) -> np.memmap:  # Document that these dtypes must be strings, not types
         if self._mode not in {"r+", "w+"}:
             raise io.UnsupportedOperation("not writable")

@@ -227,7 +227,10 @@ def test_to_improve_coverage2():
         verbose=True,
     )  # Creates metadata2.mmm file
     bgen2 = open_bgen(
-        filepath, samples_filepath=samplepath, allow_complex=True, verbose=True,
+        filepath,
+        samples_filepath=samplepath,
+        allow_complex=True,
+        verbose=True,
     )  # Creates metadata2.mmm file
 
     del bgen2
@@ -530,7 +533,10 @@ def test_coverage3():
             pass
 
     with pytest.raises(ValueError):
-        with open_bgen(example_filepath2("complex.bgen"), verbose=False,) as _:
+        with open_bgen(
+            example_filepath2("complex.bgen"),
+            verbose=False,
+        ) as _:
             pass
 
 

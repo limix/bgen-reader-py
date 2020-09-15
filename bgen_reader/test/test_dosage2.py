@@ -64,7 +64,8 @@ def test_zero_width():
     with open_bgen(filepath, allow_complex=True, verbose=False) as bgen:
         for assume_constant_ploidy in [False, True]:
             e = bgen.allele_expectation(
-                [], assume_constant_ploidy=assume_constant_ploidy,
+                [],
+                assume_constant_ploidy=assume_constant_ploidy,
             )
             f = bgen.allele_frequency(e)
             assert e.shape == (bgen.nsamples, 0, bgen.nalleles[0])
@@ -72,7 +73,8 @@ def test_zero_width():
 
             good_variants = logical_not(bgen.phased) * (bgen.nalleles == 2)
             e = bgen.allele_expectation(
-                ([], good_variants), assume_constant_ploidy=assume_constant_ploidy,
+                ([], good_variants),
+                assume_constant_ploidy=assume_constant_ploidy,
             )
             f = bgen.allele_frequency(e)
             assert e.shape == (0, sum(good_variants), bgen.nalleles[0])
@@ -81,7 +83,8 @@ def test_zero_width():
             )  # We define the freq of something with no samples as 0
 
             e = bgen.allele_expectation(
-                ([], []), assume_constant_ploidy=assume_constant_ploidy,
+                ([], []),
+                assume_constant_ploidy=assume_constant_ploidy,
             )
             f = bgen.allele_frequency(e)
             assert e.shape == (0, 0, bgen.nalleles[0])
