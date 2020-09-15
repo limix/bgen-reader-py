@@ -1,5 +1,5 @@
 limix-sphinx-theme>=0.0.4
-pytest-sphinx>=0.2.2
-sphinx>=2.4.0
-sphinx_rtd_theme>=0.4.3
+sphinx>=3.2.1
+sphinx-rtd-theme>=0.5.0
 bgen-reader>=4.0.0
+xarray>=0.16.0
