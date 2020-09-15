@@ -4,7 +4,7 @@ from ._helper import genotypes_to_allele_counts, get_genotypes
 
 
 def allele_frequency(expec):
-    r""" Compute allele frequency from its expectation.
+    r"""Compute allele frequency from its expectation.
 
     Parameters
     ----------
@@ -56,7 +56,7 @@ def allele_frequency(expec):
 
 
 def compute_dosage(expec, alt=None):
-    r""" Compute dosage from allele expectation.
+    r"""Compute dosage from allele expectation.
 
     Parameters
     ----------
@@ -229,7 +229,7 @@ def compute_dosage(expec, alt=None):
 
 
 def allele_expectation(bgen, variant_idx):
-    r""" Allele expectation.
+    r"""Allele expectation.
 
     Compute the expectation of each allele from the genotype probabilities.
 
