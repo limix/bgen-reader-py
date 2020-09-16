@@ -2,11 +2,12 @@ import os
 from pathlib import Path
 from typing import Optional, Union
 
-from ._bgen_file import bgen_file
-from ._bgen_metafile import bgen_metafile
+from cbgen import bgen_file, bgen_metafile
+from pandas import Series
+
 from ._file import assert_file_exist, assert_file_readable
 from ._genotype import create_genotypes
-from ._metafile import create_metafile, infer_metafile_filepath
+from ._metafile import create_metafile, create_variants, infer_metafile_filepath
 from ._samples import generate_samples, read_samples_file
 
 
@@ -89,8 +90,8 @@ def read_bgen(
             )
         create_metafile(filepath, metafile_filepath, verbose)
     elif os.path.getmtime(metafile_filepath) < os.path.getmtime(filepath):
-        from ._bgen_metafile import cache as metacache
         from ._genotype import cache as bgencache
+        from ._metafile import cache as metacache
 
         metacache.clear()
         bgencache.clear()
@@ -106,18 +107,24 @@ def read_bgen(
     with bgen_file(filepath) as bgen:
         samples = _get_samples(bgen, samples_filepath, verbose)
 
-        with bgen_metafile(metafile_filepath) as metafile:
-            variants = metafile.create_variants()
+        with bgen_metafile(metafile_filepath) as mf:
+            nvariants = mf.nvariants
+            npartitions = mf.npartitions
+            part_size = mf.partition_size
+            variants = create_variants(
+                metafile_filepath, nvariants, npartitions, part_size
+            )
 
         genotype = create_genotypes(bgen, metafile_filepath, verbose)
 
     return dict(variants=variants, samples=samples, genotype=genotype)
 
 
-def _get_samples(bgen, sample_file, verbose):
+def _get_samples(bgen, sample_file, verbose) -> Series:
     if sample_file is None:
         if bgen.contain_samples:
-            return bgen.read_samples()
+            samples = bgen.read_samples().astype(str)
+            return Series(samples, dtype=str, name="id")
         else:
             return generate_samples(bgen.nsamples)
     else:

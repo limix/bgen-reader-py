@@ -1,8 +1,7 @@
 from pathlib import Path
 
+from cbgen import bgen_file
 from pandas import Series, read_csv
-
-from ._bgen_file import bgen_file
 
 
 def get_samples(bgen_filepath, verbose: bool) -> Series:
@@ -23,7 +22,7 @@ def get_samples(bgen_filepath, verbose: bool) -> Series:
     return samples
 
 
-def read_samples_file(sample_filepath: Path, verbose: bool):
+def read_samples_file(sample_filepath: Path, verbose: bool) -> Series:
     if verbose:
         print(f"Sample IDs are read from {sample_filepath}.")
 
@@ -31,5 +30,5 @@ def read_samples_file(sample_filepath: Path, verbose: bool):
     return Series(samples, dtype=str, name="id")
 
 
-def generate_samples(nsamples: int):
+def generate_samples(nsamples: int) -> Series:
     return Series([f"sample_{i}" for i in range(nsamples)], dtype=str, name="id")

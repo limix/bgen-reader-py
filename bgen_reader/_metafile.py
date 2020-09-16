@@ -1,8 +1,15 @@
 import warnings
 from pathlib import Path
+from threading import RLock
 from typing import Union
 
-from ._bgen_file import bgen_file
+import dask.dataframe as dd
+from cachetools import LRUCache, cached
+from cbgen import bgen_file, bgen_metafile
+from cbgen.typing import Partition
+from dask.delayed import delayed
+from pandas import DataFrame
+
 from ._environment import BGEN_READER_CACHE_HOME
 from ._file import (
     assert_file_exist,
@@ -93,3 +100,48 @@ def infer_metafile_filepath(bgen_filepath: Path, suffix: str = ".metafile") -> P
 
         warnings.warn(_metafile_nowrite_dir.format(filepath=metafile), UserWarning)
         return BGEN_READER_CACHE_HOME / "metafile" / path_to_filename(metafile)
+
+
+def create_variants(filepath: Path, nvariants: int, npartitions: int, part_size: int):
+    dfs = []
+    index_base = 0
+    divisions = []
+    for i in range(npartitions):
+        divisions.append(index_base)
+        d = delayed(_read_partition)(filepath, i)
+        dfs.append(d)
+        index_base += part_size
+    divisions.append(nvariants - 1)
+    meta = [
+        ("id", str),
+        ("rsid", str),
+        ("chrom", str),
+        ("pos", int),
+        ("nalleles", int),
+        ("allele_ids", str),
+        ("vaddr", int),
+    ]
+    df = dd.from_delayed(dfs, meta=dd.utils.make_meta(meta), divisions=divisions)
+    return df
+
+
+cache = LRUCache(maxsize=3)
+lock = RLock()
+
+
+@cached(cache, lock=lock)
+def _read_partition(filepath: Path, partition: int) -> DataFrame:
+    with bgen_metafile(filepath) as mf:
+        part: Partition = mf.read_partition(partition)
+    v = part.variants
+    data = {
+        "id": v.id.astype(str),
+        "rsid": v.rsid.astype(str),
+        "chrom": v.chromosome.astype(str),
+        "pos": v.position.astype(int),
+        "nalleles": v.nalleles.astype(int),
+        "allele_ids": v.allele_ids.astype(str),
+        "vaddr": v.offset.astype(int),
+    }
+    df = DataFrame(data)
+    return df[["id", "rsid", "chrom", "pos", "nalleles", "allele_ids", "vaddr"]]

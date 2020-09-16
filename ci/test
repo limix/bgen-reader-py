@@ -1,4 +1,0 @@
-#!/bin/bash
-
-ldd $(find / -type f -name "_ffi.abi3.so")
-(cd ~/ && python -c "import bgen_reader; import sys; sys.exit(bgen_reader.test())")

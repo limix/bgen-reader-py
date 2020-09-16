@@ -1,11 +1,11 @@
 from pathlib import Path
 from threading import RLock
+from typing import List
 
 from cachetools import LRUCache, cached
+from cbgen import bgen_file, bgen_metafile
+from cbgen.typing import Genotype
 from tqdm import trange
-
-from ._bgen_file import bgen_file
-from ._bgen_metafile import bgen_metafile
 
 
 def create_genotypes(bgen: bgen_file, metafile_filepath, verbose):
@@ -37,10 +37,17 @@ def _get_read_genotype(bgen: bgen_file, metafile_filepath):
             sub_part = j // spart_size
             m = j % spart_size
             start = sub_part * spart_size
-            end = min(len(p), (sub_part + 1) * spart_size)
-            vaddrs = tuple(p.iloc[start:end]["vaddr"].tolist())
-            g = read_genotype_partition(bgen_filepath, vaddrs)
-            return g[m]
+            variants = p.variants
+            end = min(variants.size, (sub_part + 1) * spart_size)
+            vaddrs = tuple(p.variants.offset[start:end].tolist())
+            g: List[Genotype] = read_genotype_partition(bgen_filepath, vaddrs)
+            gm = g[m]
+            return {
+                "probs": gm.probability,
+                "phased": gm.phased,
+                "ploidy": gm.ploidy,
+                "missing": gm.missing,
+            }
 
     name = "read_genotype-" + tokenize(bytes(metafile_filepath))
     return delayed(read_genotype, name, True, None, False)
