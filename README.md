@@ -1,7 +1,5 @@
 # bgen-reader
 
-[![Travis](https://travis-ci.com/limix/bgen-reader-py.svg?branch=master)](https://travis-ci.com/limix/bgen-reader-py) [![Documentation](https://readthedocs.org/projects/bgen-reader/badge/?version=latest)](https://bgen-reader.readthedocs.io/en/latest/?badge=latest)
-
 A [bgen file format](http://www.well.ox.ac.uk/~gav/bgen_format/) reader.
 
 Bgen is a file format for storing large genetic datasets.
