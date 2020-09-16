@@ -30,7 +30,7 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        flake8
+        flake8 .
         black --check
         isort --check-only
     - name: Test with pytest
