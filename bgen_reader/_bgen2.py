@@ -390,7 +390,7 @@ class open_bgen:
         return_ploidies: bool
             Read and return the ploidy for the samples and variants specified.
             Defaults to ``False``.
-        num_threads: bool
+        num_threads: int
             The number of threads with which to read data. Defaults to all available processors or the number of variants
             being read, whichever is less. Can also be set with the 'MKL_NUM_THREADS' environment variable.
 
