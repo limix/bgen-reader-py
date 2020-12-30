@@ -49,4 +49,4 @@ If you encounter any issue, please, [submit it](https://github.com/limix/bgen-re
 
 ## License
 
-This project is licensed under the [MIT License](https://raw.githubusercontent.com/limix/bgen-reader-py/master/LICENSE.md).
+This project is licensed under the [MIT License](https://raw.githubusercontent.com/limix/bgen-reader-py/main/LICENSE.md).
