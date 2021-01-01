@@ -1178,9 +1178,7 @@ class open_bgen:
             # no bad effect.
 
     def allele_expectation(
-        self,
-        index: Optional[Any] = None,
-        assume_constant_ploidy: bool = True,
+        self, index: Optional[Any] = None, assume_constant_ploidy: bool = True,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Allele expectation.
@@ -1289,7 +1287,7 @@ class open_bgen:
             >>> # Compute the dosage when considering the allele
             >>> # in position 1 as the reference/alternative one.
             >>> alt_allele_index = 1
-            >>> dosage = e[...,1]
+            >>> dosage = e[...,alt_allele_index]
             >>>
             >>> # Print the dosage for only the first five samples
             >>> # and the one (and only) variant
