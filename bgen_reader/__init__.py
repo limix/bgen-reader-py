@@ -27,7 +27,7 @@ from ._metafile import create_metafile
 from ._reader import read_bgen
 from ._testit import test
 
-__version__ = "4.0.7"
+__version__ = "4.0.8"
 
 __all__ = [
     "__version__",
