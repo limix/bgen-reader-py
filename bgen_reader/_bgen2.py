@@ -1378,9 +1378,9 @@ class open_bgen:
                 "Current code requires that all selected variants have the same number of alleles"
             )
         if assume_constant_ploidy:
-            ploidy0 = self.read(return_probabilities=False, return_ploidies=True)[
-                [0], 0
-            ]
+            ploidy0 = self.read(
+                index=(0, 0), return_probabilities=False, return_ploidies=True
+            )
             genotype = get_genotypes(ploidy0, self.nalleles[0])[0]
             count = asarray(genotypes_to_allele_counts(genotype), float)
 
