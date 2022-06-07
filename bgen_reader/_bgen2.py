@@ -126,6 +126,7 @@ class open_bgen:
         self,
         filepath: Union[str, Path],
         samples_filepath: Optional[Union[str, Path]] = None,
+        metadata_filepath: Optional[Union[str, Path]] = None,
         allow_complex: bool = False,
         verbose: bool = True,
     ):
@@ -139,12 +140,15 @@ class open_bgen:
             Path(samples_filepath) if samples_filepath is not None else None
         )
 
-        # Getting absolute paths is hard: https://discuss.python.org/t/pathlib-absolute-vs-resolve/2573/10
-        self._metadata2_path = self._metadata_path_from_filename(
-            self._filepath, self._samples_filepath, self._allow_complex
-        ).resolve()  # needed because of tmp_cwd in create_metadata
-        if not self._metadata2_path.is_absolute():
-            self._metadata2_path = Path.cwd() / self._metadata2_path
+        if metadata_filepath is None:
+            # Getting absolute paths is hard: https://discuss.python.org/t/pathlib-absolute-vs-resolve/2573/10
+            self._metadata2_path = self._metadata_path_from_filename(
+                self._filepath, self._samples_filepath, self._allow_complex
+            ).resolve()  # needed because of tmp_cwd in create_metadata
+            if not self._metadata2_path.is_absolute():
+                self._metadata2_path = Path.cwd() / self._metadata2_path
+        else:
+            self._metadata2_path = Path(metadata_filepath)
 
         self._cbgen = bgen_file(filepath)
 

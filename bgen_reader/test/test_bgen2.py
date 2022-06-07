@@ -594,5 +594,27 @@ def test_threads():
                 assert val.shape == (row_count, col_count, 3)
 
 
+# def test_move_mmm():
+#     filepath = example_filepath("example.32bits.bgen")
+#     with open_bgen(
+#         filepath, metadata_filepath=r"m:\deldir\cmk.mmm", verbose=False
+#     ) as bgen2:
+#         for num_threads in [1, 2]:
+#             for slice in [np.s_[:, :], np.s_[:, []]]:
+#                 val = bgen2.read(index=slice, num_threads=num_threads)
+#                 row_count = len(bgen2.samples[slice[0]])
+#                 col_count = len(bgen2.ids[slice[1]])
+#                 assert val.shape == (row_count, col_count, 3)
+#     with open_bgen(
+#         filepath, metadata_filepath=r"m:\deldir\cmk.mmm", verbose=False
+#     ) as bgen2:
+#         for num_threads in [1, 2]:
+#             for slice in [np.s_[:, :], np.s_[:, []]]:
+#                 val = bgen2.read(index=slice, num_threads=num_threads)
+#                 row_count = len(bgen2.samples[slice[0]])
+#                 col_count = len(bgen2.ids[slice[1]])
+#                 assert val.shape == (row_count, col_count, 3)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
