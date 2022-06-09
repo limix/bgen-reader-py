@@ -26,9 +26,9 @@ jobs:
 
     - name: Lint
       run: |
+        flake8 .
         black --check .
         isort --check-only .
-      # flake8 .
 
     - name: Test
       run: pytest .
