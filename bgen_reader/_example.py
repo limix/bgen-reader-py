@@ -18,7 +18,7 @@ _filenames = {
 def example_filepath(filename: str):
     import requests
 
-    url = "https://bgen-examples.s3.amazonaws.com"
+    url = "https://github.com/fastlmm/bgen-sample-files/blob/main"
 
     if filename not in _filenames:
         raise ValueError(f"Unknown filename {filename}.")
