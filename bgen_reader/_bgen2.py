@@ -33,6 +33,10 @@ class open_bgen:
     samples_filepath
         Path to a `sample format`_ file or ``None`` to read samples from the BGEN file itself.
         Defaults to ``None``.
+    metadata_filepath
+        Tells where to be put the constructed metadata file. By default, will use the same
+        directory and name as the BGEN file, but with extension ``.metadata2.mmm``. Use this option,
+        for example, when the BGEN file's directory is read-only.
     allow_complex
         ``False`` (default) to assume homogeneous data; ``True`` to allow complex data.
         The BGEN format allows every variant to vary in its phaseness, its allele count,
@@ -49,7 +53,7 @@ class open_bgen:
 
     The first time a file is opened , ``open_bgen`` creates a .metadata2.mmm file, a process that takes seconds to hours,
     depending on the size of the file and the ``allow_complex`` setting. Subsequent openings take just a fraction of
-    a second. Changing ``samples_filepath`` or ``allow_complex`` results in a new .metadata2.mmm with a slightly
+    a second. Changing ``samples_filepath`` or ``allow_complex`` results in a new default .metadata2.mmm with a slightly
     different name.
 
     .. _open_examples:
@@ -126,6 +130,7 @@ class open_bgen:
         self,
         filepath: Union[str, Path],
         samples_filepath: Optional[Union[str, Path]] = None,
+        metadata_filepath: Optional[Union[str, Path]] = None,
         allow_complex: bool = False,
         verbose: bool = True,
     ):
@@ -139,12 +144,15 @@ class open_bgen:
             Path(samples_filepath) if samples_filepath is not None else None
         )
 
-        # Getting absolute paths is hard: https://discuss.python.org/t/pathlib-absolute-vs-resolve/2573/10
-        self._metadata2_path = self._metadata_path_from_filename(
-            self._filepath, self._samples_filepath, self._allow_complex
-        ).resolve()  # needed because of tmp_cwd in create_metadata
-        if not self._metadata2_path.is_absolute():
-            self._metadata2_path = Path.cwd() / self._metadata2_path
+        if metadata_filepath is None:
+            # Getting absolute paths is hard: https://discuss.python.org/t/pathlib-absolute-vs-resolve/2573/10
+            self._metadata2_path = self._metadata_path_from_filename(
+                self._filepath, self._samples_filepath, self._allow_complex
+            ).resolve()  # needed because of tmp_cwd in create_metadata
+            if not self._metadata2_path.is_absolute():
+                self._metadata2_path = Path.cwd() / self._metadata2_path
+        else:
+            self._metadata2_path = Path(metadata_filepath)
 
         self._cbgen = bgen_file(filepath)
 
