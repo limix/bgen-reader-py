@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bgen-reader"
-version = "4.0.8"
+version = "4.0.9"
 description = "Bgen file format reader"
 authors = ["Danilo Horta <horta@ebi.ac.uk>"]
 license = "MIT"
