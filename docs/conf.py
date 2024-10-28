@@ -44,11 +44,11 @@ napoleon_numpy_docstring = True
 templates_path = ["_templates"]
 autosectionlabel_prefix_document = True
 
-source_suffix = ".rst"
+source_suffix = {".rst": "restructuredtext"}
 
 master_doc = "index"
 man_pages = [(master_doc, project, "{} documentation".format(project), [author], 1)]
-language = None
+language = "en"
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "conf.py"]
 
@@ -63,7 +63,7 @@ html_theme_options = {
 htmlhelp_basename = "{}doc".format(project)
 
 intersphinx_mapping = {
-    "https://docs.python.org/": None,
+    "python": ("https://docs.python.org/3", None),
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
 }
