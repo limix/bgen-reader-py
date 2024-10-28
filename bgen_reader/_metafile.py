@@ -122,7 +122,7 @@ def create_variants(filepath: Path, nvariants: int, npartitions: int, part_size:
         ("vaddr", int),
     ]
     df = dd.from_delayed(dfs, meta=dd.utils.make_meta(meta), divisions=divisions)
-    return df
+    return create_monoincreasing_index(df)
 
 
 cache = LRUCache(maxsize=3)
@@ -145,3 +145,14 @@ def _read_partition(filepath: Path, partition: int) -> DataFrame:
     }
     df = DataFrame(data)
     return df[["id", "rsid", "chrom", "pos", "nalleles", "allele_ids", "vaddr"]]
+
+
+# Source: https://stackoverflow.com/a/66320758
+def create_monoincreasing_index(df):
+    # Assume that rows are already ordered.
+    cumlens = [0] + list(df.map_partitions(len).compute().cumsum())
+    new_partitions = []
+    for i, partition in enumerate(df.partitions):
+        partition.index = partition.index + cumlens[i]
+        new_partitions.append(partition)
+    return dd.concat(new_partitions)
