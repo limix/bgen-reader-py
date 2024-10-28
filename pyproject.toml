@@ -1,7 +1,33 @@
-[build-system]
-requires = ["setuptools>=49.2.0", "wheel>=0.34.2"]
-build-backend = "setuptools.build_meta"
+[tool.poetry]
+name = "bgen-reader"
+version = "4.0.8"
+description = "Bgen file format reader"
+authors = ["Danilo Horta <horta@ebi.ac.uk>"]
+license = "MIT"
+readme = "README.md"
 
-[tool.isort]
-profile = "black"
-src_paths = ["bgen_reader"]
+[tool.poetry.dependencies]
+python = "^3.10"
+appdirs = "^1.4.4"
+cachetools = "^5.5.0"
+cbgen = "^1.0.6"
+dask = { version = "^2024.10.0", extras = [
+  "bag",
+  "array",
+  "dataframe",
+  "delayed",
+] }
+numpy = "^2.1.2"
+pandas = "^2.2.3"
+texttable = "^1.7.0"
+tqdm = "^4.66.5"
+xarray = "^2024.10.0"
+requests = "^2.32.3"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

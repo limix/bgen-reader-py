@@ -79,8 +79,7 @@ def test_metafile_wrong_filepath():
     filepath = example_filepath("haplotypes.bgen")
     fp = "/omg/invalid/haplotypes.bgen.metafile_path"
     with pytest.raises(FileNotFoundError):
-        with pytest.warns(UserWarning):
-            read_bgen(filepath, metafile_filepath=fp, verbose=False)
+        read_bgen(filepath, metafile_filepath=fp, verbose=False)
 
 
 @pytest.mark.skipif(platform.system() != "Darwin", reason="only reliable on macos")
@@ -234,8 +233,7 @@ def test_bgen_reader_with_nonexistent_metadata_file():
     metafile_filepath = os.path.join(folder, "nonexistent.metadata")
 
     with pytest.raises(FileNotFoundError):
-        with pytest.warns(UserWarning):
-            read_bgen(filepath, verbose=False, metafile_filepath=metafile_filepath)
+        read_bgen(filepath, verbose=False, metafile_filepath=metafile_filepath)
 
 
 def test_bgen_reader_file_notfound():

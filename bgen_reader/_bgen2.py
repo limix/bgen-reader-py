@@ -1394,7 +1394,7 @@ class open_bgen:
 
             probs = self.read(index)
             if (
-                np.product(probs.shape[:2]) == 0
+                np.prod(probs.shape[:2]) == 0
             ):  # handle the case where user asks for no samples or no variants
                 expecx = np.zeros((probs.shape[0], probs.shape[1], count.shape[-1]))
             else:
@@ -1404,7 +1404,7 @@ class open_bgen:
         else:
             probs, ploidy = self.read(index, return_ploidies=True)
             if (
-                np.product(probs.shape[:2]) == 0
+                np.prod(probs.shape[:2]) == 0
             ):  # handle the case where user asks for no samples or no variants
                 expecx = np.zeros((probs.shape[0], probs.shape[1], self.nalleles[0]))
             else:
