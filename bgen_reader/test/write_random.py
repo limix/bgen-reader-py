@@ -38,7 +38,7 @@ def _write_random(
     # https://web.archive.org/web/20181010160322/http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html
     # We need the +1 so that all three values will have enough precision to be very near 1
     # The max(3,..) is needed to even 1 bit will have enough precision in the gen file
-    decimal_places = max(3, math.ceil(math.log(2 ** bits, 10)) + 1)
+    decimal_places = max(3, math.ceil(math.log(2**bits, 10)) + 1)
 
     def _format_function(num):
         return ("{0:." + str(decimal_places) + "f}").format(num)
